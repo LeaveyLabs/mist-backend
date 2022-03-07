@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'mist',
 ]
 
+ALLOWED_HOSTS = ['https://mist-backend.herokuapp.com']
+
 CORS_ALLOWED_ORIGINS = [
     'https://mist-backend.herokuapp.com',
 ]
