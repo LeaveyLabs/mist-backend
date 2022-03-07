@@ -4,9 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django
-django_heroku
-djangorestframework
+django = "*"
+django-heroku = "*"
+djangorestframework = "*"
 
 [dev-packages]
 
