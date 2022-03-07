@@ -8,16 +8,16 @@ POST api-token-auth/ \
 
 ENTITIES
 
-GET api/profiles/ \
+GET api/profiles/
 * query_parameters: username \
 * authorization: token \
-GET api/posts/ \
+GET api/posts/
 * query_parameters: none \
 * authorization: token \
-GET api/commments/ \
+GET api/commments/
 * query_parameters: post_id \
 * authorization: token \
-GET api/messages/ \
+GET api/messages/
 * query_parameters: none \
 * authorization: token \
 
