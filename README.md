@@ -1,4 +1,4 @@
-AUTHORIZATION \
+AUTHORIZATION
 
 POST api-register/ \
 * query_parameters: email, username, password \
@@ -6,7 +6,7 @@ POST api-token-auth/ \
 * query_parameters: username, password \
 
 
-ENTITIES \
+ENTITIES
 
 GET api/profiles/ \
 * query_parameters: username \
