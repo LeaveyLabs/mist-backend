@@ -10,16 +10,19 @@ ENTITIES
 
 GET api/profiles/
 * query_parameters: username \
-* authorization: token \
+* authorization: token
+
 GET api/posts/
 * query_parameters: none \
-* authorization: token \
+* authorization: token
+
 GET api/commments/
 * query_parameters: post_id \
-* authorization: token \
+* authorization: token
+
 GET api/messages/
 * query_parameters: none \
-* authorization: token \
+* authorization: token
 
 POST api/profiles/ \
 * query_parameters: username, first_name, last_name \
