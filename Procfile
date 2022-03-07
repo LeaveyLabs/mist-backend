@@ -1,1 +1,1 @@
-web: python3 manage.py runserver
+web: pipenv shell python3 manage.py runserver
