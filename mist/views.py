@@ -2,6 +2,9 @@ from django.db.models import Count
 from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
+from django.contrib.postgres.search import SearchVector
+from dateutil import parser
+
 from .serializers import (
     ProfileSerializer, 
     PostSerializer, 
@@ -31,8 +34,27 @@ class ProfileView(viewsets.ModelViewSet):
 class PostView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
-    # will return all objects in order of votes
-    queryset = Post.objects.annotate(vote_count=Count('votes')).order_by('-vote_count')
+
+    def get_queryset(self):
+        """
+        Filter by text, location, and date. 
+        If a parameter does not exist, then skip it. 
+        Sort the result by votes. 
+        """
+        # parameters
+        s_text = self.request.query_params.get('text')
+        s_location = self.request.query_params.get('location')
+        s_date = self.request.query_params.get('date')
+        # filter
+        queryset = Post.objects.all()
+        if s_text != None: 
+            queryset = Post.objects.filter(text__search=s_text)
+        if s_location != None:
+            queryset = queryset.filter(location=s_location)
+        if s_date != None:
+            queryset = queryset.filter(date=parser.parse(s_date))
+        # order
+        return queryset.annotate(vote_count=Count('votes')).order_by('-vote_count')
 
 class CommentView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)

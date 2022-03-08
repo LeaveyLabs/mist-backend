@@ -10,8 +10,9 @@ class Profile(models.Model):
         return self.username
 
 class Post(models.Model):
-    title = models.CharField(max_length=10)
+    title = models.CharField(max_length=40)
     text = models.CharField(max_length=1000)
+    location = models.CharField(max_length=20, default="USC")
     date = models.DateField()
     votes = models.ManyToManyField(Profile, related_name="votes", blank=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)

@@ -9,6 +9,8 @@ django-heroku = "*"
 djangorestframework = "*"
 django-cors-headers = "*"
 gunicorn = "*"
+django-haystack = "*"
+python-dateutil = "*"
 
 [dev-packages]
 

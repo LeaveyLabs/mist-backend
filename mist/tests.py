@@ -25,6 +25,7 @@ class AuthTest(TestCase):
         raw_view = UserCreate.as_view()(response)
         # insertion should be successful
         self.assertEquals(raw_view.status_code, 201)
+        return
 
     def test_obtain_token_valid_user(self):
         # insert user into database
@@ -50,6 +51,7 @@ class AuthTest(TestCase):
         raw_view = obtain_auth_token(response)
         # generation should be successful
         self.assertEquals(raw_view.status_code, 200)
+        return
 
 class ProfileTest(TestCase):
     def setUp(self):
@@ -126,16 +128,18 @@ class PostTest(TestCase):
             last_name='raghavan',
         )
         self.post1 = Post.objects.create(
-            title='faketitle1',
-            text='faketext1',
+            title='title1',
+            text='fake fake text text',
+            location='fakelocation1',
             date=datetime.date(2020, 3, 5),
             author=self.barath,
         )
         self.post1.votes.add(self.barath)
         self.post2 = Post.objects.create(
-            title='faketitle2',
-            text='faketext2',
-            date=datetime.date(2020, 3, 5),
+            title='title2',
+            text='real real real stuff',
+            location='fakelocation2',
+            date=datetime.date(2020, 3, 6),
             author=self.barath,
         )
         # upload to database
@@ -157,10 +161,10 @@ class PostTest(TestCase):
         force_authenticate(request, user=self.user, token=self.user.auth_token)
         return
 
-    def test_get_posts(self):
+    def test_get_all_posts(self):
         # order all seralized posts by vote count
         posts = Post.objects.annotate(vote_count=Count('votes')).order_by('-vote_count')
-        seralized_posts = [PostSerializer(post).data for post in posts]
+        serialized_posts = [PostSerializer(post).data for post in posts]
         # get all seralized posts
         request = self.factory.get(
             '/api/posts', 
@@ -170,8 +174,66 @@ class PostTest(TestCase):
         raw_view = PostView.as_view({'get':'list'})(request)
         data_view = [post_data for post_data in raw_view.data]
         # should be identical
-        self.assertEqual(seralized_posts, data_view)
+        self.assertEqual(serialized_posts, data_view)
         return
+    
+    def test_get_posts_by_text(self):
+        # only self.post1 has "fake" in its text
+        serialized_posts = [PostSerializer(self.post1).data]
+        # get all posts with "fake" in its text
+        request = self.factory.get(
+            '/api/posts',
+            {
+                'text':'fake'
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'get':'list'})(request)
+        data_view = [post_data for post_data in raw_view.data]
+        # should be identical
+        self.assertEqual(serialized_posts, data_view)
+        return
+    
+    def test_get_posts_by_location(self):
+        # only self.post1 has "fakelocation1" as its location
+        serialized_posts = [PostSerializer(self.post1).data]
+        # get all posts with "fakelocation1" as its location
+        request = self.factory.get(
+            '/api/posts',
+            {
+                'location':'fakelocation1'
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'get':'list'})(request)
+        data_view = [post_data for post_data in raw_view.data]
+        # should be identical
+        self.assertEqual(serialized_posts, data_view)
+        return
+    
+    def test_get_posts_by_date(self):
+        # only self.post1 has 3/5/2022 as its date
+        serialized_posts = [PostSerializer(self.post1).data]
+        # get all posts with 3/5/2022 as its date
+        request = self.factory.get(
+            '/api/posts',
+            {
+                'date': datetime.date(2020, 3, 5),
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'get':'list'})(request)
+        data_view = [post_data for post_data in raw_view.data]
+        # should be identical
+        self.assertEqual(serialized_posts, data_view)
+        return
+    
+    def test_get_posts_by_all_combos(self):
+        return
+
 
 class CommentTest(TestCase):
     def setUp(self):
@@ -188,6 +250,7 @@ class CommentTest(TestCase):
         self.post1 = Post.objects.create(
             title='faketitle1',
             text='faketext1',
+            location='fakelocation1',
             date=datetime.date(2020, 3, 5),
             author=self.barath,
         )
