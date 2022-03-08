@@ -146,4 +146,4 @@ import django_heroku
 django_heroku.settings(locals())
 
 import dj_database_url
-DATABASES = {'default': dj_database_url.config(default='postgres://wljznhmqtnatet:a223dab19cf59058b019ba594192b7ec019b7eeb8b128f1ccf650e42517701ab@ec2-3-209-61-239.compute-1.amazonaws.com:5432/d948qkldgrj0uk')}
+DATABASES = {'default': dj_database_url.config(conn_max_age=600)}
