@@ -48,7 +48,9 @@ class PostView(viewsets.ModelViewSet):
         # filter
         queryset = Post.objects.all()
         if s_text != None: 
-            queryset = Post.objects.filter(text__search=s_text)
+            queryset = Post.objects.annotate(
+                search=SearchVector('text', 'title')
+            ).filter(search=s_text)
         if s_location != None:
             queryset = queryset.filter(location=s_location)
         if s_date != None:
