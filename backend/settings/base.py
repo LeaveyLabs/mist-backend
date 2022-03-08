@@ -15,16 +15,8 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-rg(oz48tub@iv1rj)#d5#80m4$t8j^mt*4pgxsz1e*kwhrl3b5'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -39,12 +31,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'django.contrib.postgres',
     'mist',
-]
-
-ALLOWED_HOSTS = ['https://mist-backend.herokuapp.com']
-
-CORS_ALLOWED_ORIGINS = [
-    'https://mist-backend.herokuapp.com',
 ]
 
 REST_FRAMEWORK = {
@@ -84,21 +70,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/4.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'kevinsun',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '5432'
-    }
-}
 
 
 # Password validation
@@ -141,9 +112,3 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'  
-
-import django_heroku
-django_heroku.settings(locals())
-
-import dj_database_url
-DATABASES = {'default': dj_database_url.config(conn_max_age=600)}
