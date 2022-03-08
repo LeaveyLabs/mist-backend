@@ -23,10 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-rg(oz48tub@iv1rj)#d5#80m4$t8j^mt*4pgxsz1e*kwhrl3b5'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
+DEBUG = False
 
 # Application definition
 
@@ -147,3 +144,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 import django_heroku
 django_heroku.settings(locals())
+
+import dj_database_url
+DATABASES = {'default': dj_database_url.config(default='postgres://wljznhmqtnatet:a223dab19cf59058b019ba594192b7ec019b7eeb8b128f1ccf650e42517701ab@ec2-3-209-61-239.compute-1.amazonaws.com:5432/d948qkldgrj0uk')}
