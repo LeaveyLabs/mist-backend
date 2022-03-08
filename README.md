@@ -13,7 +13,7 @@
 * authorization: token
 
 ### GET api/posts/
-* query_parameters: none
+* query_parameters: text, location, date
 * authorization: token
 
 ### GET api/commments/
