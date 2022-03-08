@@ -56,19 +56,24 @@ class AuthTest(TestCase):
 class ProfileTest(TestCase):
     def setUp(self):
         # set up auth
-        self.user = User.objects.create(username='kevinsun', 
+        self.user1 = User.objects.create(username='kevinsun', 
             password='kevinsun')
-        Token.objects.create(user=self.user)
+        Token.objects.create(user=self.user1)
+        self.user2 = User.objects.create(username='kevinsun2', 
+            password='kevinsun2')
+        Token.objects.create(user=self.user2)
         # initialize profiles
         self.barath = Profile.objects.create(
             username='barathraghavan',
             first_name='barath',
-            last_name='raghavan'
+            last_name='raghavan',
+            user=self.user1,
         )
         self.adam = Profile.objects.create(
             username='adamnovak',
             first_name='adam',
-            last_name='novak'
+            last_name='novak',
+            user=self.user2,
         )
         # upload to database
         self.factory = APIRequestFactory()
@@ -76,12 +81,12 @@ class ProfileTest(TestCase):
             ProfileSerializer(self.barath).data,
             format='json'
         )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
         request = self.factory.post('/api/profiles', 
             ProfileSerializer(self.adam).data,
             format='json'
         )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
         return
         
     def test_get_valid_profile(self):
@@ -94,7 +99,7 @@ class ProfileTest(TestCase):
             {'username':self.barath.username},
             format="json"
         )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
         raw_view = ProfileView.as_view({'get':'list'})(request)
         data_view = raw_view.data[0]
         # should be identical
@@ -108,7 +113,7 @@ class ProfileTest(TestCase):
             {'username':'nonexistent'},
             format="json"
         )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
         raw_view = ProfileView.as_view({'get':'list'})(request)
         data_view = raw_view.data
         # should be empty
@@ -126,6 +131,7 @@ class PostTest(TestCase):
             username='barathraghavan',
             first_name='barath',
             last_name='raghavan',
+            user=self.user,
         )
         self.post1 = Post.objects.create(
             title='title1',
@@ -234,7 +240,6 @@ class PostTest(TestCase):
     def test_get_posts_by_all_combos(self):
         return
 
-
 class CommentTest(TestCase):
     def setUp(self):
         # set up auth
@@ -246,6 +251,7 @@ class CommentTest(TestCase):
             username='barathraghavan',
             first_name='barath',
             last_name='raghavan',
+            user=self.user,
         )
         self.post1 = Post.objects.create(
             title='faketitle1',
