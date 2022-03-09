@@ -77,16 +77,6 @@ class ProfileTest(TestCase):
         )
         # upload to database
         self.factory = APIRequestFactory()
-        request = self.factory.post('/api/profiles', 
-            ProfileSerializer(self.barath).data,
-            format='json'
-        )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-        request = self.factory.post('/api/profiles', 
-            ProfileSerializer(self.adam).data,
-            format='json'
-        )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
         return
         
     def test_get_valid_profile(self):
@@ -150,21 +140,6 @@ class PostTest(TestCase):
         )
         # upload to database
         self.factory = APIRequestFactory()
-        request = self.factory.post('/api/profiles', 
-            ProfileSerializer(self.barath).data, 
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
-        request = self.factory.post('/api/posts', 
-            PostSerializer(self.post1).data,
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
-        request = self.factory.post('/api/posts', 
-            PostSerializer(self.post2).data,
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
         return
 
     def test_get_all_posts(self):
@@ -239,6 +214,19 @@ class PostTest(TestCase):
     
     def test_get_posts_by_all_combos(self):
         return
+    
+    def test_overwrite_post(self):
+        # update post
+        test_post = self.post2
+        test_post.votes.add(self.barath)
+        # upload to db
+        request = self.factory.post('/api/posts', 
+            PostSerializer(test_post).data,
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        # get should be identical
+
 
 class CommentTest(TestCase):
     def setUp(self):
@@ -268,21 +256,6 @@ class CommentTest(TestCase):
         )
         # upload to database
         self.factory = APIRequestFactory()
-        request = self.factory.post('/api/profiles', 
-            ProfileSerializer(self.barath).data, 
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
-        request = self.factory.post('/api/posts', 
-            PostSerializer(self.post1).data,
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
-        request = self.factory.post('/api/comments', 
-            CommentSerializer(self.comment).data,
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
         return 
         
     def test_get_valid_comment(self):
