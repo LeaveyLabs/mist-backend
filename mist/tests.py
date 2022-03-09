@@ -219,14 +219,24 @@ class PostTest(TestCase):
         # update post
         test_post = self.post2
         test_post.votes.add(self.barath)
+        serialized_post = PostSerializer(test_post)
         # upload to db
-        request = self.factory.post('/api/posts', 
+        request = self.factory.post(
+            '/api/posts/{}'.format(self.post2.pk), 
             PostSerializer(test_post).data,
             format='json'
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        # get should be identical
-
+        # get from db
+        request = self.factory.get(
+            '/api/posts/{}'.format(self.post2.pk),
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'get':'list'})(request)
+        data_view = raw_view.data[0]
+        # should be the same
+        self.assertEqual(serialized_post.data, data_view)
 
 class CommentTest(TestCase):
     def setUp(self):
