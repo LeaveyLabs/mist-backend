@@ -124,6 +124,7 @@ class PostTest(TestCase):
             user=self.user,
         )
         self.post1 = Post.objects.create(
+            id='1',
             title='title1',
             text='fake fake text text',
             location='fakelocation1',
@@ -132,6 +133,7 @@ class PostTest(TestCase):
         )
         self.post1.votes.add(self.barath)
         self.post2 = Post.objects.create(
+            id='2',
             title='title2',
             text='real real real stuff',
             location='fakelocation2',

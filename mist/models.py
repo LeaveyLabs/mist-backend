@@ -12,6 +12,7 @@ class Profile(models.Model):
         return self.username
 
 class Post(models.Model):
+    id = models.CharField(max_length=10, primary_key=True)
     title = models.CharField(max_length=40)
     text = models.CharField(max_length=1000)
     location = models.CharField(max_length=20, default="USC")
