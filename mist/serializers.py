@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Profile, Post, Comment, Message
+from .models import Profile, Post, Comment, Message, Vote
 from django.contrib.auth.models import User
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -10,7 +10,12 @@ class ProfileSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('id', 'title', 'text', 'location', 'timestamp', 'votes', 'author')
+        fields = ('id', 'title', 'text', 'location', 'timestamp', 'author')
+
+class VoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vote
+        fields = ('voter', 'post', 'timestamp')
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:

@@ -17,12 +17,19 @@ class Post(models.Model):
     text = models.CharField(max_length=1000)
     location = models.CharField(max_length=20, default="USC")
     timestamp = models.FloatField(default=0)
-    votes = models.ManyToManyField(Profile, related_name="votes", blank=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
     def _str_(self):
         return self.title
-    
+
+class Vote(models.Model):
+    voter = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    timestamp = models.FloatField(default=0)
+
+    def _str_(self):
+        return self.voter.pk
+
 class Comment(models.Model):
     text = models.CharField(max_length=500)
     timestamp = models.FloatField(default=0)

@@ -1,4 +1,5 @@
 import datetime
+from re import L
 from django.db.models import Count
 from django.test import TestCase
 from django.contrib.auth.models import User
@@ -7,7 +8,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate, APITestCase
 from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, UserSerializer
 from mist.views import CommentView, PostView, ProfileView, UserCreate
-from .models import Profile, Post, Comment
+from .models import Profile, Post, Comment, Vote
 
 # Create your tests here.
 class AuthTest(TestCase):
@@ -116,13 +117,14 @@ class PostTest(TestCase):
         self.user = User.objects.create(username='kevinsun', 
             password='kevinsun')
         Token.objects.create(user=self.user)
-        # initialize profiles + posts
+        # initialize profiles
         self.barath = Profile.objects.create(
             username='barathraghavan',
             first_name='barath',
             last_name='raghavan',
             user=self.user,
         )
+        # initialize posts
         self.post1 = Post.objects.create(
             id='1',
             title='title1',
@@ -131,7 +133,6 @@ class PostTest(TestCase):
             timestamp=0,
             author=self.barath,
         )
-        self.post1.votes.add(self.barath)
         self.post2 = Post.objects.create(
             id='2',
             title='title2',
@@ -140,14 +141,23 @@ class PostTest(TestCase):
             timestamp=1,
             author=self.barath,
         )
+        # initialize votes
+        self.vote1 = Vote.objects.create(
+            voter=self.barath,
+            post=self.post1,
+            timestamp=0,
+        )
         # upload to database
         self.factory = APIRequestFactory()
+        return
+    
+    def test_post_new_post(self):
         return
 
     def test_get_all_posts(self):
         # order all seralized posts by vote count
-        posts = Post.objects.annotate(vote_count=Count('votes')).order_by('-vote_count')
-        serialized_posts = [PostSerializer(post).data for post in posts]
+        serialized_posts = [PostSerializer(self.post1).data, 
+        PostSerializer(self.post2).data]
         # get all seralized posts
         request = self.factory.get(
             '/api/posts', 
@@ -218,27 +228,17 @@ class PostTest(TestCase):
         return
     
     def test_overwrite_post(self):
-        # update post
-        test_post = self.post2
-        test_post.votes.add(self.barath)
-        serialized_post = PostSerializer(test_post)
-        # upload to db
-        request = self.factory.post(
-            '/api/posts/{}'.format(self.post2.pk), 
-            PostSerializer(test_post).data,
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
-        # get from db
-        request = self.factory.get(
-            '/api/posts/{}'.format(self.post2.pk),
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'get':'list'})(request)
-        data_view = raw_view.data[0]
-        # should be the same
-        self.assertEqual(serialized_post.data, data_view)
+        return
+
+class VoteTest(TestCase):
+    def setUp(self):
+        return
+    
+    def test_post_vote(self):
+        return
+    
+    def test_delete_vote(self):
+        return
 
 class CommentTest(TestCase):
     def setUp(self):

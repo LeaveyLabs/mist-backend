@@ -10,12 +10,14 @@ from .serializers import (
     CommentSerializer,
     MessageSerializer,
     UserSerializer,
+    VoteSerializer,
 )
 from .models import (
     Profile, 
     Post, 
     Comment,
     Message,
+    Vote,
 )
 
 # Create your views here.
@@ -55,7 +57,7 @@ class PostView(viewsets.ModelViewSet):
         if s_timestamp != None:
             queryset = queryset.filter(timestamp=s_timestamp)
         # order
-        return queryset.annotate(vote_count=Count('votes')).order_by('-vote_count')
+        return queryset.annotate(vote_count=Count('vote')).order_by('-vote_count')
 
 class CommentView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -67,6 +69,11 @@ class CommentView(viewsets.ModelViewSet):
         """
         post_id = self.request.query_params.get('post_id')
         return Comment.objects.filter(post_id=post_id)
+
+class VoteView(viewsets.ModelViewSet):
+    # permission_classes = (IsAuthenticated,)
+    serializer_class = VoteSerializer
+    queryset = Vote.objects.all()
 
 class MessageView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
