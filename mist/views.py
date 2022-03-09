@@ -3,7 +3,6 @@ from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVector
-from dateutil import parser
 
 from .serializers import (
     ProfileSerializer, 
@@ -44,7 +43,7 @@ class PostView(viewsets.ModelViewSet):
         # parameters
         s_text = self.request.query_params.get('text')
         s_location = self.request.query_params.get('location')
-        s_date = self.request.query_params.get('date')
+        s_timestamp = self.request.query_params.get('timestamp')
         # filter
         queryset = Post.objects.all()
         if s_text != None: 
@@ -53,8 +52,8 @@ class PostView(viewsets.ModelViewSet):
             ).filter(search=s_text)
         if s_location != None:
             queryset = queryset.filter(location=s_location)
-        if s_date != None:
-            queryset = queryset.filter(date=parser.parse(s_date))
+        if s_timestamp != None:
+            queryset = queryset.filter(timestamp=s_timestamp)
         # order
         return queryset.annotate(vote_count=Count('votes')).order_by('-vote_count')
 

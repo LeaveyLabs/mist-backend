@@ -10,22 +10,17 @@ class ProfileSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('id', 'title', 'text', 'location', 'date', 'votes', 'author')
+        fields = ('id', 'title', 'text', 'location', 'timestamp', 'votes', 'author')
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ('text', 'date', 'post')
-
-class CommentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Comment
-        fields = ('text', 'date', 'post')
+        fields = ('text', 'timestamp', 'post')
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = ('text', 'date', 'from_user', 'to_user')
+        fields = ('text', 'timestamp', 'from_user', 'to_user')
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:

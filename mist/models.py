@@ -16,7 +16,7 @@ class Post(models.Model):
     title = models.CharField(max_length=40)
     text = models.CharField(max_length=1000)
     location = models.CharField(max_length=20, default="USC")
-    date = models.DateField()
+    timestamp = models.FloatField(default=0)
     votes = models.ManyToManyField(Profile, related_name="votes", blank=True)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
@@ -25,7 +25,7 @@ class Post(models.Model):
     
 class Comment(models.Model):
     text = models.CharField(max_length=500)
-    date = models.DateField()
+    timestamp = models.FloatField(default=0)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE, default="anonymous")
 
@@ -34,7 +34,7 @@ class Comment(models.Model):
 
 class Message(models.Model):
     text = models.CharField(max_length=1000)
-    date = models.DateField()
+    timestamp = models.FloatField(default=0)
     from_user = models.ForeignKey(Profile, related_name='from_user', on_delete=models.CASCADE, null=True)
     to_user = models.ForeignKey(Profile, related_name='to_user', on_delete=models.CASCADE, null=True)
 

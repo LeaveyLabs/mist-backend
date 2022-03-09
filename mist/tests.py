@@ -128,7 +128,7 @@ class PostTest(TestCase):
             title='title1',
             text='fake fake text text',
             location='fakelocation1',
-            date=datetime.date(2020, 3, 5),
+            timestamp=0,
             author=self.barath,
         )
         self.post1.votes.add(self.barath)
@@ -137,7 +137,7 @@ class PostTest(TestCase):
             title='title2',
             text='real real real stuff',
             location='fakelocation2',
-            date=datetime.date(2020, 3, 6),
+            timestamp=1,
             author=self.barath,
         )
         # upload to database
@@ -196,14 +196,14 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts, data_view)
         return
     
-    def test_get_posts_by_date(self):
-        # only self.post1 has 3/5/2022 as its date
+    def test_get_posts_by_timestamp(self):
+        # only self.post1 has 0 as its timestamp
         serialized_posts = [PostSerializer(self.post1).data]
-        # get all posts with 3/5/2022 as its date
+        # get all posts with 0 as its timestamp
         request = self.factory.get(
             '/api/posts',
             {
-                'date': datetime.date(2020, 3, 5),
+                'timestamp': 0,
             },
             format='json'
         )
@@ -257,12 +257,12 @@ class CommentTest(TestCase):
             title='faketitle1',
             text='faketext1',
             location='fakelocation1',
-            date=datetime.date(2020, 3, 5),
+            timestamp=0,
             author=self.barath,
         )
         self.comment = Comment.objects.create(
             text='fakecomment',
-            date=datetime.date(2020, 3, 5),
+            timestamp=1,
             post=self.post1,
             author=self.barath
         )
