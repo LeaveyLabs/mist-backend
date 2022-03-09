@@ -32,7 +32,7 @@ class ProfileView(viewsets.ModelViewSet):
         return Profile.objects.filter(username=username)
 
 class PostView(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
     def get_queryset(self):
