@@ -1,6 +1,5 @@
 .vscode
 __init__.py
 .DS_Store
-*_*
 *.lock
 .*
