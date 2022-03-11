@@ -24,6 +24,7 @@ router.register(r'profiles', views.ProfileView, 'profile')
 router.register(r'posts', views.PostView, 'post')
 router.register(r'comments', views.CommentView, 'comment')
 router.register(r'messages', views.MessageView, 'message')
+router.register(r'votes', views.VoteView, 'vote')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

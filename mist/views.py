@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVector
 
 from .serializers import (
+    FlagSerializer,
     ProfileSerializer, 
     PostSerializer, 
     CommentSerializer,
@@ -73,6 +74,11 @@ class CommentView(viewsets.ModelViewSet):
 class VoteView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
     serializer_class = VoteSerializer
+    queryset = Vote.objects.all()
+
+class FlagView(viewsets.ModelViewSet):
+    # permission_classes = (IsAuthenticated,)
+    serializer_class = FlagSerializer
     queryset = Vote.objects.all()
 
 class MessageView(viewsets.ModelViewSet):

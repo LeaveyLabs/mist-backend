@@ -1,13 +1,10 @@
-import datetime
-from re import L
-from django.db.models import Count
 from django.test import TestCase
 from django.contrib.auth.models import User
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
-from rest_framework.test import APIRequestFactory, force_authenticate, APITestCase
-from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, UserSerializer
-from mist.views import CommentView, PostView, ProfileView, UserCreate
+from rest_framework.test import APIRequestFactory, force_authenticate
+from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, VoteSerializer
+from mist.views import CommentView, PostView, ProfileView, UserCreate, VoteView
 from .models import Profile, Post, Comment, Vote
 
 # Create your tests here.
@@ -146,12 +143,34 @@ class PostTest(TestCase):
             voter=self.barath,
             post=self.post1,
             timestamp=0,
+            rating=10,
         )
         # upload to database
         self.factory = APIRequestFactory()
         return
     
     def test_post_new_post(self):
+        # create new post
+        test_post = Post(
+            id='3',
+            title='title3',
+            text='real real real stuff3',
+            location='fakelocation3',
+            timestamp=2,
+            author=self.barath,
+        )
+        serialized_post = PostSerializer(test_post).data
+        # check if the post exists
+        request = self.factory.post(
+            '/api/posts',
+            serialized_post,
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'post':'create'})(request)
+        data_view = raw_view.data
+        # post should be successful
+        self.assertEqual(data_view, serialized_post)
         return
 
     def test_get_all_posts(self):
@@ -228,16 +247,107 @@ class PostTest(TestCase):
         return
     
     def test_overwrite_post(self):
+        # create new post
+        test_post = self.post2
+        test_post.title = "new fake title2"
+        serialized_post = PostSerializer(test_post).data
+        # check if the post exists
+        request = self.factory.post(
+            '/api/posts'.format(test_post.id),
+            serialized_post,
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'post':'update'})(request, pk=2)
+        data_view = raw_view.data
+        self.assertEqual(serialized_post, data_view)
         return
 
 class VoteTest(TestCase):
     def setUp(self):
+        # set up auth
+        self.user = User.objects.create(username='kevinsun', 
+            password='kevinsun')
+        Token.objects.create(user=self.user)
+        # initialize profiles
+        self.barath = Profile.objects.create(
+            username='barathraghavan',
+            first_name='barath',
+            last_name='raghavan',
+            user=self.user,
+        )
+        # initialize posts
+        self.post1 = Post.objects.create(
+            id='1',
+            title='title1',
+            text='fake fake text text',
+            location='fakelocation1',
+            timestamp=0,
+            author=self.barath,
+        )
+        self.post2 = Post.objects.create(
+            id='2',
+            title='title2',
+            text='real real real stuff',
+            location='fakelocation2',
+            timestamp=1,
+            author=self.barath,
+        )
+        # upload to database
+        self.factory = APIRequestFactory()
         return
     
     def test_post_vote(self):
+        # create vote for post1
+        vote = Vote(
+            voter=self.barath,
+            post=self.post1,
+            timestamp=2,
+            rating=10,
+        )
+        serialized_vote = VoteSerializer(vote).data
+        # post vote to database
+        request = self.factory.post(
+            '/api/votes',
+            serialized_vote,
+            format='json',
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = VoteView.as_view({'post':'create'})(request)
+        data_view = raw_view.data
+        # should be successful
+        self.assertEqual(serialized_vote, data_view)
         return
     
     def test_delete_vote(self):
+        # create new vote in the database
+        vote = Vote.objects.create(
+            voter=self.barath,
+            post=self.post2,
+            timestamp=2,
+            rating=10,
+        )
+        serialized_vote = VoteSerializer(vote).data
+        # delete vote from database
+        request = self.factory.delete(
+            '/api/votes/{}'.format(vote.pk),
+            format='json',
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
+        votes = Vote.objects.filter(id=vote.pk)
+        # vote should not exist in database
+        self.assertQuerysetEqual(votes, Vote.objects.none())
+        return
+
+class FlagTest(TestCase):
+    def setUp(self):
+        return
+    
+    def test_post_flag(self):
+        return
+    
+    def test_delete_flag(self):
         return
 
 class CommentTest(TestCase):
@@ -303,7 +413,7 @@ class CommentTest(TestCase):
 
 class MessageTest(TestCase):
     def setUp(self):
-        return 
+        return
         
     def test_get_valid_message(self):
         return

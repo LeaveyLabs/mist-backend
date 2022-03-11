@@ -26,9 +26,19 @@ class Vote(models.Model):
     voter = models.ForeignKey(Profile, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=0)
+    rating = models.IntegerField(default=5)
 
     def _str_(self):
         return self.voter.pk
+
+class Flag(models.Model):
+    flagger = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    timestamp = models.FloatField()
+    rating = models.IntegerField()
+
+    def _str_(self):
+        return self.flagger.pk
 
 class Comment(models.Model):
     text = models.CharField(max_length=500)

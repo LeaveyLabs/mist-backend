@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Profile, Post, Comment, Message, Vote
+from .models import Flag, Profile, Post, Comment, Message, Vote
 from django.contrib.auth.models import User
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -16,6 +16,11 @@ class VoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vote
         fields = ('voter', 'post', 'timestamp')
+    
+class FlagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Flag
+        fields = ('flagger', 'post', 'timestamp', 'rating') 
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
