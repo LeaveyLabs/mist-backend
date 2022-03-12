@@ -33,6 +33,9 @@ class Vote(models.Model):
     timestamp = models.FloatField(default=0)
     rating = models.IntegerField(default=5)
 
+    class Meta:
+        unique_together = ('voter', 'post',)
+
     def _str_(self):
         return self.voter.pk
 
