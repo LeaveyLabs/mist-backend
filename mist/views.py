@@ -1,4 +1,4 @@
-from django.db.models import Count
+from django.db.models import Sum
 from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
@@ -41,7 +41,7 @@ class PostView(viewsets.ModelViewSet):
         """
         Filter by text, location, and date. 
         If a parameter does not exist, then skip it. 
-        Sort the result by votes. 
+        Sort the result by vote ratings. 
         """
         # parameters
         s_text = self.request.query_params.get('text')
@@ -58,10 +58,10 @@ class PostView(viewsets.ModelViewSet):
         if s_timestamp != None:
             queryset = queryset.filter(timestamp=s_timestamp)
         # order
-        return queryset.annotate(vote_count=Count('vote')).order_by('-vote_count')
+        return queryset.annotate(vote_count=Sum('vote__rating', default=0)).order_by('-vote_count')
 
 class CommentView(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
     serializer_class = CommentSerializer
     
     def get_queryset(self):

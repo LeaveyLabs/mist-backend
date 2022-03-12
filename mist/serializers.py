@@ -8,9 +8,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ('username', 'first_name', 'last_name')
 
 class PostSerializer(serializers.ModelSerializer):
+    trendscore = serializers.ReadOnlyField(source='calculate_trendscore')
     class Meta:
         model = Post
-        fields = ('id', 'title', 'text', 'location', 'timestamp', 'author')
+        fields = ('id', 'title', 'text', 'location', 'timestamp', 'author', 'trendscore')
 
 class VoteSerializer(serializers.ModelSerializer):
     class Meta:

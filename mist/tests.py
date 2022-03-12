@@ -149,6 +149,10 @@ class PostTest(TestCase):
         self.factory = APIRequestFactory()
         return
     
+    def test_post_calculate_trendscore(self):
+        return self.assertEquals(self.post1.calculate_trendscore(), 
+            self.vote1.rating)
+    
     def test_post_new_post(self):
         # create new post
         test_post = Post(

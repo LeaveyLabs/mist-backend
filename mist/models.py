@@ -21,6 +21,11 @@ class Post(models.Model):
 
     def _str_(self):
         return self.title
+    
+    def calculate_trendscore(self):
+        votes = Vote.objects.filter(post_id=self.pk)
+        net_rating = sum(vote.rating for vote in votes)
+        return net_rating
 
 class Vote(models.Model):
     voter = models.ForeignKey(Profile, on_delete=models.CASCADE)
