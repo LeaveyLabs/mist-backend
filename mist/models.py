@@ -45,6 +45,9 @@ class Flag(models.Model):
     timestamp = models.FloatField()
     rating = models.IntegerField()
 
+    class Meta:
+        unique_together = ('flagger', 'post',)
+
     def _str_(self):
         return self.flagger.pk
 
