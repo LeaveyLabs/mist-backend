@@ -44,19 +44,19 @@ class PostView(viewsets.ModelViewSet):
         Sort the result by vote ratings. 
         """
         # parameters
-        s_text = self.request.query_params.get('text')
-        s_location = self.request.query_params.get('location')
-        s_timestamp = self.request.query_params.get('timestamp')
+        text = self.request.query_params.get('text')
+        location = self.request.query_params.get('location')
+        timestamp = self.request.query_params.get('timestamp')
         # filter
         queryset = Post.objects.all()
-        if s_text != None: 
+        if text != None: 
             queryset = Post.objects.annotate(
                 search=SearchVector('text', 'title')
-            ).filter(search=s_text)
-        if s_location != None:
-            queryset = queryset.filter(location=s_location)
-        if s_timestamp != None:
-            queryset = queryset.filter(timestamp=s_timestamp)
+            ).filter(search=text)
+        if location != None:
+            queryset = queryset.filter(location=location)
+        if timestamp != None:
+            queryset = queryset.filter(timestamp=timestamp)
         # order
         return queryset.annotate(vote_count=Sum('vote__rating', default=0)).order_by('-vote_count')
 
@@ -74,7 +74,20 @@ class CommentView(viewsets.ModelViewSet):
 class VoteView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
     serializer_class = VoteSerializer
-    queryset = Vote.objects.all()
+
+    def get_queryset(self):
+        """
+        If parameters are missing, return all votes. 
+        Otherwise, return with username and post_id.
+        """
+        # parameters
+        username = self.request.query_params.get("username")
+        post_id = self.request.query_params.get("post_id")
+        # filters
+        if username == None or post_id == None:
+            return Vote.objects.all()
+        else:
+            return Vote.objects.filter(voter=username, post_id=post_id)
 
 class FlagView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
