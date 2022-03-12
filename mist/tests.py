@@ -331,7 +331,6 @@ class VoteTest(TestCase):
             timestamp=2,
             rating=10,
         )
-        serialized_vote = VoteSerializer(vote).data
         # delete vote from database
         request = self.factory.delete(
             '/api/votes/{}'.format(vote.pk),
@@ -342,6 +341,31 @@ class VoteTest(TestCase):
         votes = Vote.objects.filter(id=vote.pk)
         # vote should not exist in database
         self.assertQuerysetEqual(votes, Vote.objects.none())
+        return
+    
+    def test_get_vote(self):
+        # create new vote in the database 
+        vote = Vote.objects.create(
+            voter=self.barath,
+            post=self.post2,
+            timestamp=2,
+            rating=10,
+        )
+        serialized_vote = VoteSerializer(vote).data
+        # query vote from database
+        request = self.factory.get(
+            '/api/votes/',
+            {
+                'username':self.barath.username,
+                'post_id':self.post2.pk,
+            },
+            format='json',
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = VoteView.as_view({'get':'list'})(request)
+        data_view = raw_view.data[0]
+        # vote 
+        self.assertEqual(serialized_vote, data_view)
         return
 
 class FlagTest(TestCase):
