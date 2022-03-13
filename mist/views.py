@@ -1,4 +1,4 @@
-from django.db.models import Sum
+from django.db.models import Avg
 from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
@@ -58,7 +58,7 @@ class PostView(viewsets.ModelViewSet):
         if timestamp != None:
             queryset = queryset.filter(timestamp=timestamp)
         # order
-        return queryset.annotate(vote_count=Sum('vote__rating', default=0)).order_by('-vote_count')
+        return queryset.annotate(vote_count=Avg('vote__rating', default=0)).order_by('-vote_count')
 
 class CommentView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)

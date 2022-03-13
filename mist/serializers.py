@@ -8,10 +8,12 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ('username', 'first_name', 'last_name')
 
 class PostSerializer(serializers.ModelSerializer):
-    trendscore = serializers.ReadOnlyField(source='calculate_trendscore')
+    averagerating = serializers.ReadOnlyField(source='calculate_averagerating')
+    commentcount = serializers.ReadOnlyField(source='calculate_commentcount')
+
     class Meta:
         model = Post
-        fields = ('id', 'title', 'text', 'location', 'timestamp', 'author', 'trendscore')
+        fields = ('id', 'title', 'text', 'location', 'timestamp', 'author', 'averagerating', 'commentcount')
 
 class VoteSerializer(serializers.ModelSerializer):
     class Meta:

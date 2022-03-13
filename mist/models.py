@@ -22,10 +22,13 @@ class Post(models.Model):
     def _str_(self):
         return self.title
     
-    def calculate_trendscore(self):
+    def calculate_averagerating(self):
         votes = Vote.objects.filter(post_id=self.pk)
-        net_rating = sum(vote.rating for vote in votes)
-        return net_rating
+        if len(votes) == 0: return 0
+        return sum(vote.rating for vote in votes)/float(len(votes))
+    
+    def calculate_commentcount(self):
+        return len(Comment.objects.filter(post=self.pk))
 
 class Vote(models.Model):
     voter = models.ForeignKey(Profile, on_delete=models.CASCADE)

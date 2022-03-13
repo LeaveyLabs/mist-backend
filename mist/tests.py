@@ -145,13 +145,24 @@ class PostTest(TestCase):
             timestamp=0,
             rating=10,
         )
+        # initialize comments
+        self.comment1 = Comment.objects.create(
+            id='fakeID',
+            text='fakecomment',
+            timestamp=1,
+            post=self.post1,
+            author=self.barath
+        )
         # upload to database
         self.factory = APIRequestFactory()
         return
     
-    def test_post_calculate_trendscore(self):
-        return self.assertEquals(self.post1.calculate_trendscore(), 
+    def test_post_calculate_averagerating(self):
+        return self.assertEquals(self.post1.calculate_averagerating(), 
             self.vote1.rating)
+    
+    def test_post_calculate_averagerating(self):
+        return self.assertEquals(self.post1.calculate_commentcount(), 1)
     
     def test_post_new_post(self):
         # create new post
@@ -319,7 +330,8 @@ class VoteTest(TestCase):
         force_authenticate(request, user=self.user, token=self.user.auth_token)
         raw_view = VoteView.as_view({'post':'create'})(request)
         data_view = raw_view.data
-        # should be successful
+        # should be successful (standardizing primary key ID)
+        serialized_vote["id"] = data_view["id"]
         self.assertEqual(serialized_vote, data_view)
         return
     
@@ -398,7 +410,7 @@ class CommentTest(TestCase):
             timestamp=0,
             author=self.barath,
         )
-        self.comment = Comment.objects.create(
+        self.comment1 = Comment.objects.create(
             id='fakeID',
             text='fakecomment',
             timestamp=1,
