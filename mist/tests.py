@@ -399,6 +399,7 @@ class CommentTest(TestCase):
             author=self.barath,
         )
         self.comment = Comment.objects.create(
+            id='fakeID',
             text='fakecomment',
             timestamp=1,
             post=self.post1,

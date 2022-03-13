@@ -52,6 +52,7 @@ class Flag(models.Model):
         return self.flagger.pk
 
 class Comment(models.Model):
+    id = models.CharField(max_length=10, primary_key=True)
     text = models.CharField(max_length=500)
     timestamp = models.FloatField(default=0)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
