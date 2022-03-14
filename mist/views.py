@@ -24,15 +24,27 @@ from .models import (
 
 # Create your views here.
 class ProfileView(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
     serializer_class = ProfileSerializer
+    queryset = Profile.objects.all()
 
     def get_queryset(self):
         """
         Returns profiles matching the username.
         """
+        # parameters
         username = self.request.query_params.get('username')
-        return Profile.objects.filter(username=username)
+        text = self.request.query_params.get('text')
+        # filter
+        if username == None and text == None:
+            return []
+        elif username != None:
+            return Profile.objects.filter(username=username)
+        else:
+            return Profile.objects.annotate(
+                search=SearchVector('username', 
+                'first_name', 'last_name')
+                ).filter(search__contains=text)
 
 class PostView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)

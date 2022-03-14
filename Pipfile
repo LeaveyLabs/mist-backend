@@ -13,6 +13,7 @@ python-dateutil = "*"
 dj-database-url = "*"
 python-decouple = "*"
 django-allauth = "*"
+pillow = "*"
 
 [dev-packages]
 
