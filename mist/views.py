@@ -1,7 +1,7 @@
+import re
 from django.db.models import Avg
 from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVector
 
 from .serializers import (
@@ -10,7 +10,8 @@ from .serializers import (
     PostSerializer, 
     CommentSerializer,
     MessageSerializer,
-    UserSerializer,
+    RegisterRequestSerializer,
+    ValidationRequestSerializer,
     VoteSerializer,
 )
 from .models import (
@@ -52,13 +53,15 @@ class PostView(viewsets.ModelViewSet):
         if text != None: 
             queryset = Post.objects.annotate(
                 search=SearchVector('text', 'title')
-            ).filter(search=text)
+            ).filter(search__contains=text)
         if location != None:
             queryset = queryset.filter(location=location)
         if timestamp != None:
             queryset = queryset.filter(timestamp=timestamp)
         # order
-        return queryset.annotate(vote_count=Avg('vote__rating', default=0)).order_by('-vote_count')
+        return queryset.annotate(
+            vote_count=Avg('vote__rating', default=0)
+            ).order_by('-vote_count')
 
 class CommentView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
@@ -99,7 +102,10 @@ class MessageView(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     queryset = Message.objects.all()
 
-class UserCreate(generics.CreateAPIView):
+class ValidateView(generics.CreateAPIView):
     permission_classes = (AllowAny, )
-    serializer_class = UserSerializer
-    queryset = User.objects.all()
+    serializer_class = ValidationRequestSerializer
+
+class RegisterView(generics.CreateAPIView):
+    permission_classes = (AllowAny, )
+    serializer_class = RegisterRequestSerializer

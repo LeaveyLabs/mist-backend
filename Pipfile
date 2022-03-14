@@ -12,6 +12,7 @@ django-haystack = "*"
 python-dateutil = "*"
 dj-database-url = "*"
 python-decouple = "*"
+django-allauth = "*"
 
 [dev-packages]
 

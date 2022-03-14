@@ -1,11 +1,14 @@
+from datetime import datetime
+import random
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
 from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, VoteSerializer
-from mist.views import CommentView, PostView, ProfileView, UserCreate, VoteView
-from .models import Profile, Post, Comment, Vote
+from mist.views import CommentView, PostView, ProfileView, RegisterView, ValidateView, VoteView
+from .models import Profile, Post, Comment, RegistrationRequest, ValidationRequest, Vote
 
 # Create your tests here.
 class AuthTest(TestCase):
@@ -16,33 +19,66 @@ class AuthTest(TestCase):
             {
                 'email':'anonymous1@usc.edu',
                 'username':'anonymous1', 
+                'first_name':'anon',
+                'last_name':'ymous',
                 'password':'anonymous1',
             },
             format='json',
         )
-        raw_view = UserCreate.as_view()(response)
+        raw_view = RegisterView.as_view()(response)
         # insertion should be successful
         self.assertEquals(raw_view.status_code, 201)
         return
-
-    def test_obtain_token_valid_user(self):
-        # insert user into database
+    
+    def test_validate_user(self):
+        # registration request
+        registration = RegistrationRequest(
+            email='anonymous2@usc.edu',
+            username='anonymous2',
+            password=make_password('fakepass1234'),
+            first_name='anony',
+            last_name='mous'
+        )
+        registration.save()
+        code_value = f'{random.randint(0, 999_999):06}'
+        # validation request
+        ValidationRequest.objects.create(
+            email='anonymous2@usc.edu',
+            password=registration.password,
+            code_value=code_value,
+            code_time=datetime.now().timestamp(),
+            registration=registration
+        )
+        # test validation
         factory = APIRequestFactory()
-        response = factory.post('api-register/',
+        response = factory.post('api-validate/',
             {
                 'email':'anonymous2@usc.edu',
-                'username':'anonymous2', 
-                'password':'anonymous2',
+                'password':'fakepass1234',
+                'code_value':code_value,
             },
             format='json',
         )
-        UserCreate.as_view()(response)
+        raw_view = ValidateView.as_view()(response)
+        # http should be successful
+        self.assertEquals(raw_view.status_code, 201)
+        # user should now exist in the database
+        self.assertIsNotNone(User.objects.get(username='anonymous2'))
+        return
+
+    def test_obtain_token_valid_user(self):
+        user = User(
+            email='anonymous3@usc.edu',
+            username='anonymous3',
+        )
+        user.set_password('fakepass12345')
+        user.save()
         # generate auth token
-        response = factory.post('api-auth-token/',
+        factory = APIRequestFactory()
+        response = factory.post('api-token/',
             {
-                'email':'anonymous2@usc.edu',
-                'username':'anonymous2', 
-                'password':'anonymous2'
+                'username':'anonymous3', 
+                'password':'fakepass12345',
             },
             format='json',
         )
@@ -212,6 +248,24 @@ class PostTest(TestCase):
             '/api/posts',
             {
                 'text':'fake'
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'get':'list'})(request)
+        data_view = [post_data for post_data in raw_view.data]
+        # should be identical
+        self.assertEqual(serialized_posts, data_view)
+        return
+    
+    def test_get_posts_by_partial_text(self):
+        # only self.post1 has "fa" in its text
+        serialized_posts = [PostSerializer(self.post1).data]
+        # get all posts with "fa" in its text
+        request = self.factory.get(
+            '/api/posts',
+            {
+                'text':'fa'
             },
             format='json'
         )

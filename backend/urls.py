@@ -29,6 +29,12 @@ router.register(r'votes', views.VoteView, 'vote')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('api-token-auth/', obtain_auth_token, name='api_token_auth'),
-    path('api-register/', views.UserCreate.as_view()),
+    path('api-register/', views.RegisterView.as_view()),
+    path('api-validate/', views.ValidateView.as_view()),
+    path('api-token/', obtain_auth_token),
+    # TODO: implement OAuth 2.0 login
+    # path('accounts/', include('allauth.urls')),
+    # path('dj-rest-auth/', include('dj_rest_auth.urls')),
+    # path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
+    # path('dj-rest-auth/account-confirm-email/', VerifyEmailView.as_view(), name='account_email_verification_sent'),
 ]
