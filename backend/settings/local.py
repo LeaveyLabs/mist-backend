@@ -22,3 +22,6 @@ DATABASES = {
         'PORT': '5432'
     }
 }
+# TODO: Pictures
+# MEDIA_ROOT = 'pics/'
+# MEDIA_URL = 'http://localhost:8000/'

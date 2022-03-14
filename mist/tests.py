@@ -1,14 +1,18 @@
+from base64 import b64decode
 from datetime import datetime
+from io import BytesIO
 import random
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
+from django.core.files.base import ContentFile
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
 from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, VoteSerializer
 from mist.views import CommentView, PostView, ProfileView, RegisterView, ValidateView, VoteView
 from .models import Profile, Post, Comment, RegistrationRequest, ValidationRequest, Vote
+from PIL import Image
 
 # Create your tests here.
 class AuthTest(TestCase):
@@ -143,6 +147,31 @@ class ProfileTest(TestCase):
         # should be empty
         self.assertEqual([], raw_view.data)
         return
+    # TODO: Profile Pictures
+    # def test_post_profile_pic(self):
+    #     # get profile with empty picture
+    #     profile = Profile.objects.get(username=self.barath.username)
+    #     # post local file
+    #     path = 'mist/test_images/test.jpeg'
+    #     img = Image.open(path)
+    #     img_io = BytesIO()
+    #     img.save(fp=img_io, format=img.format)
+    #     request = self.factory.put(
+    #         '/api/profiles/{}'.format(profile.pk),
+    #         {
+    #             'username':profile.username,
+    #             'first_name':profile.first_name,
+    #             'last_name':profile.last_name,
+    #             'pic': ContentFile(b64decode(img_io.getvalue())),
+    #         },
+    #         format="json"
+    #     )
+    #     force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+    #     raw_view = ProfileView.as_view({'put':'update'})(request, pk=profile.pk)
+    #     data_view = raw_view.data
+    #     print(data_view)
+    #     # should point to the same location
+    #     self.assertEqual(path, data_view.pic.path)
 
 class PostTest(TestCase):
     def setUp(self):
