@@ -47,7 +47,7 @@ class AuthTest(TestCase):
             password=registration.password,
             code_value=code_value,
             code_time=datetime.now().timestamp(),
-            registration=registration
+            registration=registration,
         )
         # test validation
         factory = APIRequestFactory()

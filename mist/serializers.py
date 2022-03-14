@@ -17,49 +17,60 @@ class ValidationRequestSerializer(serializers.ModelSerializer):
         model = ValidationRequest
         fields = ('email', 'password', 'code_value')
     
-    def create(self, data):
+    def get_request_by_email(self, email):
+        matching_email = ValidationRequest.objects.filter(email=email)
+        ordered_by_time = matching_email.order_by('-code_time')
+        if len(ordered_by_time) == 0: 
+            raise serializers.ValidationError("Email does not exist.")
+        return ordered_by_time[0]
+    
+    def validate(self, data):
+        # define parameters
+        email = data['email']
+        password = data['password']
+        code_value = data['code_value']
+        # validate each parameter:
+        # 1. email
+        validation = self.get_request_by_email(email)
+        # 2. password
+        if not check_password(password, validation.password):
+            raise serializers.ValidationError("Passwords do not match.")
+        # 3. time
+        curr_time = datetime.now().timestamp()
+        if curr_time-validation.code_time > 5*60:
+            raise serializers.ValidationError("Time limit exceeded.")
+        # 4. code_value
+        if validation.code_value != code_value:
+             raise serializers.ValidationError("Code does not match.")
+        return data
+    
+    def create(self, validated_data):
         """
         Deserializes new validation object.
         Checks if the code is correct and within time.
         If so, removes the object.
         """
-        # parameters
-        code_value = data.pop('code_value')
-        # 1. validate email
-        queryset = ValidationRequest.objects.filter(
-            email=data.get('email')).order_by('-code_time')
-        if len(queryset) == 0:
-            raise ValidationError("Email does not exist.")
-        validation = queryset[0]
-        registration = validation.registration
-        # 2. validate password
-        password = data.pop('password')
-        if not check_password(password, validation.password):
-            raise ValidationError("Passwords do not match.")
-        # 3. validate time (more than 5 minutes is invalid)
-        curr_time = datetime.now().timestamp()
-        if curr_time-validation.code_time > 5*60:
-            raise ValidationError("Time limit exceeded.")
-        # 4. validate code
-        if validation.code_value != code_value:
-            raise ValidationError("Code does not match.")
+        # find request by email
+        email = validated_data.pop('email')
+        request = self.get_request_by_email(email)
         # produce user object
         user = User(
-            email=registration.email,
-            username=registration.username,
+            email=request.registration.email,
+            username=request.registration.username,
         )
-        user.set_password(password)
+        user.set_password(request.password)
         user.save()
+        # produce profile object
         Profile.objects.create(
-            username=registration.username,
-            first_name=registration.first_name,
-            last_name=registration.last_name,
+            username=request.registration.username,
+            first_name=request.registration.first_name,
+            last_name=request.registration.last_name,
             user=user,
         )
         # delete request objects
-        validation.delete()
-        registration.delete()
-        return validation
+        request.registration.delete()
+        request.delete()
+        return request
 
 class RegisterRequestSerializer(serializers.ModelSerializer):
     class Meta:
