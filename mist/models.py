@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+import string
 
 # Create your models here.
 class Profile(models.Model):
@@ -27,6 +28,10 @@ class ValidationRequest(models.Model):
     code_time = models.FloatField()
     registration = models.OneToOneField(RegistrationRequest, on_delete=models.CASCADE)
 
+class Word(models.Model):
+    text = models.CharField(max_length=100, primary_key=True)
+    occurrences = models.IntegerField()
+
 class Post(models.Model):
     id = models.CharField(max_length=10, primary_key=True)
     title = models.CharField(max_length=40)
@@ -45,6 +50,31 @@ class Post(models.Model):
     
     def calculate_commentcount(self):
         return len(Comment.objects.filter(post=self.pk))
+    
+    def save(self, *args, **kwargs):
+        # check if the post is new
+        is_new = (len(Post.objects.filter(id=self.id)) == 0)
+        # save original post
+        super(Post, self).save(*args, **kwargs)
+        # generate word
+        if is_new:
+            # gather all words in the post
+            words_in_text = self.text.translate(
+                str.maketrans('', '', string.punctuation)
+                ).split()
+            words_in_title = self.title.translate(
+                str.maketrans('', '', string.punctuation)
+                ).split()
+            words_in_post = words_in_text + words_in_title
+            # for each word ...
+            for word in words_in_post:
+                # ... if it doesn't exist create one
+                matching_words = Word.objects.filter(text=word)
+                if len(matching_words) == 0:
+                    Word.objects.create(text=word,occurrences=1)
+                # ... otherwise, update occurences
+                else:
+                    matching_words[0].occurrences += 1
 
 class Vote(models.Model):
     voter = models.ForeignKey(Profile, on_delete=models.CASCADE)
