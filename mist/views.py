@@ -85,6 +85,7 @@ class WordView(viewsets.ModelViewSet):
         # parameters
         text = self.request.query_params.get('text')
         # filter
+        if text == None: return []
         return Word.objects.filter(text__contains=text)
 
 class CommentView(viewsets.ModelViewSet):
