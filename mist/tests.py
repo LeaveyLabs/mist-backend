@@ -9,9 +9,9 @@ from django.core.files.base import ContentFile
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
-from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, VoteSerializer
-from mist.views import CommentView, PostView, ProfileView, RegisterView, ValidateView, VoteView
-from .models import Profile, Post, Comment, RegistrationRequest, ValidationRequest, Vote
+from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, VoteSerializer, WordSerializer
+from mist.views import CommentView, PostView, ProfileView, RegisterView, ValidateView, VoteView, WordView
+from .models import Profile, Post, Comment, RegistrationRequest, ValidationRequest, Vote, Word
 from PIL import Image
 
 # Create your tests here.
@@ -228,6 +228,22 @@ class PostTest(TestCase):
     
     def test_post_calculate_averagerating(self):
         return self.assertEquals(self.post1.calculate_commentcount(), 1)
+
+    def test_post_create_words(self):
+        Post.objects.create(
+            id='5',
+            title='what',
+            text='have never seen this word',
+            location='nonexistent',
+            timestamp=0,
+            author=self.barath,
+        )
+        self.assertFalse(len(Word.objects.filter(text='what')) == 0)
+        self.assertFalse(len(Word.objects.filter(text='have')) == 0)
+        self.assertFalse(len(Word.objects.filter(text='never')) == 0)
+        self.assertFalse(len(Word.objects.filter(text='seen')) == 0)
+        self.assertFalse(len(Word.objects.filter(text='this')) == 0)
+        self.assertFalse(len(Word.objects.filter(text='word')) == 0)
     
     def test_post_new_post(self):
         # create new post
@@ -251,6 +267,34 @@ class PostTest(TestCase):
         data_view = raw_view.data
         # post should be successful
         self.assertEqual(data_view, serialized_post)
+        return
+    
+    def test_post_new_words(self):
+        # create new post
+        test_post = Post.objects.create(
+            id='3',
+            title='title3',
+            text='nonexistent',
+            location='fakelocation3',
+            timestamp=2,
+            author=self.barath,
+        )
+        test_word = Word(text='nonexistent', occurrences=1)
+        serialized_word = WordSerializer(test_word).data
+        # check if the word exists
+        request = self.factory.get(
+            '/api/words',
+            {
+                'text':'nonexistent'
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = WordView.as_view({'get':'list'})(request)
+        self.assertFalse(len(raw_view.data) == 0)
+        data_view = raw_view.data[0]
+        # get should be successful
+        self.assertEqual(data_view, serialized_word)
         return
 
     def test_get_all_posts(self):
@@ -360,7 +404,7 @@ class PostTest(TestCase):
         data_view = raw_view.data
         self.assertEqual(serialized_post, data_view)
         return
-
+        
 class VoteTest(TestCase):
     def setUp(self):
         # set up auth
@@ -544,3 +588,43 @@ class MessageTest(TestCase):
     
     def test_get_invalid_message(self):
         return 
+
+class WordTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create(username='kevinsun', 
+            password='kevinsun')
+        self.barath = Profile.objects.create(
+            username='barathraghavan',
+            first_name='barath',
+            last_name='raghavan',
+            user=self.user,
+        )
+        self.factory = APIRequestFactory()
+        Token.objects.create(user=self.user)
+
+    def test_get_partial_word(self):
+        # create post with text staring with "no"
+        Post.objects.create(
+            id='3',
+            title='title3',
+            text='nonexistent, non, nope, nob, no',
+            location='fakelocation3',
+            timestamp=2,
+            author=self.barath,
+        )
+        # look for words that start with "no"
+        request = self.factory.get(
+            '/api/words',
+            {
+                'text':'no'
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = WordView.as_view({'get':'list'})(request)
+        # Five words that start with "no"
+        self.assertEqual(len(raw_view.data), 5)
+        for word in raw_view.data:
+            # you can find "no" in any word
+            self.assertNotEqual(word['text'].find('no'), -1)
+        return

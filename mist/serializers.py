@@ -2,7 +2,7 @@ from datetime import datetime
 import random
 from django.forms import ValidationError
 from rest_framework import serializers
-from .models import Flag, Profile, Post, Comment, Message, RegistrationRequest, ValidationRequest, Vote
+from .models import Flag, Profile, Post, Comment, Message, RegistrationRequest, ValidationRequest, Vote, Word
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.mail import send_mail
@@ -102,6 +102,11 @@ class RegisterRequestSerializer(serializers.ModelSerializer):
             fail_silently=False,
         )
         return request
+
+class WordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Word
+        fields = ('text', 'occurrences')
 
 class PostSerializer(serializers.ModelSerializer):
     averagerating = serializers.ReadOnlyField(source='calculate_averagerating')

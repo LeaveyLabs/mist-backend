@@ -13,6 +13,7 @@ from .serializers import (
     RegisterRequestSerializer,
     ValidationRequestSerializer,
     VoteSerializer,
+    WordSerializer,
 )
 from .models import (
     Profile, 
@@ -20,6 +21,7 @@ from .models import (
     Comment,
     Message,
     Vote,
+    Word,
 )
 
 # Create your views here.
@@ -74,6 +76,16 @@ class PostView(viewsets.ModelViewSet):
         return queryset.annotate(
             vote_count=Avg('vote__rating', default=0)
             ).order_by('-vote_count')
+
+class WordView(viewsets.ModelViewSet):
+    # permission_classes = (IsAuthenticated,)
+    serializer_class = WordSerializer
+
+    def get_queryset(self):
+        # parameters
+        text = self.request.query_params.get('text')
+        # filter
+        return Word.objects.filter(text__contains=text)
 
 class CommentView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
