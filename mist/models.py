@@ -14,19 +14,12 @@ class Profile(models.Model):
     def _str_(self):
         return self.username
 
-class RegistrationRequest(models.Model):
+class Registration(models.Model):
     email = models.EmailField()
-    username = models.CharField(max_length=100)
-    password = models.CharField(max_length=100)
-    first_name = models.CharField(max_length=20)
-    last_name = models.CharField(max_length=20)
-
-class ValidationRequest(models.Model):
-    email = models.EmailField()
-    password = models.CharField(max_length=100)
-    code_value = models.CharField(max_length=6)
+    code = models.CharField(max_length=6)
     code_time = models.FloatField()
-    registration = models.OneToOneField(RegistrationRequest, on_delete=models.CASCADE)
+    validated = models.BooleanField(default=False)
+    validation_time = models.FloatField(null=True)
 
 class Word(models.Model):
     text = models.CharField(max_length=100, primary_key=True)

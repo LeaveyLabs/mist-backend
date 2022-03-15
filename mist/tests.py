@@ -6,12 +6,13 @@ from django.test import TestCase
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from django.core.files.base import ContentFile
+from rest_framework import status
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
 from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, VoteSerializer, WordSerializer
-from mist.views import CommentView, PostView, ProfileView, RegisterView, ValidateView, VoteView, WordView
-from .models import Profile, Post, Comment, RegistrationRequest, ValidationRequest, Vote, Word
+from mist.views import CommentView, PostView, ProfileView, RegisterView, CreateUserView, ValidateView, VoteView, WordView
+from .models import Profile, Post, Comment, Registration, Vote, Word
 from PIL import Image
 
 # Create your tests here.
@@ -22,52 +23,72 @@ class AuthTest(TestCase):
         response = factory.post('api-register/',
             {
                 'email':'anonymous1@usc.edu',
-                'username':'anonymous1', 
-                'first_name':'anon',
-                'last_name':'ymous',
-                'password':'anonymous1',
             },
             format='json',
         )
         raw_view = RegisterView.as_view()(response)
         # insertion should be successful
-        self.assertEquals(raw_view.status_code, 201)
+        self.assertEquals(raw_view.status_code, status.HTTP_201_CREATED)
+        # should be one registration request in the DB
+        requests = Registration.objects.filter(
+            email='anonymous1@usc.edu')
+        self.assertEqual(len(requests), 1)
         return
     
     def test_validate_user(self):
         # registration request
-        registration = RegistrationRequest(
+        code = f'{random.randint(0, 999_999):06}'
+        registration = Registration(
             email='anonymous2@usc.edu',
-            username='anonymous2',
-            password=make_password('fakepass1234'),
-            first_name='anony',
-            last_name='mous'
+            code=code,
+            code_time=datetime.now().timestamp(),
+            validation_time=None,
+            validated=False,
         )
         registration.save()
-        code_value = f'{random.randint(0, 999_999):06}'
-        # validation request
-        ValidationRequest.objects.create(
-            email='anonymous2@usc.edu',
-            password=registration.password,
-            code_value=code_value,
-            code_time=datetime.now().timestamp(),
-            registration=registration,
-        )
         # test validation
         factory = APIRequestFactory()
         response = factory.post('api-validate/',
             {
                 'email':'anonymous2@usc.edu',
-                'password':'fakepass1234',
-                'code_value':code_value,
+                'code':code,
             },
             format='json',
         )
         raw_view = ValidateView.as_view()(response)
         # http should be successful
-        self.assertEquals(raw_view.status_code, 201)
-        # user should now exist in the database
-        self.assertIsNotNone(User.objects.get(username='anonymous2'))
+        self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
+        # registration should be validated
+        registration = Registration.objects.filter(
+            email='anonymous2@usc.edu')[0]
+        self.assertTrue(registration.validated)
+        return
+
+    def test_validated_request_create_user(self):
+        # validate email
+        Registration.objects.create(
+            email='anonymous2@usc.edu',
+            code=f'{random.randint(0, 999_999):06}',
+            code_time=datetime.now().timestamp(),
+            validated=True,
+            validation_time=datetime.now().timestamp(),
+        )
+        # you should be able to sign up with this email
+        factory = APIRequestFactory()
+        response = factory.post('api-create-user/',
+            {
+                'email':'anonymous2@usc.edu',
+                'username':'mous2',
+                'password':'anon52349',
+                'confirm_password':'anon52349',
+                'first_name':'anony',
+                'last_name':'mous',
+            },
+            format='json',
+        )
+        # you should be able to signup with a validated email
+        raw_view = CreateUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
         return
 
     def test_obtain_token_valid_user(self):
@@ -88,7 +109,7 @@ class AuthTest(TestCase):
         )
         raw_view = obtain_auth_token(response)
         # generation should be successful
-        self.assertEquals(raw_view.status_code, 200)
+        self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
         return
 
 class ProfileTest(TestCase):
@@ -238,12 +259,12 @@ class PostTest(TestCase):
             timestamp=0,
             author=self.barath,
         )
-        self.assertFalse(len(Word.objects.filter(text='what')) == 0)
-        self.assertFalse(len(Word.objects.filter(text='have')) == 0)
-        self.assertFalse(len(Word.objects.filter(text='never')) == 0)
-        self.assertFalse(len(Word.objects.filter(text='seen')) == 0)
-        self.assertFalse(len(Word.objects.filter(text='this')) == 0)
-        self.assertFalse(len(Word.objects.filter(text='word')) == 0)
+        self.assertTrue(Word.objects.filter(text='what'))
+        self.assertTrue(Word.objects.filter(text='have'))
+        self.assertTrue(Word.objects.filter(text='never'))
+        self.assertTrue(Word.objects.filter(text='seen'))
+        self.assertTrue(Word.objects.filter(text='this'))
+        self.assertTrue(Word.objects.filter(text='word'))
     
     def test_post_new_post(self):
         # create new post

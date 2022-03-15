@@ -1,7 +1,11 @@
-import re
+from datetime import datetime
+from rest_framework.views import APIView
 from django.db.models import Avg
 from rest_framework import viewsets, generics
+from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.contrib.auth.models import User
 from django.contrib.postgres.search import SearchVector
 
 from .serializers import (
@@ -10,8 +14,9 @@ from .serializers import (
     PostSerializer, 
     CommentSerializer,
     MessageSerializer,
-    RegisterRequestSerializer,
-    ValidationRequestSerializer,
+    RegistrationSerializer,
+    UserCreateRequestSerializer,
+    ValidationSerializer,
     VoteSerializer,
     WordSerializer,
 )
@@ -20,6 +25,7 @@ from .models import (
     Post, 
     Comment,
     Message,
+    Registration,
     Vote,
     Word,
 )
@@ -127,10 +133,75 @@ class MessageView(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     queryset = Message.objects.all()
 
-class ValidateView(generics.CreateAPIView):
-    permission_classes = (AllowAny, )
-    serializer_class = ValidationRequestSerializer
-
 class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny, )
-    serializer_class = RegisterRequestSerializer
+    serializer_class = RegistrationSerializer
+
+class ValidateView(generics.CreateAPIView):
+    """
+    View to validate users. 
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = ValidationSerializer
+
+    def post(self, request, format=None):
+        # check validation request
+        validation = ValidationSerializer(data=request.data)
+        # if the data is not valid
+        if not validation.is_valid():
+            # return error
+            return Response(
+                {"status": "error", 
+                "data": validation.errors}, 
+                status=status.HTTP_400_BAD_REQUEST)
+        # if the data is valid
+        else:
+            # mark registration as validated
+            registration = Registration.objects.get(email=validation.data['email'])
+            registration.validated = True
+            registration.validation_time = datetime.now().timestamp()
+            registration.save()
+            return Response(
+                {"status": "success"}, 
+                status=status.HTTP_200_OK)
+
+class CreateUserView(generics.CreateAPIView):
+    """
+    View to create user objects.
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = UserCreateRequestSerializer
+
+    def post(self, request, format=None):
+        user_create_request = UserCreateRequestSerializer(data=request.data)
+        # if the request was invalid
+        if not user_create_request.is_valid():
+            # throw back an error
+            return Response(
+                {"status": "error", 
+                "data": user_create_request.errors}, 
+                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            try:
+                # create user and profile objects
+                user = User.objects.create_user(
+                    email=user_create_request.data['email'],
+                    username=user_create_request.data['username'],
+                    password=user_create_request.data['password'],
+                )
+                Profile.objects.create(
+                    username=user_create_request.data['username'],
+                    first_name=user_create_request.data['first_name'],
+                    last_name=user_create_request.data['last_name'],
+                    user=user,
+                )
+                # if we got here, then it was successful
+                return Response({"status": "success"}, status=status.HTTP_200_OK)
+            # catch failure in process
+            except:
+                return Response(
+                {"status": "error", 
+                "data": "Invalid user information."}, 
+                status=status.HTTP_400_BAD_REQUEST)
+        
+    

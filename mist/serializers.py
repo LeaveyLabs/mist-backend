@@ -1,10 +1,8 @@
-from datetime import datetime
 import random
+from datetime import datetime, timedelta
 from django.forms import ValidationError
 from rest_framework import serializers
-from .models import Flag, Profile, Post, Comment, Message, RegistrationRequest, ValidationRequest, Vote, Word
-from django.contrib.auth.models import User
-from django.contrib.auth.hashers import make_password, check_password
+from .models import Flag, Profile, Post, Comment, Message, Registration, Vote, Word
 from django.core.mail import send_mail
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -12,93 +10,98 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ('username', 'first_name', 'last_name')
 
-class ValidationRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ValidationRequest
-        fields = ('email', 'password', 'code_value')
-    
-    def get_request_by_email(self, email):
-        matching_email = ValidationRequest.objects.filter(email=email)
-        ordered_by_time = matching_email.order_by('-code_time')
-        if len(ordered_by_time) == 0: 
-            raise serializers.ValidationError("Email does not exist.")
-        return ordered_by_time[0]
-    
+class UserCreateRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=30)
+    password = serializers.CharField(max_length=30)
+    confirm_password = serializers.CharField(max_length=30)
+    first_name = serializers.CharField(max_length=30)
+    last_name = serializers.CharField(max_length=30)
+
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
     def validate(self, data):
-        # define parameters
+        # parameters
         email = data['email']
         password = data['password']
-        code_value = data['code_value']
-        # validate each parameter:
-        # 1. email
-        validation = self.get_request_by_email(email)
-        # 2. password
-        if not check_password(password, validation.password):
-            raise serializers.ValidationError("Passwords do not match.")
-        # 3. time
+        confirm_password = data['confirm_password']
         curr_time = datetime.now().timestamp()
-        if curr_time-validation.code_time > 5*60:
-            raise serializers.ValidationError("Time limit exceeded.")
-        # 4. code_value
-        if validation.code_value != code_value:
-             raise serializers.ValidationError("Code does not match.")
+        registrations = Registration.objects.filter(email=email)
+        # registration exists
+        if not registrations: 
+            raise ValidationError("Email was not registered.")
+        registration = registrations[0]
+        # registration was validated
+        if not registration.validated:
+            raise ValidationError("Email was not validated.")
+        # validation has not expired
+        if curr_time-registration.validation_time > self.EXPIRATION_TIME:
+            raise ValidationError("Validation time expired.")
+        # paswords match
+        if password != confirm_password:
+            raise ValidationError("Passowrds don't match.")
+        return data
+
+class ValidationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField()
+
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
+    def validate(self, data):
+        # parameters
+        email = data['email']
+        code = data['code']
+        time = datetime.now().timestamp()
+        registrations = Registration.objects.filter(
+                email=email).order_by('-code_time')
+        # validate email
+        if not registrations:
+            raise ValidationError("Email was not registered.")
+        # validate code
+        registration = registrations[0]
+        if code != registration.code:
+            raise ValidationError("Code does not match.")
+        # validate code time
+        if time-registration.code_time > self.EXPIRATION_TIME:
+            raise ValidationError("Code expired (5 minutes).")
+        return data
+
+class RegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Registration
+        fields = ('email',)
+
+    ACCEPTABLE_DOMAINS = ('usc.edu', 'gmail.com')
+    
+    def validate(self, data):
+        # domain must be in the list
+        email = data['email']
+        domain = email.split('@')[1]
+        if domain not in self.ACCEPTABLE_DOMAINS:
+            raise ValidationError("Invalid email domain")
         return data
     
     def create(self, validated_data):
         """
-        Deserializes new validation object.
-        Checks if the code is correct and within time.
-        If so, removes the object.
-        """
-        # find request by email
-        email = validated_data.pop('email')
-        request = self.get_request_by_email(email)
-        # produce user object
-        user = User(
-            email=request.registration.email,
-            username=request.registration.username,
-        )
-        user.set_password(request.password)
-        user.save()
-        # produce profile object
-        Profile.objects.create(
-            username=request.registration.username,
-            first_name=request.registration.first_name,
-            last_name=request.registration.last_name,
-            user=user,
-        )
-        # delete request objects
-        request.registration.delete()
-        request.delete()
-        return request
-
-class RegisterRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RegistrationRequest
-        fields = ('email', 'username', 'password', 'first_name', 'last_name')
-    
-    def create(self, validated_data):
-        """
         Create a registration request with the registration information.
-        Send in a new validation request for the user to validate. 
         """
-        password = validated_data.pop('password')
-        request = RegistrationRequest(**validated_data)
-        request.password = make_password(password)
-        request.save()
-        code_value = f'{random.randint(0, 999_999):06}'
-        ValidationRequest.objects.create(
-            email=validated_data.get('email'),
-            password=request.password,
-            code_value=code_value,
-            code_time=datetime.now().timestamp(),
-            registration=request,
+        # parameters
+        email = validated_data.get('email')
+        rand_code = f'{random.randint(0, 999_999):06}'
+        curr_time = datetime.now().timestamp()
+        # create request
+        request = Registration.objects.create(
+            email=email,
+            code=rand_code,
+            code_time=curr_time,
         )
+        # send validation email
         send_mail(
             "[Mist] Validate Your Email Address",
-            "Your sign-in code is {}".format(code_value),
+            "Your sign-in code is {}".format(rand_code),
             "kevinsun127@gmail.com",
-            [validated_data.get('email')],
+            [email],
             fail_silently=False,
         )
         return request

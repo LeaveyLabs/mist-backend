@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api-register/', views.RegisterView.as_view()),
     path('api-validate/', views.ValidateView.as_view()),
+    path('api-create-user/', views.CreateUserView.as_view()),
     path('api-token/', obtain_auth_token),
     # TODO: implement OAuth 2.0 login
     # path('accounts/', include('allauth.urls')),
