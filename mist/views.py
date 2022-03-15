@@ -76,7 +76,11 @@ class PostView(viewsets.ModelViewSet):
             gcd_formula,
             (latitude, longitude, latitude)
         )
+        # make sure the latitude + longtitude exists
+        # make sure the distance is under the max
         qs = Post.objects.all()\
+        .filter(latitude__isnull=False)\
+        .filter(longitude__isnull=False)\
         .annotate(distance=distance_raw_sql)\
         .order_by('distance')
         if max_distance is not None:
@@ -94,7 +98,6 @@ class PostView(viewsets.ModelViewSet):
         latitude = self.request.query_params.get('latitude')
         longitude = self.request.query_params.get('longitude')
         text = self.request.query_params.get('text')
-        location = self.request.query_params.get('location')
         timestamp = self.request.query_params.get('timestamp')
         # filter
         queryset = Post.objects.all()
@@ -105,8 +108,6 @@ class PostView(viewsets.ModelViewSet):
             text_set = queryset.filter(text__contains=text)
             title_set = queryset.filter(title__contains=text)
             queryset = (text_set | title_set).distinct()
-        if location != None:
-            queryset = queryset.filter(location=location)
         if timestamp != None:
             queryset = queryset.filter(timestamp=timestamp)
         # order

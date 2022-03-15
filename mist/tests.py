@@ -215,9 +215,6 @@ class PostTest(TestCase):
             id='1',
             title='title1',
             text='fake fake text text',
-            location='fakelocation1',
-            latitude=self.USC_LATITUDE,
-            longitude=self.USC_LONGITUDE,
             timestamp=0,
             author=self.barath,
         )
@@ -225,9 +222,6 @@ class PostTest(TestCase):
             id='2',
             title='title2',
             text='real real real stuff',
-            location='fakelocation2',
-            latitude=self.USC_LATITUDE,
-            longitude=self.USC_LONGITUDE,
             timestamp=1,
             author=self.barath,
         )
@@ -262,9 +256,6 @@ class PostTest(TestCase):
             id='5',
             title='what',
             text='have never seen this word',
-            location='nonexistent',
-            latitude=self.USC_LATITUDE,
-            longitude=self.USC_LONGITUDE,
             timestamp=0,
             author=self.barath,
         )
@@ -281,7 +272,6 @@ class PostTest(TestCase):
             id='3',
             title='title3',
             text='real real real stuff3',
-            location='fakelocation3',
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
             timestamp=2,
@@ -307,9 +297,6 @@ class PostTest(TestCase):
             id='3',
             title='title3',
             text='nonexistent',
-            location='fakelocation3',
-            latitude=self.USC_LATITUDE,
-            longitude=self.USC_LONGITUDE,
             timestamp=2,
             author=self.barath,
         )
@@ -382,25 +369,7 @@ class PostTest(TestCase):
         # should be identical
         self.assertEqual(serialized_posts, data_view)
         return
-    
-    def test_get_posts_by_location(self):
-        # only self.post1 has "fakelocation1" as its location
-        serialized_posts = [PostSerializer(self.post1).data]
-        # get all posts with "fakelocation1" as its location
-        request = self.factory.get(
-            '/api/posts',
-            {
-                'location':'fakelocation1'
-            },
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'get':'list'})(request)
-        data_view = [post_data for post_data in raw_view.data]
-        # should be identical
-        self.assertEqual(serialized_posts, data_view)
-        return
-    
+
     def test_get_posts_by_timestamp(self):
         # only self.post1 has 0 as its timestamp
         serialized_posts = [PostSerializer(self.post1).data]
@@ -420,22 +389,29 @@ class PostTest(TestCase):
         return
     
     def test_get_posts_by_latitude_longitude(self):
+        # create a post from USC
+        usc_post = Post.objects.create(
+            id='101',
+            title='to that hunk of a man',
+            text='adam. i love you',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
+            timestamp=2,
+            author=self.barath,
+        )
         # create a post from the north pole
         Post.objects.create(
             id='100',
             title='to that hunk of a man',
             text='santa. i love you',
-            location='north pole',
             latitude=Decimal(0),
             longitude=Decimal(0),
             timestamp=2,
             author=self.barath,
         )
-        # we want post 1 and 2 (both made at USC)
+        # we want the post from usc
         serialized_posts = [
-            PostSerializer(self.post1).data,
-            PostSerializer(self.post2).data,
-        ]
+            PostSerializer(usc_post).data]
         # get all posts at USC
         request = self.factory.get(
             '/api/posts',
@@ -490,7 +466,6 @@ class VoteTest(TestCase):
             id='1',
             title='title1',
             text='fake fake text text',
-            location='fakelocation1',
             timestamp=0,
             author=self.barath,
         )
@@ -498,7 +473,6 @@ class VoteTest(TestCase):
             id='2',
             title='title2',
             text='real real real stuff',
-            location='fakelocation2',
             timestamp=1,
             author=self.barath,
         )
@@ -600,7 +574,6 @@ class CommentTest(TestCase):
         self.post1 = Post.objects.create(
             title='faketitle1',
             text='faketext1',
-            location='fakelocation1',
             timestamp=0,
             author=self.barath,
         )
@@ -675,7 +648,6 @@ class WordTest(TestCase):
             id='3',
             title='title3',
             text='nonexistent, non, nope, nob, no',
-            location='fakelocation3',
             timestamp=2,
             author=self.barath,
         )
