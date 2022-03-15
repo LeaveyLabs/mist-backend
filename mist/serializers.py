@@ -108,6 +108,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.ReadOnlyField(source='calculate_occurrences')
+    
     class Meta:
         model = Word
         fields = ('text', 'occurrences')
