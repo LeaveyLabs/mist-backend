@@ -71,7 +71,7 @@ class Word(models.Model):
     posts = models.ManyToManyField(Post)
 
     def calculate_occurrences(self):
-        return max(self.posts.count(), 1)
+        return self.posts.count()
 
 class Vote(models.Model):
     voter = models.ForeignKey(Profile, on_delete=models.CASCADE)
