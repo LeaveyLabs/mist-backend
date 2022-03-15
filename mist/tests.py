@@ -300,7 +300,7 @@ class PostTest(TestCase):
             timestamp=2,
             author=self.barath,
         )
-        test_word = Word(text='nonexistent', occurrences=1)
+        test_word = Word(text='nonexistent')
         serialized_word = WordSerializer(test_word).data
         # check if the word exists
         request = self.factory.get(
@@ -311,7 +311,7 @@ class PostTest(TestCase):
             format='json'
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = WordView.as_view({'get':'list'})(request)
+        raw_view = WordView.as_view()(request)
         self.assertFalse(len(raw_view.data) == 0)
         data_view = raw_view.data[0]
         # get should be successful
@@ -642,7 +642,7 @@ class WordTest(TestCase):
             format='json'
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = WordView.as_view({'get':'list'})(request)
+        raw_view = WordView.as_view()(request)
         # Five words that start with "no"
         self.assertEqual(len(raw_view.data), 5)
         for word in raw_view.data:
