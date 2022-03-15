@@ -149,8 +149,10 @@ class ValidateView(generics.CreateAPIView):
         if not validation.is_valid():
             # return error
             return Response(
-                {"status": "error", 
-                "data": validation.errors}, 
+                {
+                    "status": "error", 
+                    "data": validation.errors
+                }, 
                 status=status.HTTP_400_BAD_REQUEST)
         # if the data is valid
         else:
@@ -160,7 +162,9 @@ class ValidateView(generics.CreateAPIView):
             registration.validation_time = datetime.now().timestamp()
             registration.save()
             return Response(
-                {"status": "success"}, 
+                {
+                    "status": "success"
+                }, 
                 status=status.HTTP_200_OK)
 
 class CreateUserView(generics.CreateAPIView):
@@ -176,8 +180,10 @@ class CreateUserView(generics.CreateAPIView):
         if not user_create_request.is_valid():
             # throw back an error
             return Response(
-                {"status": "error", 
-                "data": user_create_request.errors}, 
+                {
+                    "status": "error", 
+                    "data": user_create_request.errors
+                }, 
                 status=status.HTTP_400_BAD_REQUEST)
         else:
             try:
@@ -194,12 +200,18 @@ class CreateUserView(generics.CreateAPIView):
                     user=user,
                 )
                 # if we got here, then it was successful
-                return Response({"status": "success"}, status=status.HTTP_200_OK)
+                return Response(
+                    {
+                        "status": "success"
+                    }, 
+                    status=status.HTTP_200_OK)
             # catch failure in process
             except:
                 return Response(
-                {"status": "error", 
-                "data": "Invalid user information."}, 
+                {
+                    "status": "error", 
+                    "data": "Invalid user information."
+                }, 
                 status=status.HTTP_400_BAD_REQUEST)
         
     
