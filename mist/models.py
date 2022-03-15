@@ -30,6 +30,7 @@ class Post(models.Model):
     id = models.CharField(max_length=10, primary_key=True)
     title = models.CharField(max_length=40)
     text = models.CharField(max_length=1000)
+    location_description = models.CharField(max_length=40, null=True)
     latitude = models.DecimalField(max_digits=22, decimal_places=16, null=True)
     longitude = models.DecimalField(max_digits=22, decimal_places=16, null=True)
     timestamp = models.FloatField(default=0)

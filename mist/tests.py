@@ -428,6 +428,66 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts, data_view)
         return
     
+    def test_get_posts_by_loc_description(self):
+        # create a post from the north pole
+        north_post = Post.objects.create(
+            id='100',
+            title='to that hunk of a man',
+            location_description='north pole',
+            text='santa. i love you',
+            latitude=Decimal(0),
+            longitude=Decimal(0),
+            timestamp=2,
+            author=self.barath,
+        )
+        # we want the post from usc
+        serialized_posts = [
+            PostSerializer(north_post).data]
+        # get all posts at USC
+        request = self.factory.get(
+            '/api/posts',
+            {
+                'location_description': 'north pole'
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'get':'list'})(request)
+        data_view = [post_data for post_data in raw_view.data]
+        # should be identical
+        self.assertEqual(serialized_posts, data_view)
+        return
+    
+    def test_get_posts_by_partial_loc_description(self):
+        # create a post from the north pole
+        north_post = Post.objects.create(
+            id='100',
+            title='to that hunk of a man',
+            location_description='north pole',
+            text='santa. i love you',
+            latitude=Decimal(0),
+            longitude=Decimal(0),
+            timestamp=2,
+            author=self.barath,
+        )
+        # we want the post from usc
+        serialized_posts = [
+            PostSerializer(north_post).data]
+        # get all posts at USC
+        request = self.factory.get(
+            '/api/posts',
+            {
+                'location_description': 'no'
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'get':'list'})(request)
+        data_view = [post_data for post_data in raw_view.data]
+        # should be identical
+        self.assertEqual(serialized_posts, data_view)
+        return
+
     def test_get_posts_by_all_combos(self):
         return
     
