@@ -1,5 +1,6 @@
 from base64 import b64decode
 from datetime import datetime
+from decimal import Decimal
 from io import BytesIO
 import random
 from django.test import TestCase
@@ -194,6 +195,9 @@ class ProfileTest(TestCase):
     #     self.assertEqual(path, data_view.pic.path)
 
 class PostTest(TestCase):
+    USC_LATITUDE = Decimal(34.0224)
+    USC_LONGITUDE = Decimal(118.2851)
+
     def setUp(self):
         # set up auth
         self.user = User.objects.create(username='kevinsun', 
@@ -212,6 +216,8 @@ class PostTest(TestCase):
             title='title1',
             text='fake fake text text',
             location='fakelocation1',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
             timestamp=0,
             author=self.barath,
         )
@@ -220,6 +226,8 @@ class PostTest(TestCase):
             title='title2',
             text='real real real stuff',
             location='fakelocation2',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
             timestamp=1,
             author=self.barath,
         )
@@ -255,6 +263,8 @@ class PostTest(TestCase):
             title='what',
             text='have never seen this word',
             location='nonexistent',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
             timestamp=0,
             author=self.barath,
         )
@@ -272,6 +282,8 @@ class PostTest(TestCase):
             title='title3',
             text='real real real stuff3',
             location='fakelocation3',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
             timestamp=2,
             author=self.barath,
         )
@@ -296,6 +308,8 @@ class PostTest(TestCase):
             title='title3',
             text='nonexistent',
             location='fakelocation3',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
             timestamp=2,
             author=self.barath,
         )
@@ -395,6 +409,39 @@ class PostTest(TestCase):
             '/api/posts',
             {
                 'timestamp': 0,
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = PostView.as_view({'get':'list'})(request)
+        data_view = [post_data for post_data in raw_view.data]
+        # should be identical
+        self.assertEqual(serialized_posts, data_view)
+        return
+    
+    def test_get_posts_by_latitude_longitude(self):
+        # create a post from the north pole
+        Post.objects.create(
+            id='100',
+            title='to that hunk of a man',
+            text='santa. i love you',
+            location='north pole',
+            latitude=Decimal(0),
+            longitude=Decimal(0),
+            timestamp=2,
+            author=self.barath,
+        )
+        # we want post 1 and 2 (both made at USC)
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
+        ]
+        # get all posts at USC
+        request = self.factory.get(
+            '/api/posts',
+            {
+                'latitude': self.USC_LATITUDE,
+                'longitude': self.USC_LONGITUDE,
             },
             format='json'
         )

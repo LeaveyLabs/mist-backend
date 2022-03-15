@@ -113,7 +113,8 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'title', 'text', 'location', 'timestamp', 'author', 'averagerating', 'commentcount')
+        fields = ('id', 'title', 'text', 'location', 'latitude', 'longitude', 
+        'timestamp', 'author', 'averagerating', 'commentcount', )
 
 class VoteSerializer(serializers.ModelSerializer):
     class Meta:

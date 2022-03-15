@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import User
 import string
@@ -22,10 +23,16 @@ class Registration(models.Model):
     validation_time = models.FloatField(null=True)
 
 class Post(models.Model):
+    # Default coordinates are at USC
+    USC_LATITUDE = Decimal(34.0224)
+    USC_LONGITUDE = Decimal(118.2851)
+
     id = models.CharField(max_length=10, primary_key=True)
     title = models.CharField(max_length=40)
     text = models.CharField(max_length=1000)
     location = models.CharField(max_length=20, default="USC")
+    latitude = models.DecimalField(max_digits=22, decimal_places=16, default=USC_LATITUDE)
+    longitude = models.DecimalField(max_digits=22, decimal_places=16, default=USC_LONGITUDE)
     timestamp = models.FloatField(default=0)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
 

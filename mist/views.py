@@ -1,5 +1,7 @@
 from datetime import datetime
+from decimal import Decimal
 from django.db.models import Avg
+from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.response import Response
@@ -56,6 +58,32 @@ class PostView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
+    # Max distance around post is 1 kilometer
+    MAX_DISTANCE = Decimal(1)
+
+    def get_locations_nearby_coords(self, latitude, longitude, max_distance=None):
+        """
+        Return objects sorted by distance to specified coordinates
+        which distance is less than max_distance given in kilometers
+        """
+        # Great circle distance formula
+        gcd_formula = "6371 * acos(least(greatest(\
+        cos(radians(%s)) * cos(radians(latitude)) \
+        * cos(radians(longitude) - radians(%s)) + \
+        sin(radians(%s)) * sin(radians(latitude)) \
+        , -1), 1))"
+        distance_raw_sql = RawSQL(
+            gcd_formula,
+            (latitude, longitude, latitude)
+        )
+        qs = Post.objects.all()\
+        .annotate(distance=distance_raw_sql)\
+        .order_by('distance')
+        if max_distance is not None:
+            # distance must be less than max distance
+            qs = qs.filter(distance__lt=max_distance)
+        return qs
+
     def get_queryset(self):
         """
         Filter by text, location, and date. 
@@ -63,14 +91,19 @@ class PostView(viewsets.ModelViewSet):
         Sort the result by vote ratings. 
         """
         # parameters
+        latitude = self.request.query_params.get('latitude')
+        longitude = self.request.query_params.get('longitude')
         text = self.request.query_params.get('text')
         location = self.request.query_params.get('location')
         timestamp = self.request.query_params.get('timestamp')
         # filter
         queryset = Post.objects.all()
+        if latitude != None and longitude != None:
+            queryset = self.get_locations_nearby_coords(
+                latitude, longitude, max_distance=self.MAX_DISTANCE)
         if text != None:
-            text_set = Post.objects.filter(text__contains=text)
-            title_set = Post.objects.filter(title__contains=text)
+            text_set = queryset.filter(text__contains=text)
+            title_set = queryset.filter(title__contains=text)
             queryset = (text_set | title_set).distinct()
         if location != None:
             queryset = queryset.filter(location=location)
