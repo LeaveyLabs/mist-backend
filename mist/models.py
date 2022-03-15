@@ -10,7 +10,7 @@ class Profile(models.Model):
     last_name = models.CharField(max_length=20)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     # TODO: Pictures
-    # pic = models.ImageField(upload_to='profiles', null=True, blank=True)
+    picture = models.ImageField(upload_to='profiles', null=True)
 
     def _str_(self):
         return self.username
