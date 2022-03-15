@@ -1,12 +1,10 @@
 from datetime import datetime
-from rest_framework.views import APIView
 from django.db.models import Avg
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
-from django.contrib.postgres.search import SearchVector
 
 from .serializers import (
     FlagSerializer,
@@ -49,10 +47,10 @@ class ProfileView(viewsets.ModelViewSet):
         elif username != None:
             return Profile.objects.filter(username=username)
         else:
-            return Profile.objects.annotate(
-                search=SearchVector('username', 
-                'first_name', 'last_name')
-                ).filter(search__contains=text)
+            username_set = Profile.objects.filter(username__contains=text)
+            first_name_set = Profile.objects.filter(first_name__contains=text)
+            last_name_set = Profile.objects.filter(last_name__contains=text)
+            return (username_set | first_name_set | last_name_set).distinct()
 
 class PostView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
@@ -70,10 +68,10 @@ class PostView(viewsets.ModelViewSet):
         timestamp = self.request.query_params.get('timestamp')
         # filter
         queryset = Post.objects.all()
-        if text != None: 
-            queryset = Post.objects.annotate(
-                search=SearchVector('text', 'title')
-            ).filter(search__contains=text)
+        if text != None:
+            text_set = Post.objects.filter(text__contains=text)
+            title_set = Post.objects.filter(title__contains=text)
+            queryset = (text_set | title_set).distinct()
         if location != None:
             queryset = queryset.filter(location=location)
         if timestamp != None:
@@ -83,7 +81,7 @@ class PostView(viewsets.ModelViewSet):
             vote_count=Avg('vote__rating', default=0)
             ).order_by('-vote_count')
 
-class WordView(viewsets.ModelViewSet):
+class WordView(generics.ListAPIView):
     # permission_classes = (IsAuthenticated,)
     serializer_class = WordSerializer
 
