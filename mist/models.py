@@ -31,8 +31,8 @@ class Post(models.Model):
     title = models.CharField(max_length=40)
     text = models.CharField(max_length=1000)
     location_description = models.CharField(max_length=40, null=True)
-    latitude = models.DecimalField(max_digits=22, decimal_places=16, null=True)
-    longitude = models.DecimalField(max_digits=22, decimal_places=16, null=True)
+    latitude = models.FloatField(null=True)
+    longitude = models.FloatField(null=True)
     timestamp = models.FloatField(default=0)
     author = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
