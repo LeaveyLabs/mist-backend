@@ -14,7 +14,6 @@ class UserCreateRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     username = serializers.CharField(max_length=30)
     password = serializers.CharField(max_length=30)
-    confirm_password = serializers.CharField(max_length=30)
     first_name = serializers.CharField(max_length=30)
     last_name = serializers.CharField(max_length=30)
 
@@ -23,8 +22,6 @@ class UserCreateRequestSerializer(serializers.Serializer):
     def validate(self, data):
         # parameters
         email = data['email']
-        password = data['password']
-        confirm_password = data['confirm_password']
         curr_time = datetime.now().timestamp()
         registrations = Registration.objects.filter(email=email)
         # registration exists
@@ -37,9 +34,6 @@ class UserCreateRequestSerializer(serializers.Serializer):
         # validation has not expired
         if curr_time-registration.validation_time > self.EXPIRATION_TIME:
             raise ValidationError("Validation time expired.")
-        # paswords match
-        if password != confirm_password:
-            raise ValidationError("Passowrds don't match.")
         return data
 
 class ValidationSerializer(serializers.Serializer):
@@ -108,7 +102,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.ReadOnlyField(source='calculate_occurrences')
-    
+
     class Meta:
         model = Word
         fields = ('text', 'occurrences')

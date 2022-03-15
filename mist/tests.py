@@ -80,7 +80,6 @@ class AuthTest(TestCase):
                 'email':'anonymous2@usc.edu',
                 'username':'mous2',
                 'password':'anon52349',
-                'confirm_password':'anon52349',
                 'first_name':'anony',
                 'last_name':'mous',
             },
