@@ -25,11 +25,12 @@ router.register(r'posts', views.PostView, 'post')
 router.register(r'comments', views.CommentView, 'comment')
 router.register(r'messages', views.MessageView, 'message')
 router.register(r'votes', views.VoteView, 'vote')
-router.register(r'words', views.WordView, 'word')
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+    path('api/words/', views.WordView.as_view()),
     path('api-register/', views.RegisterView.as_view()),
     path('api-validate/', views.ValidateView.as_view()),
     path('api-create-user/', views.CreateUserView.as_view()),
