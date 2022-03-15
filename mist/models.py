@@ -21,10 +21,6 @@ class Registration(models.Model):
     validated = models.BooleanField(default=False)
     validation_time = models.FloatField(null=True)
 
-class Word(models.Model):
-    text = models.CharField(max_length=100, primary_key=True)
-    occurrences = models.IntegerField()
-
 class Post(models.Model):
     id = models.CharField(max_length=10, primary_key=True)
     title = models.CharField(max_length=40)
@@ -64,10 +60,18 @@ class Post(models.Model):
                 # ... if it doesn't exist create one
                 matching_words = Word.objects.filter(text=word)
                 if len(matching_words) == 0:
-                    Word.objects.create(text=word,occurrences=1)
-                # ... otherwise, update occurences
+                    word_obj = Word.objects.create(text=word)
+                    word_obj.posts.add(self)
+                # ... increment occurrences
                 else:
-                    matching_words[0].occurrences += 1
+                    matching_words[0].posts.add(self)
+
+class Word(models.Model):
+    text = models.CharField(max_length=100, primary_key=True)
+    posts = models.ManyToManyField(Post)
+
+    def calculate_occurrences(self):
+        return max(self.posts.count(), 1)
 
 class Vote(models.Model):
     voter = models.ForeignKey(Profile, on_delete=models.CASCADE)
