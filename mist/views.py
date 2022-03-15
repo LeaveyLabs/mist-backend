@@ -45,7 +45,7 @@ class ProfileView(viewsets.ModelViewSet):
         text = self.request.query_params.get('text')
         # filter
         if username == None and text == None:
-            return []
+            return Profile.objects.all()
         elif username != None:
             return Profile.objects.filter(username=username)
         else:
