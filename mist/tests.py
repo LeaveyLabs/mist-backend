@@ -1,12 +1,9 @@
 from base64 import b64decode
 from datetime import datetime
 from decimal import Decimal
-from io import BytesIO
 import random
 from django.test import TestCase
 from django.contrib.auth.models import User
-from django.contrib.auth.hashers import make_password
-from django.core.files.base import ContentFile
 from rest_framework import status
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
@@ -14,7 +11,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, VoteSerializer, WordSerializer
 from mist.views import CommentView, PostView, ProfileView, RegisterView, CreateUserView, ValidateView, VoteView, WordView
 from .models import Profile, Post, Comment, Registration, Vote, Word
-from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 # Create your tests here.
 class AuthTest(TestCase):
@@ -168,31 +165,38 @@ class ProfileTest(TestCase):
         # should be empty
         self.assertEqual([], raw_view.data)
         return
-    # TODO: Profile Pictures
-    # def test_post_profile_pic(self):
-    #     # get profile with empty picture
-    #     profile = Profile.objects.get(username=self.barath.username)
-    #     # post local file
-    #     path = 'mist/test_images/test.jpeg'
-    #     img = Image.open(path)
-    #     img_io = BytesIO()
-    #     img.save(fp=img_io, format=img.format)
-    #     request = self.factory.put(
-    #         '/api/profiles/{}'.format(profile.pk),
-    #         {
-    #             'username':profile.username,
-    #             'first_name':profile.first_name,
-    #             'last_name':profile.last_name,
-    #             'pic': ContentFile(b64decode(img_io.getvalue())),
-    #         },
-    #         format="json"
-    #     )
-    #     force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-    #     raw_view = ProfileView.as_view({'put':'update'})(request, pk=profile.pk)
-    #     data_view = raw_view.data
-    #     print(data_view)
-    #     # should point to the same location
-    #     self.assertEqual(path, data_view.pic.path)
+
+    def test_post_profile_pic(self):
+        # get profile with empty picture
+        profile = Profile.objects.get(username=self.barath.username)
+        # post gif to profile
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        profile.picture = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
+        profile.save()
+        serialized_profile = ProfileSerializer(profile)
+        # put it in the database
+        request = self.factory.put(
+            '/api/profiles/{}'.format(profile.pk),
+            {
+                'username': profile.username,
+                'first_name': profile.first_name,
+                'last_name': profile.last_name,
+                'pic': serialized_profile.data['picture'],
+                'user': profile.user.pk,
+            },
+            format="json"
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        raw_view = ProfileView.as_view({'put':'update'})(request, pk=profile.pk)
+        # check sucessful request
+        self.assertEqual(raw_view.status_code, status.HTTP_200_OK)
+        # check picture exists
+        profile_after_request = Profile.objects.get(username=self.barath.username)
+        self.assertNotEqual(profile_after_request.picture, None)
 
 class PostTest(TestCase):
     USC_LATITUDE = Decimal(34.0224)
