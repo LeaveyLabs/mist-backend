@@ -23,7 +23,8 @@ class UserCreateRequestSerializer(serializers.Serializer):
         # parameters
         email = data['email']
         curr_time = datetime.now().timestamp()
-        registrations = Registration.objects.filter(email=email)
+        registrations = Registration.objects.filter(
+            email=email).order_by('-validation_time')
         # registration exists
         if not registrations: 
             raise ValidationError("Email was not registered.")
