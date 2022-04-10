@@ -196,7 +196,9 @@ class ValidateView(generics.CreateAPIView):
         # if the data is valid
         else:
             # mark registration as validated
-            registration = Registration.objects.get(email=validation.data['email'])
+            registration = Registration.objects.filter(
+                email=validation.data['email']
+                ).order_by('-code_time')[0]
             registration.validated = True
             registration.validation_time = datetime.now().timestamp()
             registration.save()
