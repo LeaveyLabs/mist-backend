@@ -27,7 +27,6 @@ router.register(r'posts', views.PostView, 'post')
 router.register(r'comments', views.CommentView, 'comment')
 router.register(r'messages', views.MessageView, 'message')
 router.register(r'votes', views.VoteView, 'vote')
-router.register(r'words', views.WordView, 'word')
 
 
 urlpatterns = [
