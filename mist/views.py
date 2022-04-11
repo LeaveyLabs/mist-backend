@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from django.db.models import Avg
+from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
 from rest_framework import status
@@ -129,7 +129,9 @@ class WordView(generics.ListAPIView):
         text = self.request.query_params.get('text')
         # filter
         if text == None: return []
-        return Word.objects.filter(text__contains=text)
+        return Word.objects.filter(text__contains=text
+        ).annotate(post_count=Count('posts')
+        ).filter(post_count__gt=0)
 
 class CommentView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
