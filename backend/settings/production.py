@@ -23,9 +23,8 @@ from decouple import config
 
 os.environ.setdefault('AWS_ACCESS_KEY_ID', config('AWS_ACCESS_KEY_ID'))
 os.environ.setdefault('AWS_SECRET_ACCESS_KEY', config('AWS_SECRET_ACCESS_KEY'))
-os.environ.setdefault('AWS_S3_SIGNATURE_VERSION', config('AWS_S3_SIGNATURE_VERSION'))
-os.environ.setdefault('AWS_S3_REGION_NAME', config('AWS_S3_REGION_NAME'))
-os.environ.setdefault('AWS_STORAGE_BUCKET_NAME', config('AWS_STORAGE_BUCKET_NAME'))
+AWS_S3_SIGNATURE_VERSION="s3v4"
+AWS_S3_REGION_NAME="us-west-1"
 AWS_STORAGE_BUCKET_NAME = "mistbucket"
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
