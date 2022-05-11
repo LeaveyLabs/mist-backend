@@ -93,9 +93,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
         )
         # send validation email
         send_mail(
-            "[Mist] Validate Your Email Address",
-            "Your sign-in code is {}".format(rand_code),
-            "kevinsun127@gmail.com",
+            "Your code awaits!",
+            "Here's your validation code: {}".format(rand_code),
+            "getmist.app@gmail.com",
             [email],
             fail_silently=False,
         )
