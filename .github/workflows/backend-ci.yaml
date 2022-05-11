@@ -6,6 +6,9 @@ on: [push]
 jobs:
   build:
 
+    env:
+        DJANGO_SETTINGS_MODULE: backend.settings.local
+
     runs-on: ubuntu-latest
     strategy:
       matrix:
