@@ -1,0 +1,49 @@
+name: backend-ci
+
+
+on: [push | pull_request]
+
+jobs:
+  build:
+
+    env:
+        DJANGO_SETTINGS_MODULE: backend.settings.local
+        SECRET_KEY: ${{secrets.SECRET_KEY}}
+        EMAIL_HOST_USER: ${{secrets.EMAIL_HOST_USER}}
+        EMAIL_HOST_PASSWORD: ${{secrets.EMAIL_HOST_PASSWORD}}
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: postgres
+
+    services:
+      postgres:
+        image: postgres:10
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9"]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install --user pipenv
+          pipenv install
+      - name: Test
+        run: |
+          pipenv run python3 manage.py test
