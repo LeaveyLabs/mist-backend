@@ -11,6 +11,23 @@ jobs:
         SECRET_KEY: ${{secrets.SECRET_KEY}}
         EMAIL_HOST_USER: ${{secrets.EMAIL_HOST_USER}}
         EMAIL_HOST_PASSWORD: ${{secrets.EMAIL_HOST_PASSWORD}}
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: postgres
+
+    services:
+      postgres:
+        image: postgres:10
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     runs-on: ubuntu-latest
     strategy:
