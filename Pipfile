@@ -16,7 +16,6 @@ django-allauth = "*"
 pillow = "*"
 django-storages = "*"
 boto3 = "*"
-flake8 = "*"
 
 [dev-packages]
 
