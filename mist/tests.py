@@ -15,7 +15,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 # Create your tests here.
 class AuthTest(TestCase):
-    def test_register_user(self):
+    def test_register_user_valid_email(self):
         # insert user to database
         factory = APIRequestFactory()
         response = factory.post('api-register/',
@@ -33,7 +33,25 @@ class AuthTest(TestCase):
         self.assertEqual(len(requests), 1)
         return
     
-    def test_validate_user(self):
+    def test_register_user_invalid_email(self):
+        # insert user to database
+        factory = APIRequestFactory()
+        response = factory.post('api-register/',
+            {
+                'email':'anonymous1',
+            },
+            format='json',
+        )
+        raw_view = RegisterView.as_view()(response)
+        # insertion should be successful
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
+        # should be one registration request in the DB
+        requests = Registration.objects.filter(
+            email='anonymous1')
+        self.assertEqual(len(requests), 0)
+        return
+    
+    def test_validate_user_valid_code(self):
         # registration request
         code = f'{random.randint(0, 999_999):06}'
         registration = Registration(
@@ -61,8 +79,37 @@ class AuthTest(TestCase):
             email='anonymous2@usc.edu')[0]
         self.assertTrue(registration.validated)
         return
+    
+    def test_validate_user_invalid_code(self):
+        # registration request
+        code = f'{random.randint(0, 999_999):06}'
+        registration = Registration(
+            email='anonymous2@usc.edu',
+            code=code,
+            code_time=datetime.now().timestamp(),
+            validation_time=None,
+            validated=False,
+        )
+        registration.save()
+        # test validation
+        factory = APIRequestFactory()
+        response = factory.post('api-validate/',
+            {
+                'email':'anonymous2@usc.edu',
+                'code':int(code)+1,
+            },
+            format='json',
+        )
+        raw_view = ValidateView.as_view()(response)
+        # http should be successful
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
+        # registration should be validated
+        registration = Registration.objects.filter(
+            email='anonymous2@usc.edu')[0]
+        self.assertFalse(registration.validated)
+        return
 
-    def test_validated_request_create_user(self):
+    def test_create_user_valid_email(self):
         # validate email
         Registration.objects.create(
             email='anonymous2@usc.edu',
@@ -87,6 +134,32 @@ class AuthTest(TestCase):
         raw_view = CreateUserView.as_view()(response)
         self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
         return
+    
+    def test_create_user_invalid_email(self):
+        # validate email
+        Registration.objects.create(
+            email='anonymous2@usc.edu',
+            code=f'{random.randint(0, 999_999):06}',
+            code_time=datetime.now().timestamp(),
+            validated=True,
+            validation_time=datetime.now().timestamp(),
+        )
+        # you should be able to sign up with this email
+        factory = APIRequestFactory()
+        response = factory.post('api-create-user/',
+            {
+                'email':'anonymous1@usc.edu',
+                'username':'mous2',
+                'password':'anon52349',
+                'first_name':'anony',
+                'last_name':'mous',
+            },
+            format='json',
+        )
+        # you should be able to signup with a validated email
+        raw_view = CreateUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
+        return
 
     def test_obtain_token_valid_user(self):
         user = User(
@@ -107,6 +180,21 @@ class AuthTest(TestCase):
         raw_view = obtain_auth_token(response)
         # generation should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
+        return
+    
+    def test_obtain_token_invalid_user(self):
+        # generate auth token
+        factory = APIRequestFactory()
+        response = factory.post('api-token/',
+            {
+                'username':'anonymous3', 
+                'password':'fakepass12345',
+            },
+            format='json',
+        )
+        raw_view = obtain_auth_token(response)
+        # generation should be successful
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
         return
 
 class ProfileTest(TestCase):
@@ -166,7 +254,7 @@ class ProfileTest(TestCase):
         self.assertEqual([], raw_view.data)
         return
 
-    def test_post_profile_pic(self):
+    def test_put_profile_pic(self):
         # get profile with empty picture
         profile = Profile.objects.get(username=self.barath.username)
         # post gif to profile
