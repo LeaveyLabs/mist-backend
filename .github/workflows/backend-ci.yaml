@@ -20,6 +20,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --user pipenv
-      - name: Test with pytest
+      - name: Test
         run: |
           pipenv run python3 manage.py test
