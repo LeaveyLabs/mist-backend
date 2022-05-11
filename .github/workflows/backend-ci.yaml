@@ -1,5 +1,6 @@
 name: backend-ci
 
+
 on: [push]
 
 jobs:
@@ -19,7 +20,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --user pipenv
-          pipenv shell
       - name: Test with pytest
         run: |
-          python3 manage.py test
+          pipenv run python3 manage.py test
