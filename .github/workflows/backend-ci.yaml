@@ -8,6 +8,9 @@ jobs:
 
     env:
         DJANGO_SETTINGS_MODULE: backend.settings.local
+        SECRET_KEY: ${{secrets.SECRET_KEY}}
+        EMAIL_HOST_USER: ${{secrets.EMAIL_HOST_USER}}
+        EMAIL_HOST_PASSWORD: ${{secrets.EMAIL_HOST_PASSWORD}}
 
     runs-on: ubuntu-latest
     strategy:
