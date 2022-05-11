@@ -2,11 +2,7 @@ from backend.settings.base import *
 
 DEBUG = False
 
-ALLOWED_HOSTS = ["*"
-    # '0.0.0.0',
-    # 'localhost'
-    # 'https://mist-backend.herokuapp.com'
-]
+ALLOWED_HOSTS = ['https://mist-backend.herokuapp.com']
 
 CORS_ALLOWED_ORIGINS = [
     'https://mist-backend.herokuapp.com',
@@ -21,10 +17,6 @@ DATABASES = {'default': dj_database_url.config(conn_max_age=600)}
 # TODO: Pictures
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
 MEDIA_URL = '/media/'
-
-# SECURITY WARNING: keep the secret key used in production secret!
-from decouple import config
-SECRET_KEY = config('SECRET_KEY')
 
 import os
 from decouple import config
