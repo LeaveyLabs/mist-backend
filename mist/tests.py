@@ -249,10 +249,40 @@ class ProfileTest(TestCase):
         )
         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
         raw_view = ProfileView.as_view({'get':'list'})(request)
-        data_view = raw_view.data
         # should be empty
         self.assertEqual([], raw_view.data)
         return
+    
+    def test_get_valid_prefix_username(self):
+        # get valid profile object
+        profile = Profile.objects.get(username=self.barath.username)
+        seralized_profile = ProfileSerializer(profile).data
+        # get valid query object
+        request = self.factory.get(
+            '/api/profiles',
+            {'username':self.barath.username[:-1]},
+            format="json"
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        raw_view = ProfileView.as_view({'get':'list'})(request)
+        data_view = raw_view.data[0]
+        # should be identical
+        self.assertEqual(seralized_profile, data_view)
+        return
+    
+    def test_get_invalid_prefix_username(self):
+        # get valid query object
+        request = self.factory.get(
+            '/api/profiles',
+            {'username':self.barath.username[1:]},
+            format="json"
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        raw_view = ProfileView.as_view({'get':'list'})(request)
+        # should be identical
+        self.assertEqual([], raw_view.data)
+        return
+
 
     def test_put_profile_pic(self):
         # get profile with empty picture
