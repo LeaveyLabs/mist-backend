@@ -1,5 +1,7 @@
 import asyncio
+from ntpath import join
 from time import time
+from tracemalloc import start
 
 import websockets
 import json
@@ -42,7 +44,7 @@ async def error(websocket, message):
     }
     await websocket.send(json.dumps(event))
 
-async def begin_conversation(websocket, connected):
+async def execute_conversation(websocket, connected):
     """
     Receive and process messages from a user.
 
@@ -62,6 +64,23 @@ async def begin_conversation(websocket, connected):
             # Broadcast to all connected sockets
             websockets.broadcast(connected, json.dumps(valid_message_obj))
 
+async def start_conversation(websocket, user1, user2):
+    if user1 not in CONVERSATION_BETWEEN: CONVERSATION_BETWEEN[user1] = {}
+    try:
+        CONVERSATION_BETWEEN[user1][user2] = {websocket}
+        await websocket.send("Beginning conversation between {} and {}".format(user1, user2))
+        await execute_conversation(websocket, CONVERSATION_BETWEEN[user1][user2])
+    finally:
+        del CONVERSATION_BETWEEN[user1][user2]
+
+async def join_conversation(websocket, user1, user2):
+    try:
+        CONVERSATION_BETWEEN[user1][user2].add(websocket)
+        await websocket.send("Joining conversation between {} and {}".format(user1, user2))
+        await execute_conversation(websocket, CONVERSATION_BETWEEN[user1][user2])
+    finally:
+        CONVERSATION_BETWEEN[user1][user2].remove(websocket)
+
 async def handler(websocket):
     """
     Handle a connection and dispatch it according to who is connecting.
@@ -69,34 +88,24 @@ async def handler(websocket):
     """
     convo_init_json = await websocket.recv()
     valid_convo_init_obj, e = process_convo_init_json(convo_init_json)
+    # Only process valid conversation initalization requests
     if not valid_convo_init_obj:
-        await error(websocket,
-        "Could not instantiate conversation... JSON Error: {}".format(e))
+        await error(websocket, "Could not instantiate conversation... JSON Error: {}".format(e))
         return
-
-    user1 = valid_convo_init_obj["from_user"]
-    user2 = valid_convo_init_obj["to_user"]
-
-    user1_started_conversation = user1 in CONVERSATION_BETWEEN and user2 in CONVERSATION_BETWEEN[user1]
-    user2_started_conversation = user2 in CONVERSATION_BETWEEN and user1 in CONVERSATION_BETWEEN[user2]
-
-    # Do not let user1 start the conversation again if they've already started the conversation.
-    if user1_started_conversation:
-        await error(websocket,
-        "Conversation has already been started.")
-        return
-
-    # Either start a new conversation or join user2's conversation.
-    if not user2_started_conversation:
-        CONVERSATION_BETWEEN[user1] = {}
-        CONVERSATION_BETWEEN[user1][user2] = {websocket}
-        await websocket.send("Beginning conversation from {} to {}".format(user1, user2))
-        await begin_conversation(websocket, CONVERSATION_BETWEEN[user1][user2])
     
-    elif user2_started_conversation:
-        CONVERSATION_BETWEEN[user2][user1].add(websocket)
-        await websocket.send("Beginning conversation from {} to {}".format(user1, user2))
-        await begin_conversation(websocket, CONVERSATION_BETWEEN[user2][user1])
+    # To standardize the socket indexing, 
+    # the user earlier in the alphabet will be the first layer
+    # the user later in the alphabet will be the second layer
+    users = [valid_convo_init_obj["from_user"], valid_convo_init_obj["to_user"]]
+    users.sort()
+    user1, user2 = users
+    
+    # Either start or join a conversation
+    conversation_started = (user1 in CONVERSATION_BETWEEN and 
+                            user2 in CONVERSATION_BETWEEN[user1] and 
+                            CONVERSATION_BETWEEN[user1][user2])
+    if conversation_started: await join_conversation(websocket, user1, user2)
+    else: await start_conversation(websocket, user1, user2)
 
 async def main():
     async with websockets.serve(handler, "", 8001):
