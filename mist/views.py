@@ -168,7 +168,7 @@ class FlagView(viewsets.ModelViewSet):
     queryset = Vote.objects.all()
 
 class MessageView(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
     serializer_class = MessageSerializer
     queryset = Message.objects.all()
 

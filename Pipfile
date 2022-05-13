@@ -16,6 +16,10 @@ django-allauth = "*"
 pillow = "*"
 django-storages = "*"
 boto3 = "*"
+websockets = "*"
+asyncio = "*"
+jsonpickle = "*"
+requests = "*"
 
 [dev-packages]
 
