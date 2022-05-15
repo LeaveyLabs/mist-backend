@@ -208,13 +208,11 @@ class ProfileTest(TestCase):
         Token.objects.create(user=self.user2)
         # initialize profiles
         self.barath = Profile.objects.create(
-            username='barathraghavan',
             first_name='barath',
             last_name='raghavan',
             user=self.user1,
         )
         self.adam = Profile.objects.create(
-            username='adamnovak',
             first_name='adam',
             last_name='novak',
             user=self.user2,
@@ -225,12 +223,12 @@ class ProfileTest(TestCase):
         
     def test_get_valid_profile(self):
         # get valid profile object
-        profile = Profile.objects.get(username=self.barath.username)
+        profile = Profile.objects.get(user=self.user1)
         seralized_profile = ProfileSerializer(profile).data
         # get valid query object
         request = self.factory.get(
             '/api/profiles',
-            {'username':self.barath.username},
+            {'username':self.user1.username},
             format="json"
         )
         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
@@ -255,12 +253,12 @@ class ProfileTest(TestCase):
     
     def test_get_valid_prefix_username(self):
         # get valid profile object
-        profile = Profile.objects.get(username=self.barath.username)
+        profile = Profile.objects.get(user=self.user1)
         seralized_profile = ProfileSerializer(profile).data
         # get valid query object
         request = self.factory.get(
             '/api/profiles',
-            {'username':self.barath.username[:-1]},
+            {'username':self.user1.username[:-1]},
             format="json"
         )
         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
@@ -274,7 +272,7 @@ class ProfileTest(TestCase):
         # get valid query object
         request = self.factory.get(
             '/api/profiles',
-            {'username':self.barath.username[1:]},
+            {'username':self.user1.username[1:]},
             format="json"
         )
         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
@@ -286,7 +284,7 @@ class ProfileTest(TestCase):
 
     def test_put_profile_pic(self):
         # get profile with empty picture
-        profile = Profile.objects.get(username=self.barath.username)
+        profile = Profile.objects.get(user=self.user2)
         # post gif to profile
         small_gif = (
             b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
@@ -300,7 +298,6 @@ class ProfileTest(TestCase):
         request = self.factory.put(
             '/api/profiles/{}'.format(profile.pk),
             {
-                'username': profile.username,
                 'first_name': profile.first_name,
                 'last_name': profile.last_name,
                 'pic': serialized_profile.data['picture'],
@@ -308,12 +305,12 @@ class ProfileTest(TestCase):
             },
             format="json"
         )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        force_authenticate(request, user=self.user2, token=self.user2.auth_token)
         raw_view = ProfileView.as_view({'put':'update'})(request, pk=profile.pk)
         # check sucessful request
         self.assertEqual(raw_view.status_code, status.HTTP_200_OK)
         # check picture exists
-        profile_after_request = Profile.objects.get(username=self.barath.username)
+        profile_after_request = Profile.objects.get(user=self.user2)
         self.assertNotEqual(profile_after_request.picture, None)
 
 class PostTest(TestCase):
@@ -327,7 +324,6 @@ class PostTest(TestCase):
         Token.objects.create(user=self.user)
         # initialize profiles
         self.barath = Profile.objects.create(
-            username='barathraghavan',
             first_name='barath',
             last_name='raghavan',
             user=self.user,
@@ -338,18 +334,18 @@ class PostTest(TestCase):
             title='title1',
             text='fake fake text text',
             timestamp=0,
-            author=self.barath,
+            author=self.user,
         )
         self.post2 = Post.objects.create(
             id='2',
             title='title2',
             text='real real real stuff',
             timestamp=1,
-            author=self.barath,
+            author=self.user,
         )
         # initialize votes
         self.vote1 = Vote.objects.create(
-            voter=self.barath,
+            voter=self.user,
             post=self.post1,
             timestamp=0,
             rating=10,
@@ -360,7 +356,7 @@ class PostTest(TestCase):
             text='fakecomment',
             timestamp=1,
             post=self.post1,
-            author=self.barath
+            author=self.user
         )
         # upload to database
         self.factory = APIRequestFactory()
@@ -375,11 +371,11 @@ class PostTest(TestCase):
 
     def test_post_create_words(self):
         Post.objects.create(
-            id='5',
+            uuid='1',
             title='what',
             text='have never seen this word',
             timestamp=0,
-            author=self.barath,
+            author=self.user,
         )
         self.assertTrue(Word.objects.filter(text='what'))
         self.assertTrue(Word.objects.filter(text='have'))
@@ -391,13 +387,13 @@ class PostTest(TestCase):
     def test_post_new_post(self):
         # create new post
         test_post = Post(
-            id='3',
+            uuid='3',
             title='title3',
             text='real real real stuff3',
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
             timestamp=2,
-            author=self.barath,
+            author=self.user,
         )
         serialized_post = PostSerializer(test_post).data
         # check if the post exists
@@ -416,19 +412,17 @@ class PostTest(TestCase):
     def test_post_new_words(self):
         # create new post
         test_post = Post.objects.create(
-            id='3',
+            uuid='3',
             title='title3',
-            text='nonexistent',
+            text='exists',
             timestamp=2,
-            author=self.barath,
+            author=self.user,
         )
-        test_word = Word(text='nonexistent')
-        serialized_word = WordSerializer(test_word).data
         # check if the word exists
         request = self.factory.get(
             '/api/words',
             {
-                'text':'nonexistent'
+                'text':'exists'
             },
             format='json'
         )
@@ -437,7 +431,7 @@ class PostTest(TestCase):
         self.assertFalse(len(raw_view.data) == 0)
         data_view = raw_view.data[0]
         # get should be successful
-        self.assertEqual(data_view, serialized_word)
+        self.assertEqual(data_view['text'], 'exists')
         return
 
     def test_get_all_posts(self):
@@ -513,23 +507,23 @@ class PostTest(TestCase):
     def test_get_posts_by_latitude_longitude(self):
         # create a post from USC
         usc_post = Post.objects.create(
-            id='101',
+            uuid='101',
             title='to that hunk of a man',
             text='adam. i love you',
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
             timestamp=2,
-            author=self.barath,
+            author=self.user,
         )
         # create a post from the north pole
         Post.objects.create(
-            id='100',
+            uuid='100',
             title='to that hunk of a man',
             text='santa. i love you',
             latitude=Decimal(0),
             longitude=Decimal(0),
             timestamp=2,
-            author=self.barath,
+            author=self.user,
         )
         # we want the post from usc
         serialized_posts = [
@@ -553,14 +547,14 @@ class PostTest(TestCase):
     def test_get_posts_by_loc_description(self):
         # create a post from the north pole
         north_post = Post.objects.create(
-            id='100',
+            uuid='100',
             title='to that hunk of a man',
             location_description='north pole',
             text='santa. i love you',
             latitude=Decimal(0),
             longitude=Decimal(0),
             timestamp=2,
-            author=self.barath,
+            author=self.user,
         )
         # we want the post from usc
         serialized_posts = [
@@ -583,14 +577,14 @@ class PostTest(TestCase):
     def test_get_posts_by_partial_loc_description(self):
         # create a post from the north pole
         north_post = Post.objects.create(
-            id='100',
+            uuid='100',
             title='to that hunk of a man',
             location_description='north pole',
             text='santa. i love you',
             latitude=Decimal(0),
             longitude=Decimal(0),
             timestamp=2,
-            author=self.barath,
+            author=self.user,
         )
         # we want the post from usc
         serialized_posts = [
@@ -638,25 +632,24 @@ class VoteTest(TestCase):
         Token.objects.create(user=self.user)
         # initialize profiles
         self.barath = Profile.objects.create(
-            username='barathraghavan',
             first_name='barath',
             last_name='raghavan',
             user=self.user,
         )
         # initialize posts
         self.post1 = Post.objects.create(
-            id='1',
+            uuid='1',
             title='title1',
             text='fake fake text text',
             timestamp=0,
-            author=self.barath,
+            author=self.user,
         )
         self.post2 = Post.objects.create(
-            id='2',
+            uuid='2',
             title='title2',
             text='real real real stuff',
             timestamp=1,
-            author=self.barath,
+            author=self.user,
         )
         # upload to database
         self.factory = APIRequestFactory()
@@ -665,7 +658,7 @@ class VoteTest(TestCase):
     def test_post_vote(self):
         # create vote for post1
         vote = Vote(
-            voter=self.barath,
+            voter=self.user,
             post=self.post1,
             timestamp=2,
             rating=10,
@@ -688,7 +681,7 @@ class VoteTest(TestCase):
     def test_delete_vote(self):
         # create new vote in the database
         vote = Vote.objects.create(
-            voter=self.barath,
+            voter=self.user,
             post=self.post2,
             timestamp=2,
             rating=10,
@@ -708,7 +701,7 @@ class VoteTest(TestCase):
     def test_get_vote(self):
         # create new vote in the database 
         vote = Vote.objects.create(
-            voter=self.barath,
+            voter=self.user,
             post=self.post2,
             timestamp=2,
             rating=10,
@@ -718,7 +711,7 @@ class VoteTest(TestCase):
         request = self.factory.get(
             '/api/votes/',
             {
-                'username':self.barath.username,
+                'username':self.user.username,
                 'post_id':self.post2.pk,
             },
             format='json',
@@ -754,17 +747,18 @@ class CommentTest(TestCase):
             user=self.user,
         )
         self.post1 = Post.objects.create(
+            uuid='fakeid1',
             title='faketitle1',
             text='faketext1',
             timestamp=0,
-            author=self.barath,
+            author=self.user,
         )
         self.comment1 = Comment.objects.create(
-            id='fakeID',
+            id='fakeid2',
             text='fakecomment',
             timestamp=1,
             post=self.post1,
-            author=self.barath
+            author=self.user
         )
         # upload to database
         self.factory = APIRequestFactory()
@@ -827,11 +821,11 @@ class WordTest(TestCase):
     def test_get_partial_word(self):
         # create post with text staring with "no"
         Post.objects.create(
-            id='3',
+            uuid='3',
             title='title3',
             text='nonexistent, non, nope, nob, no',
             timestamp=2,
-            author=self.barath,
+            author=self.user,
         )
         # look for words that start with "no"
         request = self.factory.get(

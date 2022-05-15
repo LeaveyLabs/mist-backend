@@ -1,19 +1,23 @@
 from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import User
+from phonenumber_field.modelfields import PhoneNumberField
+import uuid
 import string
 
 # Create your models here.
 class Profile(models.Model):
-    username = models.CharField(max_length=100, primary_key=True)
+    username = models.CharField(max_length=100)
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    # TODO: Pictures
     picture = models.ImageField(upload_to='profiles', null=True)
 
     def _str_(self):
         return self.username
+
+class Account(models.Model):
+    phone_number = PhoneNumberField(null=True)
 
 class Registration(models.Model):
     email = models.EmailField()
@@ -27,14 +31,14 @@ class Post(models.Model):
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)
 
-    id = models.CharField(max_length=10, primary_key=True)
+    uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     title = models.CharField(max_length=40)
     text = models.CharField(max_length=1000)
     location_description = models.CharField(max_length=40, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
     timestamp = models.FloatField(default=0)
-    author = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def _str_(self):
         return self.title
@@ -74,14 +78,14 @@ class Post(models.Model):
                     matching_words[0].posts.add(self)
 
 class Word(models.Model):
-    text = models.CharField(max_length=100, primary_key=True)
+    text = models.CharField(max_length=100)
     posts = models.ManyToManyField(Post)
 
     def calculate_occurrences(self):
         return self.posts.count()
 
 class Vote(models.Model):
-    voter = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    voter = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=0)
     rating = models.IntegerField(default=5)
@@ -93,7 +97,7 @@ class Vote(models.Model):
         return self.voter.pk
 
 class Flag(models.Model):
-    flagger = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    flagger = models.ForeignKey(User, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField()
     rating = models.IntegerField()
@@ -105,11 +109,11 @@ class Flag(models.Model):
         return self.flagger.pk
 
 class Comment(models.Model):
-    id = models.CharField(max_length=10, primary_key=True)
+    uuid = models.CharField(max_length=36, unique=True)
     text = models.CharField(max_length=500)
     timestamp = models.FloatField(default=0)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    author = models.ForeignKey(Profile, on_delete=models.CASCADE, default="anonymous")
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def _str_(self):
         return self.text
@@ -117,8 +121,8 @@ class Comment(models.Model):
 class Message(models.Model):
     text = models.CharField(max_length=1000)
     timestamp = models.FloatField(default=0)
-    from_user = models.ForeignKey(Profile, related_name='from_user', on_delete=models.CASCADE, null=True)
-    to_user = models.ForeignKey(Profile, related_name='to_user', on_delete=models.CASCADE, null=True)
+    from_user = models.ForeignKey(User, related_name='from_user', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(User, related_name='to_user', on_delete=models.CASCADE)
 
     def _str_(self):
         return self.text

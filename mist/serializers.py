@@ -8,7 +8,10 @@ from django.core.mail import send_mail
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ('username', 'first_name', 'last_name', 'picture', 'user')
+        fields = ('first_name', 'last_name', 'picture', 'user')
+
+# class AccountSerializer(serializers.ModelSerializer):
+
 
 class UserCreateRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -114,7 +117,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'title', 'text', 'latitude', 'longitude', 'location_description',
+        fields = ('uuid', 'title', 'text', 'latitude', 'longitude', 'location_description',
         'timestamp', 'author', 'averagerating', 'commentcount', )
 
 class VoteSerializer(serializers.ModelSerializer):

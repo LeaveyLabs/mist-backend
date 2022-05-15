@@ -46,8 +46,12 @@ class ProfileView(viewsets.ModelViewSet):
         # filter
         if username == None and text == None:
             return Profile.objects.all()
-        elif username != None:
-            return Profile.objects.filter(username__startswith=username)
+        elif text == None:
+            matching_users = User.objects.filter(username__startswith=username)
+            if not matching_users: 
+                return Profile.objects.none()
+            else: 
+                return Profile.objects.filter(user=matching_users[0])
         else:
             username_set = Profile.objects.filter(username__contains=text)
             first_name_set = Profile.objects.filter(first_name__contains=text)
@@ -160,7 +164,9 @@ class VoteView(viewsets.ModelViewSet):
         if username == None or post_id == None:
             return Vote.objects.all()
         else:
-            return Vote.objects.filter(voter=username, post_id=post_id)
+            matching_users = User.objects.filter(username=username)
+            if not matching_users: return Vote.objects.none()
+            return Vote.objects.filter(voter=matching_users[0], post_id=post_id)
 
 class FlagView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
@@ -237,7 +243,6 @@ class CreateUserView(generics.CreateAPIView):
                     password=user_create_request.data['password'],
                 )
                 Profile.objects.create(
-                    username=user_create_request.data['username'],
                     first_name=user_create_request.data['first_name'],
                     last_name=user_create_request.data['last_name'],
                     user=user,
