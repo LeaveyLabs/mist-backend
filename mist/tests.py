@@ -352,7 +352,7 @@ class PostTest(TestCase):
         )
         # initialize comments
         self.comment1 = Comment.objects.create(
-            id='fakeID',
+            uuid='fakeID',
             text='fakecomment',
             timestamp=1,
             post=self.post1,
@@ -754,7 +754,7 @@ class CommentTest(TestCase):
             author=self.user,
         )
         self.comment1 = Comment.objects.create(
-            id='fakeid2',
+            uuid='fakeid2',
             text='fakecomment',
             timestamp=1,
             post=self.post1,
