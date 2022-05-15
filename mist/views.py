@@ -47,7 +47,7 @@ class ProfileView(viewsets.ModelViewSet):
         if username == None and text == None:
             return Profile.objects.all()
         elif username != None:
-            return Profile.objects.filter(username=username)
+            return Profile.objects.filter(username__startswith=username)
         else:
             username_set = Profile.objects.filter(username__contains=text)
             first_name_set = Profile.objects.filter(first_name__contains=text)
@@ -168,7 +168,7 @@ class FlagView(viewsets.ModelViewSet):
     queryset = Vote.objects.all()
 
 class MessageView(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
     serializer_class = MessageSerializer
     queryset = Message.objects.all()
 
