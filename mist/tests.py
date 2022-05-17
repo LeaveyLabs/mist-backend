@@ -8,8 +8,8 @@ from rest_framework import status
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
-from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, VoteSerializer, WordSerializer
-from mist.views import CommentView, PostView, ProfileView, RegisterView, CreateUserView, ValidateView, VoteView, WordView
+from mist.serializers import CommentSerializer, PostSerializer, UserSerializer, VoteSerializer, WordSerializer
+from mist.views import CommentView, DeleteUserView, ModifyUserView, PostView, QueryUserView, RegisterUserEmailView, CreateUserView, ValidateUserEmailView, VoteView, WordView
 from .models import Profile, Post, Comment, Registration, Vote, Word
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -24,7 +24,7 @@ class AuthTest(TestCase):
             },
             format='json',
         )
-        raw_view = RegisterView.as_view()(response)
+        raw_view = RegisterUserEmailView.as_view()(response)
         # insertion should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_201_CREATED)
         # should be one registration request in the DB
@@ -42,7 +42,7 @@ class AuthTest(TestCase):
             },
             format='json',
         )
-        raw_view = RegisterView.as_view()(response)
+        raw_view = RegisterUserEmailView.as_view()(response)
         # insertion should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
         # should be one registration request in the DB
@@ -71,7 +71,7 @@ class AuthTest(TestCase):
             },
             format='json',
         )
-        raw_view = ValidateView.as_view()(response)
+        raw_view = ValidateUserEmailView.as_view()(response)
         # http should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
         # registration should be validated
@@ -100,7 +100,7 @@ class AuthTest(TestCase):
             },
             format='json',
         )
-        raw_view = ValidateView.as_view()(response)
+        raw_view = ValidateUserEmailView.as_view()(response)
         # http should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
         # registration should be validated
@@ -197,121 +197,717 @@ class AuthTest(TestCase):
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
         return
 
-class ProfileTest(TestCase):
-    def setUp(self):
-        # set up auth
-        self.user1 = User.objects.create(username='kevinsun', 
-            password='kevinsun')
-        Token.objects.create(user=self.user1)
-        self.user2 = User.objects.create(username='kevinsun2', 
-            password='kevinsun2')
-        Token.objects.create(user=self.user2)
-        # initialize profiles
-        self.barath = Profile.objects.create(
-            first_name='barath',
-            last_name='raghavan',
-            user=self.user1,
+class QueryUserViewTest(TestCase):
+    # Valid Queries
+    def test_query_user_by_valid_text(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
         )
-        self.adam = Profile.objects.create(
-            first_name='adam',
-            last_name='novak',
-            user=self.user2,
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'text': 'name',
+            },
+            format='json',
         )
-        # upload to database
-        self.factory = APIRequestFactory()
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(raw_view.data[0], serialized_user.data)
+        return
+
+    def test_query_user_by_valid_full_username(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'username': 'unrelatedUsername',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(raw_view.data[0], serialized_user.data)
+        return
+    
+    def test_query_user_by_valid_prefix_username(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'username': 'unrelated',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(raw_view.data[0], serialized_user.data)
+        return
+
+    def test_query_valid_user_by_full_first_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'first_name': 'completelyDifferentFirstName',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(raw_view.data[0], serialized_user.data)
+        return
+    
+    def test_query_valid_user_by_prefix_first_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'first_name': 'completely',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(raw_view.data[0], serialized_user.data)
+        return
+
+    def test_query_valid_user_by_full_last_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'last_name': 'notTheSameLastName',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(raw_view.data[0], serialized_user.data)
         return
         
-    def test_get_valid_profile(self):
-        # get valid profile object
-        profile = Profile.objects.get(user=self.user1)
-        seralized_profile = ProfileSerializer(profile).data
-        # get valid query object
-        request = self.factory.get(
-            '/api/profiles',
-            {'username':self.user1.username},
-            format="json"
+    def test_query_valid_user_by_prefix_last_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
         )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-        raw_view = ProfileView.as_view({'get':'list'})(request)
-        data_view = raw_view.data[0]
-        # should be identical
-        self.assertEqual(seralized_profile, data_view)
-        return
-    
-    def test_get_invalid_profile(self):
-        # get invalid query object
-        request = self.factory.get(
-            '/api/profiles',
-            {'username':'nonexistent'},
-            format="json"
-        )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-        raw_view = ProfileView.as_view({'get':'list'})(request)
-        # should be empty
-        self.assertEqual([], raw_view.data)
-        return
-    
-    def test_get_valid_prefix_username(self):
-        # get valid profile object
-        profile = Profile.objects.get(user=self.user1)
-        seralized_profile = ProfileSerializer(profile).data
-        # get valid query object
-        request = self.factory.get(
-            '/api/profiles',
-            {'username':self.user1.username[:-1]},
-            format="json"
-        )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-        raw_view = ProfileView.as_view({'get':'list'})(request)
-        data_view = raw_view.data[0]
-        # should be identical
-        self.assertEqual(seralized_profile, data_view)
-        return
-    
-    def test_get_invalid_prefix_username(self):
-        # get valid query object
-        request = self.factory.get(
-            '/api/profiles',
-            {'username':self.user1.username[1:]},
-            format="json"
-        )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-        raw_view = ProfileView.as_view({'get':'list'})(request)
-        # should be identical
-        self.assertEqual([], raw_view.data)
-        return
-
-
-    def test_put_profile_pic(self):
-        # get profile with empty picture
-        profile = Profile.objects.get(user=self.user2)
-        # post gif to profile
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
-            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
-            b'\x02\x4c\x01\x00\x3b'
-        )
-        profile.picture = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
-        profile.save()
-        serialized_profile = ProfileSerializer(profile)
-        # put it in the database
-        request = self.factory.put(
-            '/api/profiles/{}'.format(profile.pk),
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
             {
-                'first_name': profile.first_name,
-                'last_name': profile.last_name,
-                'pic': serialized_profile.data['picture'],
-                'user': profile.user.pk,
+                'last_name': 'notTheSame',
             },
-            format="json"
+            format='json',
         )
-        force_authenticate(request, user=self.user2, token=self.user2.auth_token)
-        raw_view = ProfileView.as_view({'put':'update'})(request, pk=profile.pk)
-        # check sucessful request
-        self.assertEqual(raw_view.status_code, status.HTTP_200_OK)
-        # check picture exists
-        profile_after_request = Profile.objects.get(user=self.user2)
-        self.assertNotEqual(profile_after_request.picture, None)
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(raw_view.data[0], serialized_user.data)
+        return
+
+    # Invalid User
+    def test_query_user_by_invalid_text(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'text': 'notInTheTextAtAll',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(len(raw_view.data), 0)
+        return
+
+    def test_query_user_by_invalid_full_username(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'username': 'thisUsernameDoesNotExist',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(len(raw_view.data), 0)
+        return
+    
+    def test_query_user_by_invalid_prefix_username(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'username': 'Username',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(len(raw_view.data), 0)
+        return
+
+    def test_query_user_by_invalid_full_first_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'first_name': 'thisFirstNameDoesNotExist',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(len(raw_view.data), 0)
+        return
+    
+    def test_query_user_by_invalid_prefix_first_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'first_name': 'DifferentFirstName',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(len(raw_view.data), 0)
+        return
+
+    def test_query_user_by_invalid_full_last_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'last_name': 'thisLastNameDoesNotExist',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(len(raw_view.data), 0)
+        return
+
+    def test_query_user_by_invalid_prefix_last_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        serialized_user = UserSerializer(valid_user)
+        factory = APIRequestFactory()
+        response = factory.get('api-query-user/',
+            {
+                'last_name': 'LastName',
+            },
+            format='json',
+        )
+        raw_view = QueryUserView.as_view()(response)
+        self.assertEquals(len(raw_view.data), 0)
+        return
+
+class DeleteUserViewTest(TestCase):
+    def test_delete_valid_user(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.delete('api-delete-user/',
+            {
+                'email': 'email@usc.edu',
+                'username': 'unrelatedUsername',
+                'password': 'randomPassword',
+            },
+            format='json',
+        )
+        raw_view = DeleteUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
+        self.assertEquals(
+            len(User.objects.filter(email=valid_user.email)), 0)
+        return
+
+    def test_delete_invalid_email(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.delete('api-delete-user/',
+            {
+                'email': 'thisEmailDoesNotExist@usc.edu',
+                'username': 'unrelatedUsername',
+                'password': 'randomPassword',
+            },
+            format='json',
+        )
+        raw_view = DeleteUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEquals(valid_user, User.objects.get(email=valid_user.email))
+        return
+    
+    def test_delete_invalid_username(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.delete('api-delete-user/',
+            {
+                'email': 'email@usc.edu',
+                'username': 'thisUsernameDoesNotExist',
+                'password': 'randomPassword',
+            },
+            format='json',
+        )
+        raw_view = DeleteUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEquals(valid_user, User.objects.get(email=valid_user.email))
+        return
+    
+    def test_delete_invalid_password(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName",
+            password="randomPassword",
+        )
+        factory = APIRequestFactory()
+        response = factory.delete('api-delete-user/',
+            {
+                'email': 'email@usc.edu',
+                'username': 'unrelatedUsername',
+                'password': 'invalidPassword',
+            },
+            format='json',
+        )
+        raw_view = DeleteUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEquals(valid_user, User.objects.get(email=valid_user.email))
+        return
+
+class ModifyUserViewTest(TestCase):
+    def test_modify_invalid_email(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName",
+        )
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.patch('api-modify-user/',
+            {
+                'email': 'thisEmailDoesNotExist@usc.edu',
+            },
+            format='json',
+        )
+        raw_view = ModifyUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEquals(valid_user, User.objects.get(email=valid_user.email))
+        return
+        
+    def test_modify_valid_username(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName",
+        )
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.patch('api-modify-user/',
+            {
+                'email': 'email@usc.edu',
+                'username': 'newUsername',
+            },
+            format='json',
+        )
+        raw_view = ModifyUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
+        self.assertEquals('newUsername', User.objects.get(email=valid_user.email).username)
+        return
+    
+    def test_modify_invalid_username(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName",
+        )
+        valid_user.set_password('randomPassword')
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.patch('api-modify-user/',
+            {
+                'email': 'email@usc.edu',
+                'username': 'unrelatedUsername',
+            },
+            format='json',
+        )
+        raw_view = ModifyUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
+        return
+    
+    def test_modify_valid_password(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password("strongPassword@1354689$")
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.patch('api-modify-user/',
+            {
+                'email': 'email@usc.edu',
+                'password': 'anotherStrongPass@9703$',
+            },
+            format='json',
+        )
+        raw_view = ModifyUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
+        return
+    
+    def test_modify_invalid_password(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password("strongPassword@1354689$")
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.patch('api-modify-user/',
+            {
+                'email': 'email@usc.edu',
+                'password': '123',
+            },
+            format='json',
+        )
+        raw_view = ModifyUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
+        return
+
+    def test_modify_first_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password("strongPassword@1354689$")
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.patch('api-modify-user/',
+            {
+                'email': 'email@usc.edu',
+                'first_name': 'heyMyRealFirstName',
+            },
+            format='json',
+        )
+        raw_view = ModifyUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
+        self.assertEquals(
+            'heyMyRealFirstName', 
+            User.objects.get(email=valid_user.email).first_name)
+        return
+    
+    def test_modify_last_name(self):
+        valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        valid_user.set_password("strongPassword@1354689$")
+        valid_user.save()
+        valid_profile = Profile.objects.create(
+            user=valid_user,
+        )
+        factory = APIRequestFactory()
+        response = factory.patch('api-modify-user/',
+            {
+                'email': 'email@usc.edu',
+                'last_name': 'heyMyRealLastName',
+            },
+            format='json',
+        )
+        raw_view = ModifyUserView.as_view()(response)
+        self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
+        self.assertEquals(
+            'heyMyRealLastName', 
+            User.objects.get(email=valid_user.email).last_name)
+        return
+
+# class ProfileTest(TestCase):
+#     def setUp(self):
+#         # set up auth
+#         self.user1 = User.objects.create(username='kevinsun', 
+#             password='kevinsun')
+#         Token.objects.create(user=self.user1)
+#         self.user2 = User.objects.create(username='kevinsun2', 
+#             password='kevinsun2')
+#         Token.objects.create(user=self.user2)
+#         # initialize profiles
+#         self.barath = Profile.objects.create(
+#             first_name='barath',
+#             last_name='raghavan',
+#             user=self.user1,
+#         )
+#         self.adam = Profile.objects.create(
+#             first_name='adam',
+#             last_name='novak',
+#             user=self.user2,
+#         )
+#         # upload to database
+#         self.factory = APIRequestFactory()
+#         return
+        
+#     def test_get_valid_profile(self):
+#         # get valid profile object
+#         profile = Profile.objects.get(user=self.user1)
+#         seralized_profile = ProfileSerializer(profile).data
+#         # get valid query object
+#         request = self.factory.get(
+#             '/api/profiles',
+#             {'username':self.user1.username},
+#             format="json"
+#         )
+#         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+#         raw_view = ProfileView.as_view({'get':'list'})(request)
+#         data_view = raw_view.data[0]
+#         # should be identical
+#         self.assertEqual(seralized_profile, data_view)
+#         return
+    
+#     def test_get_invalid_profile(self):
+#         # get invalid query object
+#         request = self.factory.get(
+#             '/api/profiles',
+#             {'username':'nonexistent'},
+#             format="json"
+#         )
+#         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+#         raw_view = ProfileView.as_view({'get':'list'})(request)
+#         # should be empty
+#         self.assertEqual([], raw_view.data)
+#         return
+    
+#     def test_get_valid_prefix_username(self):
+#         # get valid profile object
+#         profile = Profile.objects.get(user=self.user1)
+#         seralized_profile = ProfileSerializer(profile).data
+#         # get valid query object
+#         request = self.factory.get(
+#             '/api/profiles',
+#             {'username':self.user1.username[:-1]},
+#             format="json"
+#         )
+#         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+#         raw_view = ProfileView.as_view({'get':'list'})(request)
+#         data_view = raw_view.data[0]
+#         # should be identical
+#         self.assertEqual(seralized_profile, data_view)
+#         return
+    
+#     def test_get_invalid_prefix_username(self):
+#         # get valid query object
+#         request = self.factory.get(
+#             '/api/profiles',
+#             {'username':self.user1.username[1:]},
+#             format="json"
+#         )
+#         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+#         raw_view = ProfileView.as_view({'get':'list'})(request)
+#         # should be identical
+#         self.assertEqual([], raw_view.data)
+#         return
+
+
+#     def test_put_profile_pic(self):
+#         # get profile with empty picture
+#         profile = Profile.objects.get(user=self.user2)
+#         # post gif to profile
+#         small_gif = (
+#             b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
+#             b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
+#             b'\x02\x4c\x01\x00\x3b'
+#         )
+#         profile.picture = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
+#         profile.save()
+#         serialized_profile = ProfileSerializer(profile)
+#         # put it in the database
+#         request = self.factory.put(
+#             '/api/profiles/{}'.format(profile.pk),
+#             {
+#                 'first_name': profile.first_name,
+#                 'last_name': profile.last_name,
+#                 'pic': serialized_profile.data['picture'],
+#                 'user': profile.user.pk,
+#             },
+#             format="json"
+#         )
+#         force_authenticate(request, user=self.user2, token=self.user2.auth_token)
+#         raw_view = ProfileView.as_view({'put':'update'})(request, pk=profile.pk)
+#         # check sucessful request
+#         self.assertEqual(raw_view.status_code, status.HTTP_200_OK)
+#         # check picture exists
+#         profile_after_request = Profile.objects.get(user=self.user2)
+#         self.assertNotEqual(profile_after_request.picture, None)
 
 class PostTest(TestCase):
     USC_LATITUDE = Decimal(34.0224)
@@ -324,8 +920,6 @@ class PostTest(TestCase):
         Token.objects.create(user=self.user)
         # initialize profiles
         self.barath = Profile.objects.create(
-            first_name='barath',
-            last_name='raghavan',
             user=self.user,
         )
         # initialize posts
@@ -632,8 +1226,6 @@ class VoteTest(TestCase):
         Token.objects.create(user=self.user)
         # initialize profiles
         self.barath = Profile.objects.create(
-            first_name='barath',
-            last_name='raghavan',
             user=self.user,
         )
         # initialize posts
@@ -741,9 +1333,6 @@ class CommentTest(TestCase):
         Token.objects.create(user=self.user)
         # initialize profiles + posts
         self.barath = Profile.objects.create(
-            username='barathraghavan',
-            first_name='barath',
-            last_name='raghavan',
             user=self.user,
         )
         self.post1 = Post.objects.create(
@@ -810,9 +1399,6 @@ class WordTest(TestCase):
         self.user = User.objects.create(username='kevinsun', 
             password='kevinsun')
         self.barath = Profile.objects.create(
-            username='barathraghavan',
-            first_name='barath',
-            last_name='raghavan',
             user=self.user,
         )
         self.factory = APIRequestFactory()

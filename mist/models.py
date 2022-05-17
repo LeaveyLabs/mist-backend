@@ -1,15 +1,13 @@
 from decimal import Decimal
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
 
 # Create your models here.
 class Profile(models.Model):
-    username = models.CharField(max_length=100)
-    first_name = models.CharField(max_length=20)
-    last_name = models.CharField(max_length=20)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     picture = models.ImageField(upload_to='profiles', null=True)
 
@@ -38,7 +36,7 @@ class Post(models.Model):
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
     timestamp = models.FloatField(default=0)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def _str_(self):
         return self.title
@@ -85,7 +83,7 @@ class Word(models.Model):
         return self.posts.count()
 
 class Vote(models.Model):
-    voter = models.ForeignKey(User, on_delete=models.CASCADE)
+    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=0)
     rating = models.IntegerField(default=5)
@@ -97,7 +95,7 @@ class Vote(models.Model):
         return self.voter.pk
 
 class Flag(models.Model):
-    flagger = models.ForeignKey(User, on_delete=models.CASCADE)
+    flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField()
     rating = models.IntegerField()
@@ -113,7 +111,7 @@ class Comment(models.Model):
     text = models.CharField(max_length=500)
     timestamp = models.FloatField(default=0)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def _str_(self):
         return self.text
@@ -121,8 +119,8 @@ class Comment(models.Model):
 class Message(models.Model):
     text = models.CharField(max_length=1000)
     timestamp = models.FloatField(default=0)
-    from_user = models.ForeignKey(User, related_name='from_user', on_delete=models.CASCADE)
-    to_user = models.ForeignKey(User, related_name='to_user', on_delete=models.CASCADE)
+    from_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='from_user', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='to_user', on_delete=models.CASCADE)
 
     def _str_(self):
         return self.text

@@ -4,16 +4,69 @@ from django.forms import ValidationError
 from rest_framework import serializers
 from .models import Flag, Profile, Post, Comment, Message, Registration, Vote, Word
 from django.core.mail import send_mail
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 
-class ProfileSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
+    picture = serializers.SerializerMethodField()
+
     class Meta:
-        model = Profile
-        fields = ('first_name', 'last_name', 'picture', 'user')
+        model = User
+        fields = ('username', 'first_name', 'last_name', 'picture' )
 
-# class AccountSerializer(serializers.ModelSerializer):
+    def get_picture(self, obj):
+        return Profile.objects.get(user=obj.pk).picture
+
+class UserDeletionRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=30)
+    password = serializers.CharField(max_length=30)
+
+    def validate(self, data):
+        email = data['email']
+        username = data['username']
+        password = data['password']
+        try:
+            user = User.objects.get(email=email, username=username)
+        except:
+            raise ValidationError('Email-Username-Password combination does not exist.')
+
+        user = authenticate(email=email, username=username, password=password)
+        if not user: 
+            raise ValidationError("Invalid User Credentials.")
+        return data
+
+class UserModificationRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=30, required=False)
+    password = serializers.CharField(max_length=30, required=False)
+    first_name = serializers.CharField(max_length=30, required=False)
+    last_name = serializers.CharField(max_length=30, required=False)
+    picture = serializers.ImageField(required=False)
+
+    def validate(self, data):
+        email = data['email']
+        try:
+            user = User.objects.get(email=email)
+            Profile.objects.get(user=user)
+        except:
+            raise ValidationError('User does not exist.')
+    
+        if 'username' in data:
+            username = data['username']
+            matching_users = User.objects.filter(username=username)
+            if matching_users:
+                raise ValidationError('Username is already in use.')
+        
+        if 'password' in data:
+            password = data['password']
+            validate_password(password, user=user)
+        
+        return data
 
 
-class UserCreateRequestSerializer(serializers.Serializer):
+class UserCreationRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     username = serializers.CharField(max_length=30)
     password = serializers.CharField(max_length=30)
@@ -40,7 +93,7 @@ class UserCreateRequestSerializer(serializers.Serializer):
             raise ValidationError("Validation time expired.")
         return data
 
-class ValidationSerializer(serializers.Serializer):
+class UserEmailValidationRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField()
 
@@ -65,7 +118,7 @@ class ValidationSerializer(serializers.Serializer):
             raise ValidationError("Code expired (5 minutes).")
         return data
 
-class RegistrationSerializer(serializers.ModelSerializer):
+class UserEmailRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Registration
         fields = ('email',)

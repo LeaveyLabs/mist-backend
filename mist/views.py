@@ -10,13 +10,15 @@ from django.contrib.auth.models import User
 
 from .serializers import (
     FlagSerializer,
-    ProfileSerializer, 
     PostSerializer, 
     CommentSerializer,
     MessageSerializer,
-    RegistrationSerializer,
-    UserCreateRequestSerializer,
-    ValidationSerializer,
+    UserDeletionRequestSerializer,
+    UserEmailRegistrationSerializer,
+    UserCreationRequestSerializer,
+    UserModificationRequestSerializer,
+    UserEmailValidationRequestSerializer,
+    UserSerializer,
     VoteSerializer,
     WordSerializer,
 )
@@ -30,33 +32,102 @@ from .models import (
     Word,
 )
 
-# Create your views here.
-class ProfileView(viewsets.ModelViewSet):
+class QueryUserView(generics.ListAPIView):
     # permission_classes = (IsAuthenticated,)
-    serializer_class = ProfileSerializer
-    queryset = Profile.objects.all()
+    serializer_class = UserSerializer
 
     def get_queryset(self):
         """
-        Returns profiles matching the username.
+        Returns users matching the username, first_name, last_name
         """
         # parameters
         username = self.request.query_params.get('username')
+        first_name = self.request.query_params.get('first_name')
+        last_name = self.request.query_params.get('last_name')
         text = self.request.query_params.get('text')
         # filter
-        if username == None and text == None:
-            return Profile.objects.all()
-        elif text == None:
-            matching_users = User.objects.filter(username__startswith=username)
-            if not matching_users: 
-                return Profile.objects.none()
-            else: 
-                return Profile.objects.filter(user=matching_users[0])
-        else:
-            username_set = Profile.objects.filter(username__contains=text)
-            first_name_set = Profile.objects.filter(first_name__contains=text)
-            last_name_set = Profile.objects.filter(last_name__contains=text)
+        if text != None:
+            username_set = User.objects.filter(username__contains=text)
+            first_name_set = User.objects.filter(first_name__contains=text)
+            last_name_set = User.objects.filter(last_name__contains=text)
             return (username_set | first_name_set | last_name_set).distinct()
+        else:
+            username_set = User.objects.none()
+            first_name_set = User.objects.none()
+            last_name_set = User.objects.none()
+            if username: 
+                username_set = User.objects.filter(username__startswith=username)
+            if first_name:
+                first_name_set = User.objects.filter(first_name__startswith=first_name)
+            if last_name:
+                last_name_set = User.objects.filter(last_name__startswith=last_name)
+            return (username_set | first_name_set | last_name_set).distinct()
+            
+
+class DeleteUserView(generics.DestroyAPIView):
+    def delete(self, request, *args, **kwargs):
+        user_delete_request = UserDeletionRequestSerializer(data=request.data)
+        if not user_delete_request.is_valid():
+            return Response(
+                {
+                    "status": "error", 
+                    "data": user_delete_request.errors
+                }, 
+                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            email = user_delete_request.data['email']
+            username = user_delete_request.data['username']
+            User.objects.get(email=email, username=username).delete()
+            return Response(
+                {
+                    "status": "success",
+                },
+                status=status.HTTP_200_OK)
+
+class ModifyUserView(generics.UpdateAPIView):    
+    def patch(self, request, *args, **kwargs):
+        user_modification_request = UserModificationRequestSerializer(data=request.data)
+        if not user_modification_request.is_valid():
+            return Response(
+                {
+                    "status": "error", 
+                    "data": user_modification_request.errors
+                }, 
+                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            email = user_modification_request.data['email']
+            user = User.objects.get(email=email)
+            profile = Profile.objects.get(user=user)
+
+            if 'username' in user_modification_request.data:
+                username = user_modification_request.data['username']
+                user.username = username
+
+            if 'password' in user_modification_request.data:
+                password = user_modification_request.data['password']
+                user.set_password(password)
+
+            if 'first_name' in user_modification_request.data:
+                first_name = user_modification_request.data['first_name']
+                user.first_name = first_name
+
+            if 'last_name' in user_modification_request.data:
+                last_name = user_modification_request.data['last_name']
+                user.last_name = last_name
+            
+            if 'picture' in user_modification_request.data:
+                picture = user_modification_request.data['picture']
+                profile.picture = picture
+
+            user.save()
+            profile.save()
+
+            return Response(
+                {
+                    "status": "success",
+                    "data": UserSerializer(user).data
+                },
+                status=status.HTTP_200_OK)
 
 class PostView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
@@ -178,20 +249,20 @@ class MessageView(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
     queryset = Message.objects.all()
 
-class RegisterView(generics.CreateAPIView):
+class RegisterUserEmailView(generics.CreateAPIView):
     permission_classes = (AllowAny, )
-    serializer_class = RegistrationSerializer
+    serializer_class = UserEmailRegistrationSerializer
 
-class ValidateView(generics.CreateAPIView):
+class ValidateUserEmailView(generics.CreateAPIView):
     """
     View to validate users. 
     """
     permission_classes = (AllowAny, )
-    serializer_class = ValidationSerializer
+    serializer_class = UserEmailValidationRequestSerializer
 
     def post(self, request, format=None):
         # check validation request
-        validation = ValidationSerializer(data=request.data)
+        validation = UserEmailValidationRequestSerializer(data=request.data)
         # if the data is not valid
         if not validation.is_valid():
             # return error
@@ -221,10 +292,10 @@ class CreateUserView(generics.CreateAPIView):
     View to create user objects.
     """
     permission_classes = (AllowAny, )
-    serializer_class = UserCreateRequestSerializer
+    serializer_class = UserCreationRequestSerializer
 
     def post(self, request, format=None):
-        user_create_request = UserCreateRequestSerializer(data=request.data)
+        user_create_request = UserCreationRequestSerializer(data=request.data)
         # if the request was invalid
         if not user_create_request.is_valid():
             # throw back an error
@@ -241,10 +312,10 @@ class CreateUserView(generics.CreateAPIView):
                     email=user_create_request.data['email'],
                     username=user_create_request.data['username'],
                     password=user_create_request.data['password'],
-                )
-                Profile.objects.create(
                     first_name=user_create_request.data['first_name'],
                     last_name=user_create_request.data['last_name'],
+                )
+                Profile.objects.create(
                     user=user,
                 )
                 # if we got here, then it was successful

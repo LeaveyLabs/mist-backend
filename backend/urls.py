@@ -22,7 +22,6 @@ from rest_framework.authtoken.views import obtain_auth_token
 from mist import views
 
 router = routers.DefaultRouter()
-router.register(r'profiles', views.ProfileView, 'profile')
 router.register(r'posts', views.PostView, 'post')
 router.register(r'comments', views.CommentView, 'comment')
 router.register(r'messages', views.MessageView, 'message')
@@ -33,10 +32,13 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/words/', views.WordView.as_view()),
-    path('api-register/', views.RegisterView.as_view()),
-    path('api-validate/', views.ValidateView.as_view()),
+    path('api-register/', views.RegisterUserEmailView.as_view()),
+    path('api-validate/', views.ValidateUserEmailView.as_view()),
     path('api-create-user/', views.CreateUserView.as_view()),
     path('api-token/', obtain_auth_token),
+    path('api-query-user/', views.QueryUserView.as_view()),
+    path('api-delete-user/', views.DeleteUserView.as_view()),
+    path('api-modify-user/', views.ModifyUserView.as_view()),
     # TODO: implement OAuth 2.0 login
     # path('accounts/', include('allauth.urls')),
     # path('dj-rest-auth/', include('dj_rest_auth.urls')),
