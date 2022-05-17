@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
-from mist.serializers import CommentSerializer, PostSerializer, UserSerializer, VoteSerializer, WordSerializer
+from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, UserSerializer, VoteSerializer, WordSerializer
 from mist.views import CommentView, DeleteUserView, ModifyUserView, PostView, QueryUserView, RegisterUserEmailView, CreateUserView, ValidateUserEmailView, VoteView, WordView
 from .models import Profile, Post, Comment, Registration, Vote, Word
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -793,122 +793,6 @@ class ModifyUserViewTest(TestCase):
             User.objects.get(email=valid_user.email).last_name)
         return
 
-# class ProfileTest(TestCase):
-#     def setUp(self):
-#         # set up auth
-#         self.user1 = User.objects.create(username='kevinsun', 
-#             password='kevinsun')
-#         Token.objects.create(user=self.user1)
-#         self.user2 = User.objects.create(username='kevinsun2', 
-#             password='kevinsun2')
-#         Token.objects.create(user=self.user2)
-#         # initialize profiles
-#         self.barath = Profile.objects.create(
-#             first_name='barath',
-#             last_name='raghavan',
-#             user=self.user1,
-#         )
-#         self.adam = Profile.objects.create(
-#             first_name='adam',
-#             last_name='novak',
-#             user=self.user2,
-#         )
-#         # upload to database
-#         self.factory = APIRequestFactory()
-#         return
-        
-#     def test_get_valid_profile(self):
-#         # get valid profile object
-#         profile = Profile.objects.get(user=self.user1)
-#         seralized_profile = ProfileSerializer(profile).data
-#         # get valid query object
-#         request = self.factory.get(
-#             '/api/profiles',
-#             {'username':self.user1.username},
-#             format="json"
-#         )
-#         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-#         raw_view = ProfileView.as_view({'get':'list'})(request)
-#         data_view = raw_view.data[0]
-#         # should be identical
-#         self.assertEqual(seralized_profile, data_view)
-#         return
-    
-#     def test_get_invalid_profile(self):
-#         # get invalid query object
-#         request = self.factory.get(
-#             '/api/profiles',
-#             {'username':'nonexistent'},
-#             format="json"
-#         )
-#         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-#         raw_view = ProfileView.as_view({'get':'list'})(request)
-#         # should be empty
-#         self.assertEqual([], raw_view.data)
-#         return
-    
-#     def test_get_valid_prefix_username(self):
-#         # get valid profile object
-#         profile = Profile.objects.get(user=self.user1)
-#         seralized_profile = ProfileSerializer(profile).data
-#         # get valid query object
-#         request = self.factory.get(
-#             '/api/profiles',
-#             {'username':self.user1.username[:-1]},
-#             format="json"
-#         )
-#         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-#         raw_view = ProfileView.as_view({'get':'list'})(request)
-#         data_view = raw_view.data[0]
-#         # should be identical
-#         self.assertEqual(seralized_profile, data_view)
-#         return
-    
-#     def test_get_invalid_prefix_username(self):
-#         # get valid query object
-#         request = self.factory.get(
-#             '/api/profiles',
-#             {'username':self.user1.username[1:]},
-#             format="json"
-#         )
-#         force_authenticate(request, user=self.user1, token=self.user1.auth_token)
-#         raw_view = ProfileView.as_view({'get':'list'})(request)
-#         # should be identical
-#         self.assertEqual([], raw_view.data)
-#         return
-
-
-#     def test_put_profile_pic(self):
-#         # get profile with empty picture
-#         profile = Profile.objects.get(user=self.user2)
-#         # post gif to profile
-#         small_gif = (
-#             b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
-#             b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
-#             b'\x02\x4c\x01\x00\x3b'
-#         )
-#         profile.picture = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
-#         profile.save()
-#         serialized_profile = ProfileSerializer(profile)
-#         # put it in the database
-#         request = self.factory.put(
-#             '/api/profiles/{}'.format(profile.pk),
-#             {
-#                 'first_name': profile.first_name,
-#                 'last_name': profile.last_name,
-#                 'pic': serialized_profile.data['picture'],
-#                 'user': profile.user.pk,
-#             },
-#             format="json"
-#         )
-#         force_authenticate(request, user=self.user2, token=self.user2.auth_token)
-#         raw_view = ProfileView.as_view({'put':'update'})(request, pk=profile.pk)
-#         # check sucessful request
-#         self.assertEqual(raw_view.status_code, status.HTTP_200_OK)
-#         # check picture exists
-#         profile_after_request = Profile.objects.get(user=self.user2)
-#         self.assertNotEqual(profile_after_request.picture, None)
-
 class PostTest(TestCase):
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)
@@ -998,9 +882,16 @@ class PostTest(TestCase):
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
         raw_view = PostView.as_view({'post':'create'})(request)
-        data_view = raw_view.data
-        # post should be successful
-        self.assertEqual(data_view, serialized_post)
+        self.assertEqual(raw_view.status_code, status.HTTP_201_CREATED)
+        self.assertIsNotNone(Post.objects.filter(
+            uuid=test_post.uuid,
+            title=test_post.title,
+            text=test_post.text,
+            latitude=test_post.latitude,
+            longitude=test_post.longitude,
+            timestamp=test_post.timestamp,
+            author=test_post.author
+        ))
         return
     
     def test_post_new_words(self):
@@ -1368,6 +1259,9 @@ class CommentTest(TestCase):
         data_view = raw_view.data[0]
         # should be identical
         self.assertEqual(serialized_comment, data_view)
+        # should contain picture and username
+        self.assertIn('author_picture', data_view)
+        self.assertIn('author_username', data_view)
         return
     
     def test_get_invalid_comment(self):

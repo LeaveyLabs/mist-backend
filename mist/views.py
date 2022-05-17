@@ -13,6 +13,7 @@ from .serializers import (
     PostSerializer, 
     CommentSerializer,
     MessageSerializer,
+    ProfileSerializer,
     UserDeletionRequestSerializer,
     UserEmailRegistrationSerializer,
     UserCreationRequestSerializer,
@@ -65,6 +66,8 @@ class QueryUserView(generics.ListAPIView):
             
 
 class DeleteUserView(generics.DestroyAPIView):
+    serializer_class = UserDeletionRequestSerializer
+
     def delete(self, request, *args, **kwargs):
         user_delete_request = UserDeletionRequestSerializer(data=request.data)
         if not user_delete_request.is_valid():
@@ -84,7 +87,9 @@ class DeleteUserView(generics.DestroyAPIView):
                 },
                 status=status.HTTP_200_OK)
 
-class ModifyUserView(generics.UpdateAPIView):    
+class ModifyUserView(generics.UpdateAPIView):  
+    serializer_class = UserModificationRequestSerializer
+
     def patch(self, request, *args, **kwargs):
         user_modification_request = UserModificationRequestSerializer(data=request.data)
         if not user_modification_request.is_valid():
@@ -115,10 +120,6 @@ class ModifyUserView(generics.UpdateAPIView):
                 last_name = user_modification_request.data['last_name']
                 user.last_name = last_name
             
-            if 'picture' in user_modification_request.data:
-                picture = user_modification_request.data['picture']
-                profile.picture = picture
-
             user.save()
             profile.save()
 
@@ -128,6 +129,20 @@ class ModifyUserView(generics.UpdateAPIView):
                     "data": UserSerializer(user).data
                 },
                 status=status.HTTP_200_OK)
+
+class ProfileView(viewsets.ModelViewSet):
+    serializer_class = ProfileSerializer
+    
+    def get_queryset(self):
+        username = self.request.query_params.get('username')
+        if username == None: 
+            return Profile.objects.none()
+        else: 
+            try:
+                user = User.objects.get(username=username)
+                return Profile.objects.filter(user=user)
+            except:
+                return Profile.objects.none()
 
 class PostView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)

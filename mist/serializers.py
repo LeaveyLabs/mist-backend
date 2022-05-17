@@ -13,10 +13,15 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'picture' )
+        fields = ('id', 'username', 'first_name', 'last_name', 'picture' )
 
     def get_picture(self, obj):
         return Profile.objects.get(user=obj.pk).picture
+
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = '__all__'
 
 class UserDeletionRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -43,7 +48,6 @@ class UserModificationRequestSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=30, required=False)
     first_name = serializers.CharField(max_length=30, required=False)
     last_name = serializers.CharField(max_length=30, required=False)
-    picture = serializers.ImageField(required=False)
 
     def validate(self, data):
         email = data['email']
@@ -170,7 +174,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('uuid', 'title', 'text', 'latitude', 'longitude', 'location_description',
+        fields = ('id', 'uuid', 'title', 'text', 'latitude', 'longitude', 'location_description',
         'timestamp', 'author', 'averagerating', 'commentcount', )
 
 class VoteSerializer(serializers.ModelSerializer):
@@ -181,14 +185,25 @@ class VoteSerializer(serializers.ModelSerializer):
 class FlagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flag
-        fields = ('flagger', 'post', 'timestamp', 'rating') 
+        fields = ('id', 'flagger', 'post', 'timestamp', 'rating') 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author_picture = serializers.SerializerMethodField()
+    author_username = serializers.SerializerMethodField()
+
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'timestamp', 'post', 'author')
+        fields = ('id', 'text', 'timestamp', 'post', 
+        'author', 'author_picture', 'author_username')
+
+    def get_author_picture(self, obj):
+        return Profile.objects.get(user=obj.author_id).picture
+    
+    def get_author_username(self, obj):
+        return User.objects.get(pk=obj.author_id).username
+
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = ('text', 'timestamp', 'from_user', 'to_user')
+        fields = ('id', 'text', 'timestamp', 'from_user', 'to_user')
