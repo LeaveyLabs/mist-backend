@@ -6,7 +6,7 @@ import django.db.models.deletion
 from mist.serializers import FlagSerializer
 
 def assign_to_first_post(apps, schema_editor):
-    Comment = apps.get_model('mist', 'Post')
+    Comment = apps.get_model('mist', 'Comment')
     Flag = apps.get_model('mist', 'Flag')
     Vote = apps.get_model('mist', 'Vote')
     comments = Comment.objects.all()
