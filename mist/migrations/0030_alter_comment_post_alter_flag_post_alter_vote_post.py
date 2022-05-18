@@ -3,6 +3,21 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
+from mist.serializers import FlagSerializer
+
+def assign_to_first_post(apps, schema_editor):
+    Comment = apps.get_model('mist', 'Post')
+    Flag = apps.get_model('mist', 'Flag')
+    Vote = apps.get_model('mist', 'Vote')
+    comments = Comment.objects.all()
+    votes = Vote.objects.all()
+    flags = Flag.objects.all()
+    for c in comments:
+        c.temp_post = 1
+    for f in flags:
+        f.temp_post = 1
+    for v in votes:
+        v.temp_post = 1
 
 class Migration(migrations.Migration):
 
@@ -11,9 +26,39 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL('ALTER TABLE mist_comment ALTER post TYPE bigint USING post::bigint;'),
-        migrations.RunSQL('ALTER TABLE mist_flag ALTER post TYPE bigint USING post::bigint;'),
-        migrations.RunSQL('ALTER TABLE mist_vote ALTER post TYPE bigint USING post::bigint;'),
+
+        migrations.AddField(
+            model_name='comment',
+            name='temp_post',
+            field=models.IntegerField(null=True),
+        ),
+        migrations.AddField(
+            model_name='vote',
+            name='temp_post',
+            field=models.IntegerField(null=True),
+        ),
+        migrations.AddField(
+            model_name='flag',
+            name='temp_post',
+            field=models.IntegerField(null=True),
+        ),
+
+        migrations.RunPython(
+            code=assign_to_first_post,
+            reverse_code=migrations.RunPython.noop,
+        ),
+
+        migrations.RemoveField(model_name='comment', name='post'),
+        migrations.RemoveField(model_name='vote', name='post'),
+        migrations.RemoveField(model_name='flag', name='post'),
+
+        migrations.RenameField(
+            model_name='post', old_name='temp_post', new_name='post'),
+        migrations.RenameField(
+            model_name='vote', old_name='temp_post', new_name='post'),
+        migrations.RenameField(
+            model_name='flag', old_name='temp_post', new_name='post'),
+
         migrations.AlterField(
             model_name='comment',
             name='post',
