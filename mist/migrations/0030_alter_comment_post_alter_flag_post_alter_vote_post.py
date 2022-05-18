@@ -11,9 +11,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL('ALTER TABLE mist_comment ALTER post_id TYPE bigint;'),
-        migrations.RunSQL('ALTER TABLE mist_flag ALTER post_id TYPE bigint;'),
-        migrations.RunSQL('ALTER TABLE mist_vote ALTER post_id TYPE bigint;'),
+        migrations.RunSQL('ALTER TABLE mist_comment ALTER post TYPE bigint;'),
+        migrations.RunSQL('ALTER TABLE mist_flag ALTER post TYPE bigint;'),
+        migrations.RunSQL('ALTER TABLE mist_vote ALTER post TYPE bigint;'),
         migrations.AlterField(
             model_name='comment',
             name='post',
