@@ -162,10 +162,16 @@ class FlagSerializer(serializers.ModelSerializer):
         fields = ('id', 'flagger', 'post', 'timestamp', 'rating') 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author_picture = serializers.SerializerMethodField()
+    author_username = serializers.ReadOnlyField(source='author.username')
+
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'timestamp', 'post', 'author')
-        depth = 1
+        fields = ('id', 'text', 'timestamp', 'post', 
+        'author', 'author_picture', 'author_username')
+    
+    def get_author_picture(self, obj):
+        return Profile.objects.get(user=obj.author).picture
 
 
 class MessageSerializer(serializers.ModelSerializer):

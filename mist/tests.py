@@ -1260,8 +1260,8 @@ class CommentTest(TestCase):
         # should be identical
         self.assertEqual(serialized_comment, data_view)
         # should contain picture and username
-        # self.assertIn('author_picture', data_view)
-        # self.assertIn('author_username', data_view)
+        self.assertIn('author_picture', data_view)
+        self.assertIn('author_username', data_view)
         return
     
     def test_get_invalid_comment(self):
