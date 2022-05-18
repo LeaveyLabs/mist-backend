@@ -14,10 +14,13 @@ def assign_to_first_post(apps, schema_editor):
     flags = Flag.objects.all()
     for c in comments:
         c.temp_post = 1
+        c.save()
     for f in flags:
         f.temp_post = 1
+        f.save()
     for v in votes:
         v.temp_post = 1
+        v.save()
 
 class Migration(migrations.Migration):
 
