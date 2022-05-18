@@ -1259,8 +1259,7 @@ class CommentTest(TestCase):
         data_view = raw_view.data[0]
         # should be identical
         self.assertEqual(serialized_comment, data_view)
-        # should contain picture and username
-        self.assertIn('author_picture', data_view)
+        # should contain username always
         self.assertIn('author_username', data_view)
         return
     
@@ -1276,6 +1275,31 @@ class CommentTest(TestCase):
         data_view = raw_view.data
         # should be identical
         self.assertEqual([], data_view)
+        return
+
+    def test_post_valid_comment(self):
+        test_comment = Comment(
+            uuid='fakeid2',
+            text='fakecomment',
+            timestamp=1,
+            post=self.post1,
+            author=self.user
+        )
+        test_comment_serializer = CommentSerializer(test_comment)
+        request = self.factory.post(
+            '/api/comments/',
+            test_comment_serializer.data,
+            format="json"
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        raw_view = CommentView.as_view({'post':'create'})(request)
+        self.assertEqual(raw_view.status_code, status.HTTP_201_CREATED)
+        self.assertGreaterEqual(len(Comment.objects.filter(
+            uuid=test_comment.uuid,
+            text=test_comment.text,
+            timestamp=test_comment.timestamp,
+            post=test_comment.post,
+            author=test_comment.author)), 1)
         return
 
 class MessageTest(TestCase):

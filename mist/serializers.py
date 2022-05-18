@@ -16,6 +16,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_picture(self, obj):
         return Profile.objects.get(user=obj.pk).picture
+    
+    def to_representation(self, instance):
+        repr = super().to_representation(instance)
+        if not repr['picture']:
+            repr.pop('picture')
+        return repr
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -167,12 +173,17 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'timestamp', 'post', 
-        'author', 'author_picture', 'author_username')
+        fields = ('id', 'text', 'timestamp', 'post', 'author', 
+        'author_picture', 'author_username')
     
     def get_author_picture(self, obj):
         return Profile.objects.get(user=obj.author).picture
 
+    def to_representation(self, instance):
+        repr = super().to_representation(instance)
+        if not repr['author_picture']:
+            repr.pop('author_picture')
+        return repr
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
