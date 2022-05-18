@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+import random
 from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
@@ -7,6 +8,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
 
 from .serializers import (
     FlagSerializer,
@@ -267,6 +269,39 @@ class MessageView(viewsets.ModelViewSet):
 class RegisterUserEmailView(generics.CreateAPIView):
     permission_classes = (AllowAny, )
     serializer_class = UserEmailRegistrationSerializer
+
+    def post(self, request, format=None):
+        registration_request = UserEmailRegistrationSerializer(data=request.data)
+        if not registration_request.is_valid():
+            # return error
+            return Response(
+                {
+                    "status": "error", 
+                    "data": registration_request.errors
+                }, 
+                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            email = registration_request.data['email']
+            rand_code = f'{random.randint(0, 999_999):06}'
+            curr_time = datetime.now().timestamp()
+            request = Registration.objects.create(
+                email=email,
+                code=rand_code,
+                code_time=curr_time,
+            )
+            send_mail(
+                "Your code awaits!",
+                "Here's your validation code: {}".format(rand_code),
+                "getmist.app@gmail.com",
+                [email],
+                fail_silently=False,
+            )
+            return Response(
+                {
+                    "status": "success",
+                    "data": registration_request.data,
+                }, 
+                status=status.HTTP_201_CREATED)
 
 class ValidateUserEmailView(generics.CreateAPIView):
     """

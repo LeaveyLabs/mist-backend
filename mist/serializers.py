@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from django.forms import ValidationError
 from rest_framework import serializers
 from .models import Flag, Profile, Post, Comment, Message, Registration, Vote, Word
-from django.core.mail import send_mail
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
@@ -68,7 +67,6 @@ class UserModificationRequestSerializer(serializers.Serializer):
             validate_password(password, user=user)
         
         return data
-
 
 class UserCreationRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -136,30 +134,6 @@ class UserEmailRegistrationSerializer(serializers.ModelSerializer):
         if domain not in self.ACCEPTABLE_DOMAINS:
             raise ValidationError("Invalid email domain")
         return data
-    
-    def create(self, validated_data):
-        """
-        Create a registration request with the registration information.
-        """
-        # parameters
-        email = validated_data.get('email')
-        rand_code = f'{random.randint(0, 999_999):06}'
-        curr_time = datetime.now().timestamp()
-        # create request
-        request = Registration.objects.create(
-            email=email,
-            code=rand_code,
-            code_time=curr_time,
-        )
-        # send validation email
-        send_mail(
-            "Your code awaits!",
-            "Here's your validation code: {}".format(rand_code),
-            "getmist.app@gmail.com",
-            [email],
-            fail_silently=False,
-        )
-        return request
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.ReadOnlyField(source='calculate_occurrences')
@@ -188,22 +162,13 @@ class FlagSerializer(serializers.ModelSerializer):
         fields = ('id', 'flagger', 'post', 'timestamp', 'rating') 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author_picture = serializers.SerializerMethodField()
-    author_username = serializers.SerializerMethodField()
-
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'timestamp', 'post', 
-        'author', 'author_picture', 'author_username')
-
-    def get_author_picture(self, obj):
-        return Profile.objects.get(user=obj.author_id).picture
-    
-    def get_author_username(self, obj):
-        return User.objects.get(pk=obj.author_id).username
+        fields = ('id', 'text', 'timestamp', 'post', 'author')
+        depth = 1
 
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = ('id', 'text', 'timestamp', 'from_user', 'to_user')
+        fields = ('id', 'text', 'timestamp', 'from_user_id', 'to_user_id')
