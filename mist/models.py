@@ -107,7 +107,7 @@ class Flag(models.Model):
         return self.flagger.pk
 
 class Comment(models.Model):
-    uuid = models.CharField(max_length=36, unique=True)
+    uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     text = models.CharField(max_length=500)
     timestamp = models.FloatField(default=0)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
