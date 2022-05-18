@@ -12,7 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'picture' )
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'picture' )
 
     def get_picture(self, obj):
         return Profile.objects.get(user=obj.pk).picture
