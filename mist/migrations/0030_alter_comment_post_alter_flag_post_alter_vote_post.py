@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
         migrations.RemoveField(model_name='flag', name='post'),
 
         migrations.RenameField(
-            model_name='post', old_name='temp_post', new_name='post'),
+            model_name='comment', old_name='temp_post', new_name='post'),
         migrations.RenameField(
             model_name='vote', old_name='temp_post', new_name='post'),
         migrations.RenameField(
