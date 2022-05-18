@@ -20,6 +20,8 @@ websockets = "*"
 asyncio = "*"
 jsonpickle = "*"
 requests = "*"
+django-phonenumber-field = "*"
+phonenumbers = "*"
 
 [dev-packages]
 

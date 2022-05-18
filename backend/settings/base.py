@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django.contrib.postgres',
     'storages',
+    'phonenumber_field',
     'mist',
 ]
 

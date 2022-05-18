@@ -3,14 +3,78 @@ from datetime import datetime, timedelta
 from django.forms import ValidationError
 from rest_framework import serializers
 from .models import Flag, Profile, Post, Comment, Message, Registration, Vote, Word
-from django.core.mail import send_mail
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
+
+class UserSerializer(serializers.ModelSerializer):
+    picture = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'email', 'username', 'first_name', 'last_name', 'picture' )
+
+    def get_picture(self, obj):
+        return Profile.objects.get(user=obj.pk).picture
+    
+    def to_representation(self, instance):
+        repr = super().to_representation(instance)
+        if not repr['picture']:
+            repr.pop('picture')
+        return repr
 
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ('username', 'first_name', 'last_name', 'picture', 'user')
+        fields = '__all__'
 
-class UserCreateRequestSerializer(serializers.Serializer):
+class UserDeletionRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=30)
+    password = serializers.CharField(max_length=30)
+
+    def validate(self, data):
+        email = data['email']
+        username = data['username']
+        password = data['password']
+        try:
+            user = User.objects.get(email=email, username=username)
+        except:
+            raise ValidationError('Email-Username-Password combination does not exist.')
+
+        user = authenticate(email=email, username=username, password=password)
+        if not user: 
+            raise ValidationError("Invalid User Credentials.")
+        return data
+
+class UserModificationRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=30, required=False)
+    password = serializers.CharField(max_length=30, required=False)
+    first_name = serializers.CharField(max_length=30, required=False)
+    last_name = serializers.CharField(max_length=30, required=False)
+
+    def validate(self, data):
+        email = data['email']
+        try:
+            user = User.objects.get(email=email)
+            Profile.objects.get(user=user)
+        except:
+            raise ValidationError('User does not exist.')
+    
+        if 'username' in data:
+            username = data['username']
+            matching_users = User.objects.filter(username=username)
+            if matching_users:
+                raise ValidationError('Username is already in use.')
+        
+        if 'password' in data:
+            password = data['password']
+            validate_password(password, user=user)
+        
+        return data
+
+class UserCreationRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     username = serializers.CharField(max_length=30)
     password = serializers.CharField(max_length=30)
@@ -37,7 +101,7 @@ class UserCreateRequestSerializer(serializers.Serializer):
             raise ValidationError("Validation time expired.")
         return data
 
-class ValidationSerializer(serializers.Serializer):
+class UserEmailValidationRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     code = serializers.CharField()
 
@@ -62,7 +126,7 @@ class ValidationSerializer(serializers.Serializer):
             raise ValidationError("Code expired (5 minutes).")
         return data
 
-class RegistrationSerializer(serializers.ModelSerializer):
+class UserEmailRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Registration
         fields = ('email',)
@@ -76,30 +140,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         if domain not in self.ACCEPTABLE_DOMAINS:
             raise ValidationError("Invalid email domain")
         return data
-    
-    def create(self, validated_data):
-        """
-        Create a registration request with the registration information.
-        """
-        # parameters
-        email = validated_data.get('email')
-        rand_code = f'{random.randint(0, 999_999):06}'
-        curr_time = datetime.now().timestamp()
-        # create request
-        request = Registration.objects.create(
-            email=email,
-            code=rand_code,
-            code_time=curr_time,
-        )
-        # send validation email
-        send_mail(
-            "Your code awaits!",
-            "Here's your validation code: {}".format(rand_code),
-            "getmist.app@gmail.com",
-            [email],
-            fail_silently=False,
-        )
-        return request
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.ReadOnlyField(source='calculate_occurrences')
@@ -114,7 +154,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'title', 'text', 'latitude', 'longitude', 'location_description',
+        fields = ('id', 'uuid', 'title', 'text', 'latitude', 'longitude', 'location_description',
         'timestamp', 'author', 'averagerating', 'commentcount', )
 
 class VoteSerializer(serializers.ModelSerializer):
@@ -125,14 +165,27 @@ class VoteSerializer(serializers.ModelSerializer):
 class FlagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flag
-        fields = ('flagger', 'post', 'timestamp', 'rating') 
+        fields = ('id', 'flagger', 'post', 'timestamp', 'rating') 
 
 class CommentSerializer(serializers.ModelSerializer):
+    author_picture = serializers.SerializerMethodField()
+    author_username = serializers.ReadOnlyField(source='author.username')
+
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'timestamp', 'post', 'author')
+        fields = ('id', 'text', 'timestamp', 'post', 'author', 
+        'author_picture', 'author_username')
+    
+    def get_author_picture(self, obj):
+        return Profile.objects.get(user=obj.author).picture
+
+    def to_representation(self, instance):
+        repr = super().to_representation(instance)
+        if not repr['author_picture']:
+            repr.pop('author_picture')
+        return repr
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = ('text', 'timestamp', 'from_user', 'to_user')
+        fields = ('id', 'text', 'timestamp', 'from_user_id', 'to_user_id')
