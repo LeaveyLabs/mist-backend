@@ -22,19 +22,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.postgres',
+    'mist',
+    'phonenumber_field',
     'rest_framework',
     'rest_framework.authtoken',
-    'corsheaders',
-    'django.contrib.postgres',
     'storages',
-    'phonenumber_field',
-    'mist',
+    'users.apps.UsersConfig',
 ]
 
 REST_FRAMEWORK = {
