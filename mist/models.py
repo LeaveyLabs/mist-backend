@@ -5,6 +5,9 @@ from django.db import models
 import uuid
 import string
 
+def get_current_time():
+    return datetime.now().timestamp()
+
 class Post(models.Model):
     # Default coordinates are at USC
     USC_LATITUDE = Decimal(34.0224)
@@ -16,7 +19,7 @@ class Post(models.Model):
     location_description = models.CharField(max_length=40, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
-    timestamp = models.FloatField(default=datetime.now().timestamp)
+    timestamp = models.FloatField(default=get_current_time)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def _str_(self):
@@ -66,7 +69,7 @@ class Word(models.Model):
 class Vote(models.Model):
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    timestamp = models.FloatField(default=datetime.now().timestamp)
+    timestamp = models.FloatField(default=get_current_time)
     rating = models.IntegerField(default=5)
 
     class Meta:
@@ -78,7 +81,7 @@ class Vote(models.Model):
 class Flag(models.Model):
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    timestamp = models.FloatField(default=datetime.now().timestamp)
+    timestamp = models.FloatField(default=get_current_time)
     rating = models.IntegerField()
 
     class Meta:
@@ -90,7 +93,7 @@ class Flag(models.Model):
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     text = models.CharField(max_length=500)
-    timestamp = models.FloatField(default=datetime.now().timestamp)
+    timestamp = models.FloatField(default=get_current_time)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
@@ -99,9 +102,11 @@ class Comment(models.Model):
 
 class Message(models.Model):
     text = models.CharField(max_length=1000)
-    timestamp = models.FloatField(default=datetime.now().timestamp)
+    timestamp = models.FloatField(default=get_current_time)
     from_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='from_user', on_delete=models.CASCADE)
     to_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='to_user', on_delete=models.CASCADE)
 
     def _str_(self):
         return self.text
+
+    
