@@ -11,7 +11,6 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, UserSerializer, VoteSerializer, WordSerializer
 from mist.views import CommentView, DeleteUserView, ModifyUserView, PostView, QueryUserView, RegisterUserEmailView, CreateUserView, ValidateUserEmailView, VoteView, WordView
 from .models import Profile, Post, Comment, UserRegistration, Vote, Word
-from models.account import Account
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 # Create your tests here.
