@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.postgres',
+    'django_nose',
     'mist',
     'phonenumber_field',
     'rest_framework',
@@ -138,3 +139,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Default user model
 AUTH_USER_MODEL = 'users.User'
+
+# Django Nose will run the test suites
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+# Tell nose to measure coverage on the 'mist' and 'users' apps
+NOSE_ARGS = [
+    '--with-coverage',
+    '--cover-package=mist,users',
+]
