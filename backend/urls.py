@@ -18,7 +18,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
 from rest_framework import routers
-from rest_framework.authtoken import views
+from rest_framework.authtoken.views import obtain_auth_token
 from mist import views
 
 router = routers.DefaultRouter()
@@ -36,7 +36,7 @@ urlpatterns = [
     path('api-register/', views.RegisterUserEmailView.as_view()),
     path('api-validate/', views.ValidateUserEmailView.as_view()),
     path('api-create-user/', views.CreateUserView.as_view()),
-    path('api-token/', views.obtain_auth_token),
+    path('api-token/', obtain_auth_token),
     path('api-query-user/', views.QueryUserView.as_view()),
     path('api-delete-user/', views.DeleteUserView.as_view()),
     path('api-modify-user/', views.ModifyUserView.as_view()),
