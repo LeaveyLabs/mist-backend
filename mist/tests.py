@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 import random
 from django.test import TestCase
-from django.contrib.auth.models import User
+from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token

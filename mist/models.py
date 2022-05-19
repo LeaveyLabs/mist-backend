@@ -1,7 +1,7 @@
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User, AbstractUser
+from users.models import User
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string

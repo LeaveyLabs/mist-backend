@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.forms import ValidationError
 from rest_framework import serializers
 from .models import Flag, Profile, Post, Comment, Message, EmailAuthentication, Vote, Word
-from django.contrib.auth.models import User
+from users.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
