@@ -1,28 +1,8 @@
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
-from users.models import User
-from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
-
-# Create your models here.
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    picture = models.ImageField(upload_to='profiles', null=True)
-
-    def _str_(self):
-        return self.username
-
-class Account(models.Model):
-    phone_number = PhoneNumberField(null=True)
-
-class EmailAuthentication(models.Model):
-    email = models.EmailField()
-    code = models.CharField(max_length=6)
-    code_time = models.FloatField()
-    validated = models.BooleanField(default=False)
-    validation_time = models.FloatField(null=True)
 
 class Post(models.Model):
     # Default coordinates are at USC

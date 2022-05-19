@@ -19,27 +19,23 @@ from django.conf.urls.static import static
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
-from mist import views
+from mist.views import PostView, CommentView, MessageView, VoteView, WordView
+from users.views import RegisterUserEmailView, ValidateUserEmailView, UserView
 
 router = routers.DefaultRouter()
-router.register(r'profiles', views.ProfileView, 'profile')
-router.register(r'posts', views.PostView, 'post')
-router.register(r'comments', views.CommentView, 'comment')
-router.register(r'messages', views.MessageView, 'message')
-router.register(r'votes', views.VoteView, 'vote')
-
+router.register(r'users', UserView, 'user')
+router.register(r'posts', PostView, 'post')
+router.register(r'comments', CommentView, 'comment')
+router.register(r'messages', MessageView, 'message')
+router.register(r'votes', VoteView, 'vote')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('api/words/', views.WordView.as_view()),
-    path('api-register/', views.RegisterUserEmailView.as_view()),
-    path('api-validate/', views.ValidateUserEmailView.as_view()),
-    path('api-create-user/', views.CreateUserView.as_view()),
+    path('api/words/', WordView.as_view()),
+    path('api-register/', RegisterUserEmailView.as_view()),
+    path('api-validate/', ValidateUserEmailView.as_view()),
     path('api-token/', obtain_auth_token),
-    path('api-query-user/', views.QueryUserView.as_view()),
-    path('api-delete-user/', views.DeleteUserView.as_view()),
-    path('api-modify-user/', views.ModifyUserView.as_view()),
     # TODO: implement OAuth 2.0 login
     # path('accounts/', include('allauth.urls')),
     # path('dj-rest-auth/', include('dj_rest_auth.urls')),
