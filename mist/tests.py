@@ -4,9 +4,9 @@ from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
-from mist.serializers import CommentSerializer, PostSerializer, VoteSerializer
-from mist.views import CommentView, PostView, VoteView, WordView
-from .models import Post, Comment, Vote, Word
+from mist.serializers import CommentSerializer, FlagSerializer, PostSerializer, VoteSerializer
+from mist.views import CommentView, FlagView, PostView, VoteView, WordView
+from .models import Flag, Post, Comment, Vote, Word
 
 class PostTest(TestCase):
     USC_LATITUDE = Decimal(34.0224)
@@ -464,10 +464,7 @@ class VoteTest(TestCase):
         )
         self.assertTrue(Vote.objects.filter(pk=vote.pk))
 
-        request = APIRequestFactory().delete(
-            '/api/votes/{}'.format(vote.pk),
-            format='json',
-        )
+        request = APIRequestFactory().delete('/api/votes/')
         force_authenticate(request, user=self.user, token=self.user.auth_token)
         response = VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
 
@@ -507,14 +504,61 @@ class VoteTest(TestCase):
 
 class FlagTest(TestCase):
     def setUp(self):
+        self.user = User(
+            email='TestUser@usc.edu',
+            username='TestUser',
+        )
+        self.user.set_password("TestPassword@98374")
+        self.user.save()
+        Token.objects.create(user=self.user)
 
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user,
+        )
         return
     
     def test_post_flag(self):
+        flag = Flag(
+            flagger=self.user,
+            post=self.post
+        )
+        serialized_flag = FlagSerializer(flag).data
+        self.assertFalse(Flag.objects.filter(
+            flagger=flag.flagger,
+            post=flag.post
+        ))
 
+        request = APIRequestFactory().post(
+            '/api/flags/',
+            serialized_flag,
+            format='json',
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        response = FlagView.as_view({'post':'create'})(request)
+        response_flag = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_flag.get('flagger'), serialized_flag.get('flagger'))
+        self.assertEqual(response_flag.get('post'), serialized_flag.get('post'))
+        self.assertTrue(Flag.objects.filter(
+            flagger=flag.flagger,
+            post=flag.post
+        ))
         return
     
     def test_delete_flag(self):
+        flag = Flag.objects.create(
+            flagger=self.user,
+            post=self.post,
+        )
+        self.assertTrue(Flag.objects.filter(pk=flag.pk))
+        request = APIRequestFactory().delete('/api/flags/')
+        response = FlagView.as_view({'delete':'destroy'})(request, pk=flag.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Flag.objects.filter(pk=flag.pk))
         return
 
 class CommentTest(TestCase):
