@@ -30,7 +30,7 @@ from .models import (
     Post, 
     Comment,
     Message,
-    UserRegistration,
+    EmailAuthentication,
     Vote,
     Word,
 )
@@ -53,7 +53,7 @@ class RegisterUserEmailView(generics.CreateAPIView):
             email = registration_request.data['email']
             rand_code = f'{random.randint(0, 999_999):06}'
             curr_time = datetime.now().timestamp()
-            request = UserRegistration.objects.create(
+            request = EmailAuthentication.objects.create(
                 email=email,
                 code=rand_code,
                 code_time=curr_time,
@@ -94,7 +94,7 @@ class ValidateUserEmailView(generics.CreateAPIView):
         # if the data is valid
         else:
             # mark registration as validated
-            registration = UserRegistration.objects.filter(
+            registration = EmailAuthentication.objects.filter(
                 email=validation.data['email']
                 ).order_by('-code_time')[0]
             registration.validated = True

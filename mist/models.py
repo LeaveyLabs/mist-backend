@@ -17,7 +17,7 @@ class Profile(models.Model):
 class Account(models.Model):
     phone_number = PhoneNumberField(null=True)
 
-class UserRegistration(models.Model):
+class EmailAuthentication(models.Model):
     email = models.EmailField()
     code = models.CharField(max_length=6)
     code_time = models.FloatField()
