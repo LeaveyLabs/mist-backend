@@ -82,7 +82,7 @@ class Flag(models.Model):
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField()
+    rating = models.IntegerField(default=5)
 
     class Meta:
         unique_together = ('flagger', 'post',)
