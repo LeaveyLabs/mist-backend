@@ -10,7 +10,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
 from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, UserSerializer, VoteSerializer, WordSerializer
 from mist.views import CommentView, DeleteUserView, ModifyUserView, PostView, QueryUserView, RegisterUserEmailView, CreateUserView, ValidateUserEmailView, VoteView, WordView
-from .models import Profile, Post, Comment, Registration, Vote, Word
+from .models import Profile, Post, Comment, UserRegistration, Vote, Word
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 # Create your tests here.
@@ -28,7 +28,7 @@ class AuthTest(TestCase):
         # insertion should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_201_CREATED)
         # should be one registration request in the DB
-        requests = Registration.objects.filter(
+        requests = UserRegistration.objects.filter(
             email='anonymous1@usc.edu')
         self.assertEqual(len(requests), 1)
         return
@@ -46,7 +46,7 @@ class AuthTest(TestCase):
         # insertion should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
         # should be one registration request in the DB
-        requests = Registration.objects.filter(
+        requests = UserRegistration.objects.filter(
             email='anonymous1')
         self.assertEqual(len(requests), 0)
         return
@@ -54,7 +54,7 @@ class AuthTest(TestCase):
     def test_validate_user_valid_code(self):
         # registration request
         code = f'{random.randint(0, 999_999):06}'
-        registration = Registration(
+        registration = UserRegistration(
             email='anonymous2@usc.edu',
             code=code,
             code_time=datetime.now().timestamp(),
@@ -75,7 +75,7 @@ class AuthTest(TestCase):
         # http should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
         # registration should be validated
-        registration = Registration.objects.filter(
+        registration = UserRegistration.objects.filter(
             email='anonymous2@usc.edu')[0]
         self.assertTrue(registration.validated)
         return
@@ -83,7 +83,7 @@ class AuthTest(TestCase):
     def test_validate_user_invalid_code(self):
         # registration request
         code = f'{random.randint(0, 999_999):06}'
-        registration = Registration(
+        registration = UserRegistration(
             email='anonymous2@usc.edu',
             code=code,
             code_time=datetime.now().timestamp(),
@@ -104,14 +104,14 @@ class AuthTest(TestCase):
         # http should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
         # registration should be validated
-        registration = Registration.objects.filter(
+        registration = UserRegistration.objects.filter(
             email='anonymous2@usc.edu')[0]
         self.assertFalse(registration.validated)
         return
 
     def test_create_user_valid_email(self):
         # validate email
-        Registration.objects.create(
+        UserRegistration.objects.create(
             email='anonymous2@usc.edu',
             code=f'{random.randint(0, 999_999):06}',
             code_time=datetime.now().timestamp(),
@@ -137,7 +137,7 @@ class AuthTest(TestCase):
     
     def test_create_user_invalid_email(self):
         # validate email
-        Registration.objects.create(
+        UserRegistration.objects.create(
             email='anonymous2@usc.edu',
             code=f'{random.randint(0, 999_999):06}',
             code_time=datetime.now().timestamp(),
