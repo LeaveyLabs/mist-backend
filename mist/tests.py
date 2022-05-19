@@ -1,17 +1,12 @@
-from base64 import b64decode
-from datetime import datetime
 from decimal import Decimal
-import random
 from django.test import TestCase
 from users.models import User
 from rest_framework import status
-from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
 from mist.serializers import CommentSerializer, PostSerializer, VoteSerializer
 from mist.views import CommentView, PostView, VoteView, WordView
 from .models import Post, Comment, Vote, Word
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 class PostTest(TestCase):
     USC_LATITUDE = Decimal(34.0224)
