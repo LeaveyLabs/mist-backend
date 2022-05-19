@@ -1,5 +1,4 @@
 .vscode
-__init__.py
 .DS_Store
 *.lock
 *.env

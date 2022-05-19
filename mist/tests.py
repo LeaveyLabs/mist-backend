@@ -10,11 +10,11 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
 from mist.serializers import CommentSerializer, PostSerializer, ProfileSerializer, UserSerializer, VoteSerializer, WordSerializer
 from mist.views import CommentView, DeleteUserView, ModifyUserView, PostView, QueryUserView, RegisterUserEmailView, CreateUserView, ValidateUserEmailView, VoteView, WordView
-from .models import Profile, Post, Comment, Registration, Vote, Word
+from .models import Profile, Post, Comment, EmailAuthentication, Vote, Word
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 # Create your tests here.
-class AuthTest(TestCase):
+class RegisterUserEmailViewTest(TestCase):
     def test_register_user_valid_email(self):
         # insert user to database
         factory = APIRequestFactory()
@@ -28,7 +28,7 @@ class AuthTest(TestCase):
         # insertion should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_201_CREATED)
         # should be one registration request in the DB
-        requests = Registration.objects.filter(
+        requests = EmailAuthentication.objects.filter(
             email='anonymous1@usc.edu')
         self.assertEqual(len(requests), 1)
         return
@@ -46,15 +46,16 @@ class AuthTest(TestCase):
         # insertion should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
         # should be one registration request in the DB
-        requests = Registration.objects.filter(
+        requests = EmailAuthentication.objects.filter(
             email='anonymous1')
         self.assertEqual(len(requests), 0)
         return
-    
+
+class ValidateUserEmailViewTest(TestCase):
     def test_validate_user_valid_code(self):
         # registration request
         code = f'{random.randint(0, 999_999):06}'
-        registration = Registration(
+        registration = EmailAuthentication(
             email='anonymous2@usc.edu',
             code=code,
             code_time=datetime.now().timestamp(),
@@ -75,15 +76,16 @@ class AuthTest(TestCase):
         # http should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
         # registration should be validated
-        registration = Registration.objects.filter(
+        registration = EmailAuthentication.objects.filter(
             email='anonymous2@usc.edu')[0]
         self.assertTrue(registration.validated)
         return
-    
+
+class CreateUserViewTest(TestCase):
     def test_validate_user_invalid_code(self):
         # registration request
         code = f'{random.randint(0, 999_999):06}'
-        registration = Registration(
+        registration = EmailAuthentication(
             email='anonymous2@usc.edu',
             code=code,
             code_time=datetime.now().timestamp(),
@@ -104,14 +106,14 @@ class AuthTest(TestCase):
         # http should be successful
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
         # registration should be validated
-        registration = Registration.objects.filter(
+        registration = EmailAuthentication.objects.filter(
             email='anonymous2@usc.edu')[0]
         self.assertFalse(registration.validated)
         return
 
     def test_create_user_valid_email(self):
         # validate email
-        Registration.objects.create(
+        EmailAuthentication.objects.create(
             email='anonymous2@usc.edu',
             code=f'{random.randint(0, 999_999):06}',
             code_time=datetime.now().timestamp(),
@@ -137,7 +139,7 @@ class AuthTest(TestCase):
     
     def test_create_user_invalid_email(self):
         # validate email
-        Registration.objects.create(
+        EmailAuthentication.objects.create(
             email='anonymous2@usc.edu',
             code=f'{random.randint(0, 999_999):06}',
             code_time=datetime.now().timestamp(),
@@ -198,19 +200,21 @@ class AuthTest(TestCase):
         return
 
 class QueryUserViewTest(TestCase):
-    # Valid Queries
-    def test_query_user_by_valid_text(self):
-        valid_user = User.objects.create(
+    def setUp(self):
+        self.valid_user = User.objects.create(
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
             last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
+        self.valid_user.set_password('randomPassword')
+        self.valid_user.save()
+        self.valid_profile = Profile.objects.create(
+            user=self.valid_user,
         )
-        serialized_user = UserSerializer(valid_user)
+        self.serialized_user = UserSerializer(self.valid_user)
+
+    # Valid Queries
+    def test_query_user_by_valid_text(self):
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -219,21 +223,10 @@ class QueryUserViewTest(TestCase):
             format='json',
         )
         raw_view = QueryUserView.as_view()(response)
-        self.assertEquals(raw_view.data[0], serialized_user.data)
+        self.assertEquals(raw_view.data[0], self.serialized_user.data)
         return
 
     def test_query_user_by_valid_full_username(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -242,21 +235,10 @@ class QueryUserViewTest(TestCase):
             format='json',
         )
         raw_view = QueryUserView.as_view()(response)
-        self.assertEquals(raw_view.data[0], serialized_user.data)
+        self.assertEquals(raw_view.data[0], self.serialized_user.data)
         return
     
     def test_query_user_by_valid_prefix_username(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -265,21 +247,10 @@ class QueryUserViewTest(TestCase):
             format='json',
         )
         raw_view = QueryUserView.as_view()(response)
-        self.assertEquals(raw_view.data[0], serialized_user.data)
+        self.assertEquals(raw_view.data[0], self.serialized_user.data)
         return
 
     def test_query_valid_user_by_full_first_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -288,21 +259,10 @@ class QueryUserViewTest(TestCase):
             format='json',
         )
         raw_view = QueryUserView.as_view()(response)
-        self.assertEquals(raw_view.data[0], serialized_user.data)
+        self.assertEquals(raw_view.data[0], self.serialized_user.data)
         return
     
     def test_query_valid_user_by_prefix_first_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -311,21 +271,10 @@ class QueryUserViewTest(TestCase):
             format='json',
         )
         raw_view = QueryUserView.as_view()(response)
-        self.assertEquals(raw_view.data[0], serialized_user.data)
+        self.assertEquals(raw_view.data[0], self.serialized_user.data)
         return
 
     def test_query_valid_user_by_full_last_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -334,21 +283,10 @@ class QueryUserViewTest(TestCase):
             format='json',
         )
         raw_view = QueryUserView.as_view()(response)
-        self.assertEquals(raw_view.data[0], serialized_user.data)
+        self.assertEquals(raw_view.data[0], self.serialized_user.data)
         return
         
     def test_query_valid_user_by_prefix_last_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -357,22 +295,11 @@ class QueryUserViewTest(TestCase):
             format='json',
         )
         raw_view = QueryUserView.as_view()(response)
-        self.assertEquals(raw_view.data[0], serialized_user.data)
+        self.assertEquals(raw_view.data[0], self.serialized_user.data)
         return
 
     # Invalid User
     def test_query_user_by_invalid_text(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -385,17 +312,6 @@ class QueryUserViewTest(TestCase):
         return
 
     def test_query_user_by_invalid_full_username(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -408,17 +324,6 @@ class QueryUserViewTest(TestCase):
         return
     
     def test_query_user_by_invalid_prefix_username(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -431,17 +336,6 @@ class QueryUserViewTest(TestCase):
         return
 
     def test_query_user_by_invalid_full_first_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -454,17 +348,6 @@ class QueryUserViewTest(TestCase):
         return
     
     def test_query_user_by_invalid_prefix_first_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -477,17 +360,6 @@ class QueryUserViewTest(TestCase):
         return
 
     def test_query_user_by_invalid_full_last_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -500,17 +372,6 @@ class QueryUserViewTest(TestCase):
         return
 
     def test_query_user_by_invalid_prefix_last_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
-        serialized_user = UserSerializer(valid_user)
         factory = APIRequestFactory()
         response = factory.get('api-query-user/',
             {
@@ -523,17 +384,19 @@ class QueryUserViewTest(TestCase):
         return
 
 class DeleteUserViewTest(TestCase):
-    def test_delete_valid_user(self):
-        valid_user = User.objects.create(
+    def setUp(self):
+        self.valid_user = User.objects.create(
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
             last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
+        self.valid_user.set_password('randomPassword')
+        self.valid_user.save()
+        self.valid_profile = Profile.objects.create(
+            user=self.valid_user,
         )
+
+    def test_delete_valid_user(self):
         factory = APIRequestFactory()
         response = factory.delete('api-delete-user/',
             {
@@ -546,20 +409,10 @@ class DeleteUserViewTest(TestCase):
         raw_view = DeleteUserView.as_view()(response)
         self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
         self.assertEquals(
-            len(User.objects.filter(email=valid_user.email)), 0)
+            len(User.objects.filter(email=self.valid_user.email)), 0)
         return
 
     def test_delete_invalid_email(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
         factory = APIRequestFactory()
         response = factory.delete('api-delete-user/',
             {
@@ -571,20 +424,10 @@ class DeleteUserViewTest(TestCase):
         )
         raw_view = DeleteUserView.as_view()(response)
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEquals(valid_user, User.objects.get(email=valid_user.email))
+        self.assertEquals(self.valid_user, User.objects.get(email=self.valid_user.email))
         return
     
     def test_delete_invalid_username(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
         factory = APIRequestFactory()
         response = factory.delete('api-delete-user/',
             {
@@ -596,17 +439,10 @@ class DeleteUserViewTest(TestCase):
         )
         raw_view = DeleteUserView.as_view()(response)
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEquals(valid_user, User.objects.get(email=valid_user.email))
+        self.assertEquals(self.valid_user, User.objects.get(email=self.valid_user.email))
         return
     
     def test_delete_invalid_password(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            password="randomPassword",
-        )
         factory = APIRequestFactory()
         response = factory.delete('api-delete-user/',
             {
@@ -618,22 +454,23 @@ class DeleteUserViewTest(TestCase):
         )
         raw_view = DeleteUserView.as_view()(response)
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEquals(valid_user, User.objects.get(email=valid_user.email))
+        self.assertEquals(self.valid_user, User.objects.get(email=self.valid_user.email))
         return
 
 class ModifyUserViewTest(TestCase):
-    def test_modify_invalid_email(self):
-        valid_user = User.objects.create(
+    def setUp(self):
+        self.valid_user = User.objects.create(
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
+            last_name="notTheSameLastName")
+        self.valid_user.set_password("strongPassword@1354689$")
+        self.valid_user.save()
+        self.valid_profile = Profile.objects.create(
+            user=self.valid_user,
         )
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
+
+    def test_modify_invalid_email(self):
         factory = APIRequestFactory()
         response = factory.patch('api-modify-user/',
             {
@@ -643,21 +480,11 @@ class ModifyUserViewTest(TestCase):
         )
         raw_view = ModifyUserView.as_view()(response)
         self.assertEquals(raw_view.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEquals(valid_user, User.objects.get(email=valid_user.email))
+        self.assertEquals(self.valid_user, 
+        User.objects.get(email=self.valid_user.email))
         return
         
     def test_modify_valid_username(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-        )
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
         factory = APIRequestFactory()
         response = factory.patch('api-modify-user/',
             {
@@ -668,21 +495,11 @@ class ModifyUserViewTest(TestCase):
         )
         raw_view = ModifyUserView.as_view()(response)
         self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
-        self.assertEquals('newUsername', User.objects.get(email=valid_user.email).username)
+        self.assertEquals('newUsername', 
+        User.objects.get(email=self.valid_user.email).username)
         return
     
     def test_modify_invalid_username(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-        )
-        valid_user.set_password('randomPassword')
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
         factory = APIRequestFactory()
         response = factory.patch('api-modify-user/',
             {
@@ -696,16 +513,6 @@ class ModifyUserViewTest(TestCase):
         return
     
     def test_modify_valid_password(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password("strongPassword@1354689$")
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
         factory = APIRequestFactory()
         response = factory.patch('api-modify-user/',
             {
@@ -719,16 +526,6 @@ class ModifyUserViewTest(TestCase):
         return
     
     def test_modify_invalid_password(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password("strongPassword@1354689$")
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
         factory = APIRequestFactory()
         response = factory.patch('api-modify-user/',
             {
@@ -742,16 +539,6 @@ class ModifyUserViewTest(TestCase):
         return
 
     def test_modify_first_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password("strongPassword@1354689$")
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
         factory = APIRequestFactory()
         response = factory.patch('api-modify-user/',
             {
@@ -764,20 +551,10 @@ class ModifyUserViewTest(TestCase):
         self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
         self.assertEquals(
             'heyMyRealFirstName', 
-            User.objects.get(email=valid_user.email).first_name)
+            User.objects.get(email=self.valid_user.email).first_name)
         return
     
     def test_modify_last_name(self):
-        valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
-        valid_user.set_password("strongPassword@1354689$")
-        valid_user.save()
-        valid_profile = Profile.objects.create(
-            user=valid_user,
-        )
         factory = APIRequestFactory()
         response = factory.patch('api-modify-user/',
             {
@@ -790,7 +567,7 @@ class ModifyUserViewTest(TestCase):
         self.assertEquals(raw_view.status_code, status.HTTP_200_OK)
         self.assertEquals(
             'heyMyRealLastName', 
-            User.objects.get(email=valid_user.email).last_name)
+            User.objects.get(email=self.valid_user.email).last_name)
         return
 
 class PostTest(TestCase):

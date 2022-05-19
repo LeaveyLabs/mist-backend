@@ -2,7 +2,7 @@ import random
 from datetime import datetime, timedelta
 from django.forms import ValidationError
 from rest_framework import serializers
-from .models import Flag, Profile, Post, Comment, Message, Registration, Vote, Word
+from .models import Flag, Profile, Post, Comment, Message, EmailAuthentication, Vote, Word
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
@@ -87,7 +87,7 @@ class UserCreationRequestSerializer(serializers.Serializer):
         # parameters
         email = data['email']
         curr_time = datetime.now().timestamp()
-        registrations = Registration.objects.filter(
+        registrations = EmailAuthentication.objects.filter(
             email=email).order_by('-validation_time')
         # registration exists
         if not registrations: 
@@ -112,7 +112,7 @@ class UserEmailValidationRequestSerializer(serializers.Serializer):
         email = data['email']
         code = data['code']
         time = datetime.now().timestamp()
-        registrations = Registration.objects.filter(
+        registrations = EmailAuthentication.objects.filter(
                 email=email).order_by('-code_time')
         # validate email
         if not registrations:
@@ -128,7 +128,7 @@ class UserEmailValidationRequestSerializer(serializers.Serializer):
 
 class UserEmailRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Registration
+        model = EmailAuthentication
         fields = ('email',)
 
     ACCEPTABLE_DOMAINS = ('usc.edu', 'gmail.com')
