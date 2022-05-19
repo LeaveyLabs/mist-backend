@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
@@ -65,7 +66,7 @@ class Word(models.Model):
 class Vote(models.Model):
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    timestamp = models.FloatField(default=0)
+    timestamp = models.FloatField(default=datetime.now().timestamp)
     rating = models.IntegerField(default=5)
 
     class Meta:
