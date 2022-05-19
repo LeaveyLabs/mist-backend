@@ -78,7 +78,7 @@ class Vote(models.Model):
 class Flag(models.Model):
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    timestamp = models.FloatField()
+    timestamp = models.FloatField(default=datetime.now().timestamp)
     rating = models.IntegerField()
 
     class Meta:
@@ -90,7 +90,7 @@ class Flag(models.Model):
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     text = models.CharField(max_length=500)
-    timestamp = models.FloatField(default=0)
+    timestamp = models.FloatField(default=datetime.now().timestamp)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
@@ -99,7 +99,7 @@ class Comment(models.Model):
 
 class Message(models.Model):
     text = models.CharField(max_length=1000)
-    timestamp = models.FloatField(default=0)
+    timestamp = models.FloatField(default=datetime.now().timestamp)
     from_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='from_user', on_delete=models.CASCADE)
     to_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='to_user', on_delete=models.CASCADE)
 
