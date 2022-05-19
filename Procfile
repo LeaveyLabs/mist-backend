@@ -1,2 +1,2 @@
 web: gunicorn backend.wsgi
-release: python3 manage.py migrate --fake
+release: python3 manage.py migrate
