@@ -7,82 +7,18 @@ from users.models import User
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
-class UserSerializer(serializers.ModelSerializer):
+class UserEmailRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ('id', 'email', 'username', 
-        'first_name', 'last_name', 'picture', )
-        
-class UserDeletionRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    username = serializers.CharField(max_length=30)
-    password = serializers.CharField(max_length=30)
+        model = EmailAuthentication
+        fields = ('email',)
 
-    def validate(self, data):
-        email = data['email']
-        username = data['username']
-        password = data['password']
-        try:
-            user = User.objects.get(email=email, username=username)
-        except:
-            raise ValidationError('Email-Username-Password combination does not exist.')
-
-        user = authenticate(email=email, username=username, password=password)
-        if not user: 
-            raise ValidationError("Invalid User Credentials.")
-        return data
-
-class UserModificationRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    username = serializers.CharField(max_length=30, required=False)
-    password = serializers.CharField(max_length=30, required=False)
-    first_name = serializers.CharField(max_length=30, required=False)
-    last_name = serializers.CharField(max_length=30, required=False)
-
-    def validate(self, data):
-        email = data['email']
-        try:
-            user = User.objects.get(email=email)
-        except:
-            raise ValidationError('User does not exist.')
+    ACCEPTABLE_DOMAINS = ('usc.edu', 'gmail.com')
     
-        if 'username' in data:
-            username = data['username']
-            matching_users = User.objects.filter(username=username)
-            if matching_users:
-                raise ValidationError('Username is already in use.')
-        
-        if 'password' in data:
-            password = data['password']
-            validate_password(password, user=user)
-        
-        return data
-
-class UserCreationRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    username = serializers.CharField(max_length=30)
-    password = serializers.CharField(max_length=30)
-    first_name = serializers.CharField(max_length=30)
-    last_name = serializers.CharField(max_length=30)
-
-    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
-
     def validate(self, data):
-        # parameters
-        email = data['email']
-        curr_time = datetime.now().timestamp()
-        registrations = EmailAuthentication.objects.filter(
-            email=email).order_by('-validation_time')
-        # registration exists
-        if not registrations: 
-            raise ValidationError("Email was not registered.")
-        registration = registrations[0]
-        # registration was validated
-        if not registration.validated:
-            raise ValidationError("Email was not validated.")
-        # validation has not expired
-        if curr_time-registration.validation_time > self.EXPIRATION_TIME:
-            raise ValidationError("Validation time expired.")
+        email = data.get('email')
+        domain = email.split('@')[1]
+        if domain not in self.ACCEPTABLE_DOMAINS:
+            raise ValidationError("Invalid email domain")
         return data
 
 class UserEmailValidationRequestSerializer(serializers.Serializer):
@@ -92,35 +28,88 @@ class UserEmailValidationRequestSerializer(serializers.Serializer):
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
 
     def validate(self, data):
-        # parameters
-        email = data['email']
-        code = data['code']
-        time = datetime.now().timestamp()
+        email = data.get('email')
         registrations = EmailAuthentication.objects.filter(
                 email=email).order_by('-code_time')
-        # validate email
+
         if not registrations:
             raise ValidationError("Email was not registered.")
-        # validate code
+
+        code = data.get('code')
         registration = registrations[0]
         if code != registration.code:
             raise ValidationError("Code does not match.")
-        # validate code time
-        if time-registration.code_time > self.EXPIRATION_TIME:
-            raise ValidationError("Code expired (5 minutes).")
+
+        current_time = datetime.now().timestamp()
+        time_since_registration = current_time - registration.code_time 
+        registration_expired = time_since_registration > self.EXPIRATION_TIME
+
+        if registration_expired:
+            raise ValidationError("Code expired (10 minutes).")
+
         return data
 
-class UserEmailRegistrationSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(max_length=50, write_only=True)
+
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
     class Meta:
-        model = EmailAuthentication
-        fields = ('email',)
+        model = User
+        fields = ('id', 'email', 'username', 'password',
+        'first_name', 'last_name', 'picture', )
 
-    ACCEPTABLE_DOMAINS = ('usc.edu', 'gmail.com')
-    
     def validate(self, data):
-        # domain must be in the list
-        email = data['email']
-        domain = email.split('@')[1]
-        if domain not in self.ACCEPTABLE_DOMAINS:
-            raise ValidationError("Invalid email domain")
+        if 'email' in data:
+            # will see if you can register with this email without error
+            emailValidator = UserEmailRegistrationSerializer(data=data)
+            emailValidator.is_valid()
+
+        if 'password' in data:
+            # validates password strength
+            password = data.get('password')
+            validate_password(password)
+        
         return data
+
+    def create(self, validated_data):
+        email = validated_data.get('email')
+        email_auth_requests = EmailAuthentication.objects.filter(
+            email=email).order_by('-validation_time')
+
+        if not email_auth_requests:
+            raise ValidationError("Email was not registered.")
+
+        most_recent_auth_request = email_auth_requests[0]
+
+        if not most_recent_auth_request.validated:
+            raise ValidationError("Email was not validated.")
+
+        current_time = datetime.now().timestamp()
+        time_since_validation = current_time - most_recent_auth_request.validation_time
+        validation_expired = time_since_validation > self.EXPIRATION_TIME
+
+        if validation_expired:
+            raise ValidationError("Email validation expired.")
+
+        users_with_matching_email = User.objects.filter(email=email)
+        if len(users_with_matching_email):
+            raise ValidationError("Email already taken.")
+
+        username = validated_data.get('username')
+        users_with_matching_username = User.objects.filter(username=username)
+        
+        if len(users_with_matching_username):
+            raise ValidationError("Username already taken.")
+
+        return User.objects.create(**validated_data)
+    
+    def update(self, instance, validated_data):
+        instance.email = validated_data.get('email', instance.email)
+        instance.username = validated_data.get('username', instance.username)
+        instance.set_password(validated_data.get('password', instance.password))
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.picture = validated_data.get('picture', instance.picture)
+        instance.save()
+        return instance
