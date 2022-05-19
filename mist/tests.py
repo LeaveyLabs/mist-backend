@@ -13,219 +13,225 @@ class PostTest(TestCase):
     USC_LONGITUDE = Decimal(118.2851)
 
     def setUp(self):
-        # set up auth
-        self.user = User.objects.create(username='kevinsun', 
-            password='kevinsun')
+        self.user = User(
+            email='TestUser@usc.edu',
+            username='TestUser',
+        )
+        self.user.set_password("TestPassword@98374")
+        self.user.save()
         Token.objects.create(user=self.user)
-        # initialize posts
+
         self.post1 = Post.objects.create(
-            id='1',
-            title='title1',
-            text='fake fake text text',
-            timestamp=0,
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
             author=self.user,
         )
         self.post2 = Post.objects.create(
-            id='2',
-            title='title2',
-            text='real real real stuff',
-            timestamp=1,
+            title='FakeTitleForSecondPost',
+            text='FakeTextForSecondPost',
             author=self.user,
         )
-        # initialize votes
-        self.vote1 = Vote.objects.create(
+
+        self.vote = Vote.objects.create(
             voter=self.user,
             post=self.post1,
-            timestamp=0,
-            rating=10,
         )
-        # initialize comments
-        self.comment1 = Comment.objects.create(
-            uuid='fakeID',
-            text='fakecomment',
-            timestamp=1,
+
+        self.comment = Comment.objects.create(
+            text='FakeTextForComment',
             post=self.post1,
-            author=self.user
+            author=self.user,
         )
-        # upload to database
-        self.factory = APIRequestFactory()
         return
     
     def test_post_calculate_averagerating(self):
         return self.assertEquals(self.post1.calculate_averagerating(), 
-            self.vote1.rating)
+            self.vote.rating)
     
     def test_post_calculate_averagerating(self):
         return self.assertEquals(self.post1.calculate_commentcount(), 1)
 
     def test_post_create_words(self):
         Post.objects.create(
-            uuid='1',
-            title='what',
-            text='have never seen this word',
-            timestamp=0,
+            title='TitleWord',
+            text='StartingTextWord MiddleTextWord NumbersWord123',
             author=self.user,
         )
-        self.assertTrue(Word.objects.filter(text='what'))
-        self.assertTrue(Word.objects.filter(text='have'))
-        self.assertTrue(Word.objects.filter(text='never'))
-        self.assertTrue(Word.objects.filter(text='seen'))
-        self.assertTrue(Word.objects.filter(text='this'))
-        self.assertTrue(Word.objects.filter(text='word'))
+        self.assertTrue(Word.objects.filter(text='TitleWord'))
+        self.assertTrue(Word.objects.filter(text='StartingTextWord'))
+        self.assertTrue(Word.objects.filter(text='MiddleTextWord'))
+        self.assertTrue(Word.objects.filter(text='NumbersWord123'))
+        self.assertFalse(Word.objects.filter(text='ThisWordDoesNotExist'))
+        self.assertFalse(Word.objects.filter(text='NeitherDoesThisOne'))
     
     def test_post_new_post(self):
-        # create new post
         test_post = Post(
-            uuid='3',
-            title='title3',
-            text='real real real stuff3',
+            title='SomeFakeTitle',
+            text='ThisPostWillBeTestingCreatingANewPost',
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
-            timestamp=2,
             author=self.user,
         )
         serialized_post = PostSerializer(test_post).data
-        # check if the post exists
-        request = self.factory.post(
-            '/api/posts',
-            serialized_post,
-            format='json'
-        )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'post':'create'})(request)
-        self.assertEqual(raw_view.status_code, status.HTTP_201_CREATED)
-        self.assertIsNotNone(Post.objects.filter(
+
+        self.assertFalse(Post.objects.filter(
             uuid=test_post.uuid,
             title=test_post.title,
             text=test_post.text,
             latitude=test_post.latitude,
             longitude=test_post.longitude,
-            timestamp=test_post.timestamp,
+            author=test_post.author
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/posts',
+            serialized_post,
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        response = PostView.as_view({'post':'create'})(request)
+        response_post = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_post.get('title'), serialized_post.get('title'))
+        self.assertEqual(response_post.get('text'), serialized_post.get('text'))
+        self.assertEqual(response_post.get('latitude'), serialized_post.get('latitude'))
+        self.assertEqual(response_post.get('longitude'), serialized_post.get('longitude'))
+        self.assertEqual(response_post.get('author'), serialized_post.get('author'))
+        self.assertTrue(Post.objects.filter(
+            uuid=test_post.uuid,
+            title=test_post.title,
+            text=test_post.text,
+            latitude=test_post.latitude,
+            longitude=test_post.longitude,
             author=test_post.author
         ))
         return
     
     def test_post_new_words(self):
-        # create new post
+        self.assertFalse(Word.objects.filter(text='ThisTextNowExists'))
         test_post = Post.objects.create(
-            uuid='3',
-            title='title3',
-            text='exists',
-            timestamp=2,
+            title='SomeFakeTitle',
+            text='ThisTextNowExists',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
             author=self.user,
         )
-        # check if the word exists
-        request = self.factory.get(
+
+        request = APIRequestFactory().get(
             '/api/words',
             {
-                'text':'exists'
+                'text': test_post.text,
             },
             format='json'
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = WordView.as_view()(request)
-        self.assertFalse(len(raw_view.data) == 0)
-        data_view = raw_view.data[0]
-        # get should be successful
-        self.assertEqual(data_view['text'], 'exists')
+        response = WordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data)
+        self.assertEqual(response.data[0].get('text'), 'ThisTextNowExists')
+        self.assertTrue(Word.objects.filter(text='ThisTextNowExists'))
         return
 
     def test_get_all_posts(self):
-        # order all seralized posts by vote count
-        serialized_posts = [PostSerializer(self.post1).data, 
-        PostSerializer(self.post2).data]
-        # get all seralized posts
-        request = self.factory.get(
+        serialized_posts = [
+            PostSerializer(self.post1).data, 
+            PostSerializer(self.post2).data
+        ]
+
+        request = APIRequestFactory().get(
             '/api/posts', 
             format="json"
         )
+
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'get':'list'})(request)
-        data_view = [post_data for post_data in raw_view.data]
-        # should be identical
-        self.assertEqual(serialized_posts, data_view)
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts, response_posts)
         return
     
     def test_get_posts_by_text(self):
-        # only self.post1 has "fake" in its text
         serialized_posts = [PostSerializer(self.post1).data]
-        # get all posts with "fake" in its text
-        request = self.factory.get(
+        
+        request = APIRequestFactory().get(
             '/api/posts',
             {
-                'text':'fake'
+                'text': self.post1.text,
             },
             format='json'
         )
+
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'get':'list'})(request)
-        data_view = [post_data for post_data in raw_view.data]
-        # should be identical
-        self.assertEqual(serialized_posts, data_view)
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts, response_posts)
         return
     
     def test_get_posts_by_partial_text(self):
-        # only self.post1 has "fa" in its text
         serialized_posts = [PostSerializer(self.post1).data]
-        # get all posts with "fa" in its text
-        request = self.factory.get(
+
+        mid_point_of_text = len(self.post1.text)//2
+        half_of_post_text = self.post1.text[mid_point_of_text:]
+
+        request = APIRequestFactory().get(
             '/api/posts',
             {
-                'text':'fa'
+                'text': half_of_post_text,
             },
             format='json'
         )
+ 
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'get':'list'})(request)
-        data_view = [post_data for post_data in raw_view.data]
-        # should be identical
-        self.assertEqual(serialized_posts, data_view)
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts, response_posts)
         return
 
     def test_get_posts_by_timestamp(self):
-        # only self.post1 has 0 as its timestamp
         serialized_posts = [PostSerializer(self.post1).data]
-        # get all posts with 0 as its timestamp
-        request = self.factory.get(
+
+        request = APIRequestFactory().get(
             '/api/posts',
             {
-                'timestamp': 0,
+                'timestamp': self.post1.timestamp,
             },
             format='json'
         )
+
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'get':'list'})(request)
-        data_view = [post_data for post_data in raw_view.data]
-        # should be identical
-        self.assertEqual(serialized_posts, data_view)
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts, response_posts)
         return
     
     def test_get_posts_by_latitude_longitude(self):
-        # create a post from USC
-        usc_post = Post.objects.create(
-            uuid='101',
-            title='to that hunk of a man',
-            text='adam. i love you',
+        post_from_usc = Post.objects.create(
+            title='FakeTitleOfUSCPost',
+            text='HereIsAPostFromUSC',
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
-            timestamp=2,
             author=self.user,
         )
-        # create a post from the north pole
-        Post.objects.create(
-            uuid='100',
-            title='to that hunk of a man',
-            text='santa. i love you',
+        post_from_north_pole = Post.objects.create(
+            title='FakeTitleOfNorthPolePost',
+            text='HereIsAPostFromTheNorthPole',
             latitude=Decimal(0),
             longitude=Decimal(0),
-            timestamp=2,
             author=self.user,
         )
-        # we want the post from usc
-        serialized_posts = [
-            PostSerializer(usc_post).data]
-        # get all posts at USC
-        request = self.factory.get(
+
+        serialized_posts_from_usc = [PostSerializer(post_from_usc).data]
+
+        request = APIRequestFactory().get(
             '/api/posts',
             {
                 'latitude': self.USC_LATITUDE,
@@ -233,191 +239,279 @@ class PostTest(TestCase):
             },
             format='json'
         )
+
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'get':'list'})(request)
-        data_view = [post_data for post_data in raw_view.data]
-        # should be identical
-        self.assertEqual(serialized_posts, data_view)
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts_from_usc, response_posts)
         return
     
     def test_get_posts_by_loc_description(self):
-        # create a post from the north pole
-        north_post = Post.objects.create(
-            uuid='100',
-            title='to that hunk of a man',
-            location_description='north pole',
-            text='santa. i love you',
+        post_from_north_pole = Post.objects.create(
+            title='FakeTitleOfNorthPolePost',
+            text='HereIsAPostFromTheNorthPole',
+            location_description='North Pole',
             latitude=Decimal(0),
             longitude=Decimal(0),
-            timestamp=2,
             author=self.user,
         )
-        # we want the post from usc
-        serialized_posts = [
-            PostSerializer(north_post).data]
-        # get all posts at USC
-        request = self.factory.get(
+
+        serialized_posts_from_north_pole = [
+            PostSerializer(post_from_north_pole).data]
+
+        request = APIRequestFactory().get(
             '/api/posts',
             {
-                'location_description': 'north pole'
+                'location_description': 'North Pole'
             },
             format='json'
         )
+
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'get':'list'})(request)
-        data_view = [post_data for post_data in raw_view.data]
-        # should be identical
-        self.assertEqual(serialized_posts, data_view)
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts_from_north_pole, response_posts)
         return
     
     def test_get_posts_by_partial_loc_description(self):
-        # create a post from the north pole
-        north_post = Post.objects.create(
-            uuid='100',
-            title='to that hunk of a man',
-            location_description='north pole',
-            text='santa. i love you',
+        post_from_north_pole = Post.objects.create(
+            title='FakeTitleOfNorthPolePost',
+            text='HereIsAPostFromTheNorthPole',
+            location_description='North Pole',
             latitude=Decimal(0),
             longitude=Decimal(0),
-            timestamp=2,
             author=self.user,
         )
-        # we want the post from usc
-        serialized_posts = [
-            PostSerializer(north_post).data]
-        # get all posts at USC
-        request = self.factory.get(
+
+        serialized_posts_from_north_pole = [
+            PostSerializer(post_from_north_pole).data]
+
+        request = APIRequestFactory().get(
             '/api/posts',
             {
-                'location_description': 'no'
+                'location_description': 'North'
             },
             format='json'
         )
-        force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'get':'list'})(request)
-        data_view = [post_data for post_data in raw_view.data]
-        # should be identical
-        self.assertEqual(serialized_posts, data_view)
-        return
 
-    def test_get_posts_by_all_combos(self):
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts_from_north_pole, response_posts)
         return
     
-    def test_overwrite_post(self):
-        # create new post
-        test_post = self.post2
-        test_post.title = "new fake title2"
-        serialized_post = PostSerializer(test_post).data
-        # check if the post exists
-        request = self.factory.post(
-            '/api/posts'.format(test_post.id),
+    def test_put_post_title(self):
+        fake_title =  "NewFakeTitleForFirstPost"
+        self.post1.title = fake_title
+        serialized_post = PostSerializer(self.post1).data
+
+        self.assertFalse(Post.objects.filter(title=fake_title))
+
+        request = APIRequestFactory().put(
+            '/api/posts/',
             serialized_post,
             format='json'
         )
+
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = PostView.as_view({'post':'update'})(request, pk=2)
-        data_view = raw_view.data
-        self.assertEqual(serialized_post, data_view)
+        response = PostView.as_view({'put':'update'})(request, pk=self.post1.pk)
+        response_post = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_post, response_post)
+        self.assertTrue(Post.objects.filter(title=fake_title))
+        return
+    
+    def test_put_post_text(self):
+        fake_text = "NewFakeTextForFirstPost"
+        self.post1.text = fake_text
+        serialized_post = PostSerializer(self.post1).data
+
+        self.assertFalse(Post.objects.filter(text=fake_text))
+
+        request = APIRequestFactory().put(
+            '/api/posts/',
+            serialized_post,
+            format='json'
+        )
+
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        response = PostView.as_view({'put':'update'})(request, pk=self.post1.pk)
+        response_post = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_post, response_post)
+        self.assertTrue(Post.objects.filter(text=fake_text))
+        return
+
+    def test_patch_valid_post_title(self):
+        fake_title = 'NewFakeTitleForFirstPost'
+
+        self.assertFalse(Post.objects.filter(title=fake_title))
+
+        request = APIRequestFactory().patch(
+            '/api/posts/',
+            {
+                'title': fake_title,
+            },
+            format='json'
+        )
+
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        response = PostView.as_view({'patch':'partial_update'})(request, pk=self.post1.pk)
+        response_post = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_post.get('title'), fake_title)
+        self.assertTrue(Post.objects.filter(title=fake_title))
+        return
+
+    def test_patch_post_text(self):
+        fake_text = 'NewFakeTextForFirstPost'
+
+        self.assertFalse(Post.objects.filter(text=fake_text))
+
+        request = APIRequestFactory().patch(
+            '/api/posts/',
+            {
+                'text': fake_text,
+            },
+            format='json'
+        )
+
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        response = PostView.as_view({'patch':'partial_update'})(request, pk=self.post1.pk)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get('text'), fake_text)
+        self.assertTrue(Post.objects.filter(text=fake_text))
+        return
+
+    def test_delete_post(self):
+        self.assertTrue(Post.objects.filter(pk=self.post1.pk))
+
+        request = APIRequestFactory().delete('/api/posts/')
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        response = PostView.as_view({'delete':'destroy'})(request, pk=self.post1.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Post.objects.filter(pk=self.post1.pk))
         return
         
 class VoteTest(TestCase):
     def setUp(self):
-        # set up auth
-        self.user = User.objects.create(username='kevinsun', 
-            password='kevinsun')
+        self.user = User(
+            email='TestUser@usc.edu',
+            username='TestUser',
+        )
+        self.user.set_password("TestPassword@98374")
+        self.user.save()
         Token.objects.create(user=self.user)
-        # initialize posts
-        self.post1 = Post.objects.create(
-            uuid='1',
-            title='title1',
-            text='fake fake text text',
-            timestamp=0,
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
             author=self.user,
         )
-        self.post2 = Post.objects.create(
-            uuid='2',
-            title='title2',
-            text='real real real stuff',
-            timestamp=1,
-            author=self.user,
-        )
-        # upload to database
-        self.factory = APIRequestFactory()
         return
     
     def test_post_vote(self):
-        # create vote for post1
         vote = Vote(
             voter=self.user,
-            post=self.post1,
-            timestamp=2,
+            post=self.post,
             rating=10,
         )
         serialized_vote = VoteSerializer(vote).data
-        # post vote to database
-        request = self.factory.post(
+
+        self.assertFalse(Vote.objects.filter(
+            voter=vote.voter,
+            post=vote.post,
+            rating=vote.rating,
+        ))
+
+        request = APIRequestFactory().post(
             '/api/votes',
             serialized_vote,
             format='json',
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = VoteView.as_view({'post':'create'})(request)
-        data_view = raw_view.data
-        # should be successful (standardizing primary key ID)
-        serialized_vote["id"] = data_view["id"]
-        self.assertEqual(serialized_vote, data_view)
+        response = VoteView.as_view({'post':'create'})(request)
+
+        response_vote = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_vote.get('voter'), serialized_vote.get('voter'))
+        self.assertEqual(response_vote.get('post'), serialized_vote.get('post'))
+        self.assertEqual(response_vote.get('rating'), serialized_vote.get('rating'))
+        self.assertTrue(Vote.objects.filter(
+            voter=vote.voter,
+            post=vote.post,
+            rating=vote.rating,
+        ))
         return
     
     def test_delete_vote(self):
-        # create new vote in the database
         vote = Vote.objects.create(
             voter=self.user,
-            post=self.post2,
-            timestamp=2,
+            post=self.post,
             rating=10,
         )
-        # delete vote from database
-        request = self.factory.delete(
+        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+
+        request = APIRequestFactory().delete(
             '/api/votes/{}'.format(vote.pk),
             format='json',
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
-        votes = Vote.objects.filter(id=vote.pk)
-        # vote should not exist in database
-        self.assertQuerysetEqual(votes, Vote.objects.none())
+        response = VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Vote.objects.filter(pk=vote.pk))
         return
     
     def test_get_vote(self):
-        # create new vote in the database 
         vote = Vote.objects.create(
             voter=self.user,
-            post=self.post2,
-            timestamp=2,
+            post=self.post,
             rating=10,
         )
         serialized_vote = VoteSerializer(vote).data
-        # query vote from database
-        request = self.factory.get(
+        self.assertTrue(Vote.objects.filter(
+            voter=vote.voter,
+            post=vote.post,
+            rating=vote.rating,
+        ))
+
+        request = APIRequestFactory().get(
             '/api/votes/',
             {
-                'username':self.user.username,
-                'post_id':self.post2.pk,
+                'username': self.user.username,
+                'post_id': self.post.pk,
             },
             format='json',
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = VoteView.as_view({'get':'list'})(request)
-        data_view = raw_view.data[0]
-        # vote 
-        self.assertEqual(serialized_vote, data_view)
+        response = VoteView.as_view({'get':'list'})(request)
+
+        response_vote = response.data[0]
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_vote, response_vote)
         return
 
 class FlagTest(TestCase):
     def setUp(self):
+
         return
     
     def test_post_flag(self):
+
         return
     
     def test_delete_flag(self):
@@ -425,84 +519,94 @@ class FlagTest(TestCase):
 
 class CommentTest(TestCase):
     def setUp(self):
-        # set up auth
-        self.user = User.objects.create(username='kevinsun', 
-            password='kevinsun')
+        self.user = User(
+            email='TestUser@usc.edu',
+            username='TestUser',
+        )
+        self.user.set_password("TestPassword@98374")
+        self.user.save()
         Token.objects.create(user=self.user)
-        self.post1 = Post.objects.create(
-            uuid='fakeid1',
-            title='faketitle1',
-            text='faketext1',
-            timestamp=0,
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
             author=self.user,
         )
-        self.comment1 = Comment.objects.create(
-            uuid='fakeid2',
-            text='fakecomment',
-            timestamp=1,
-            post=self.post1,
+
+        self.comment = Comment.objects.create(
+            text='FakeTextForComment',
+            post=self.post,
             author=self.user
         )
-        # upload to database
-        self.factory = APIRequestFactory()
+
+        self.unused_post_id = 155
         return 
         
     def test_get_valid_comment(self):
-        # get valid comment object
-        comment = Comment.objects.get(post=self.post1)
-        serialized_comment = CommentSerializer(comment).data
-        # get valid query object
-        request = self.factory.get(
+        serialized_comment = CommentSerializer(self.comment).data
+
+        request = APIRequestFactory().get(
             '/api/comments',
-            {'post_id':self.post1.pk},
+            {
+                'post_id':self.post.pk
+            },
             format="json"
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = CommentView.as_view({'get':'list'})(request)
-        data_view = raw_view.data[0]
-        # should be identical
-        self.assertEqual(serialized_comment, data_view)
-        # should contain username always
-        self.assertIn('author_username', data_view)
+        response = CommentView.as_view({'get':'list'})(request)
+        response_comment = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_comment, response_comment)
+        self.assertIn('author_username', response_comment)
         return
     
     def test_get_invalid_comment(self):
-        # get valid query object
-        request = self.factory.get(
+        request = APIRequestFactory().get(
             '/api/comments',
-            {'post_id':'2'},
+            {
+                'post_id': self.unused_post_id,
+            },
             format="json"
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = CommentView.as_view({'get':'list'})(request)
-        data_view = raw_view.data
-        # should be identical
-        self.assertEqual([], data_view)
+        response = CommentView.as_view({'get':'list'})(request)
+        response_comment = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_comment)
         return
 
     def test_post_valid_comment(self):
         test_comment = Comment(
-            uuid='fakeid2',
-            text='fakecomment',
-            timestamp=1,
-            post=self.post1,
+            text='FakeTextForTestComment',
+            post=self.post,
             author=self.user
         )
-        test_comment_serializer = CommentSerializer(test_comment)
-        request = self.factory.post(
+        serialized_comment = CommentSerializer(test_comment).data
+
+        self.assertFalse(Comment.objects.filter(
+            text=test_comment.text,
+            post=test_comment.post,
+            author=test_comment.author))
+
+        request = APIRequestFactory().post(
             '/api/comments/',
-            test_comment_serializer.data,
+            serialized_comment,
             format="json"
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = CommentView.as_view({'post':'create'})(request)
-        self.assertEqual(raw_view.status_code, status.HTTP_201_CREATED)
-        self.assertGreaterEqual(len(Comment.objects.filter(
-            uuid=test_comment.uuid,
+        response = CommentView.as_view({'post':'create'})(request)
+        response_comment = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_comment.get('text'), serialized_comment.get('text'))
+        self.assertEqual(response_comment.get('post'), serialized_comment.get('post'))
+        self.assertEqual(response_comment.get('author'), serialized_comment.get('author'))
+        self.assertTrue(Comment.objects.filter(
             text=test_comment.text,
-            timestamp=test_comment.timestamp,
             post=test_comment.post,
-            author=test_comment.author)), 1)
+            author=test_comment.author))
         return
 
 class MessageTest(TestCase):
@@ -517,33 +621,60 @@ class MessageTest(TestCase):
 
 class WordTest(TestCase):
     def setUp(self):
-        self.user = User.objects.create(username='kevinsun', 
-            password='kevinsun')
-        self.factory = APIRequestFactory()
+        self.user = User(
+            email='TestUser@usc.edu',
+            username='TestUser',
+        )
+        self.user.set_password("TestPassword@98374")
+        self.user.save()
         Token.objects.create(user=self.user)
 
     def test_get_partial_word(self):
-        # create post with text staring with "no"
+        word_to_search = 'Fake'
+        self.assertFalse(Word.objects.filter(text__contains=word_to_search))
         Post.objects.create(
-            uuid='3',
-            title='title3',
-            text='nonexistent, non, nope, nob, no',
-            timestamp=2,
+            title='FakeTitleForFakePost',
+            text='FakeTextForFakePost',
             author=self.user,
         )
-        # look for words that start with "no"
-        request = self.factory.get(
+
+        request = APIRequestFactory().get(
             '/api/words',
             {
-                'text':'no'
+                'text': word_to_search,
             },
             format='json'
         )
         force_authenticate(request, user=self.user, token=self.user.auth_token)
-        raw_view = WordView.as_view()(request)
-        # Five words that start with "no"
-        self.assertEqual(len(raw_view.data), 5)
-        for word in raw_view.data:
-            # you can find "no" in any word
-            self.assertNotEqual(word['text'].find('no'), -1)
+        response = WordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for word in response.data:
+            self.assertFalse(word.get('text').find(word_to_search), -1)
+        self.assertTrue(Word.objects.filter(text__contains=word_to_search))
+        return
+    
+    def test_get_full_word(self):
+        word_to_search = 'FakeTitleForFakePost'
+        self.assertFalse(Word.objects.filter(text__contains=word_to_search))
+        Post.objects.create(
+            title='FakeTitleForFakePost',
+            text='FakeTextForFakePost',
+            author=self.user,
+        )
+
+        request = APIRequestFactory().get(
+            '/api/words',
+            {
+                'text': word_to_search,
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
+        response = WordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for word in response.data:
+            self.assertFalse(word.get('text').find(word_to_search), -1)
+        self.assertTrue(Word.objects.filter(text__contains=word_to_search))
         return

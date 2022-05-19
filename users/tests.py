@@ -13,6 +13,9 @@ from .models import User, EmailAuthentication
 # Create your tests here.
 class RegisterUserEmailViewTest(TestCase):
     def test_register_user_valid_email(self):
+        self.assertFalse(EmailAuthentication.objects.filter(
+            email='RegisterThisFakeEmail@usc.edu'))
+
         request = APIRequestFactory().post(
             'api-register/',
             {
@@ -20,7 +23,6 @@ class RegisterUserEmailViewTest(TestCase):
             },
             format='json',
         )
-
         response = RegisterUserEmailView.as_view()(request)
 
         self.assertEquals(response.status_code, status.HTTP_201_CREATED)
@@ -36,7 +38,6 @@ class RegisterUserEmailViewTest(TestCase):
             },
             format='json',
         )
-
         response = RegisterUserEmailView.as_view()(request)
 
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -51,6 +52,9 @@ class ValidateUserEmailViewTest(TestCase):
         )
         registration.save()
 
+        self.assertFalse(EmailAuthentication.objects.get(
+            email='ValidateThisFakeEmail@usc.edu').validated)
+
         request = APIRequestFactory().post('api-validate/',
             {
                 'email': 'ValidateThisFakeEmail@usc.edu',
@@ -58,7 +62,6 @@ class ValidateUserEmailViewTest(TestCase):
             },
             format='json',
         )
-
         response = ValidateUserEmailView.as_view()(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -72,6 +75,9 @@ class ValidateUserEmailViewTest(TestCase):
         )
         registration.save()
 
+        self.assertFalse(EmailAuthentication.objects.get(
+            email='ValidateThisFakeEmail@usc.edu').validated)
+
         request = APIRequestFactory().post(
             'api-validate/',
             {
@@ -80,7 +86,6 @@ class ValidateUserEmailViewTest(TestCase):
             },
             format='json',
         )
-
         response = ValidateUserEmailView.as_view()(request)
 
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -97,22 +102,41 @@ class UserViewPostTest(TestCase):
         self.email_auth.validation_time = datetime.now().timestamp()
         self.email_auth.save()
 
-    def test_create_user_valid_email(self):        
+        self.fake_username = 'FakeTestingUsername'
+        self.fake_password = 'FakeTestingPassword@3124587'
+        self.fake_first_name = 'FirstNameOfFakeUser'
+        self.fake_last_name = 'LastNameOfFakeUser'
+
+    def test_create_user_valid_email(self):
+        self.assertFalse(User.objects.filter(
+            email=self.email_auth.email,
+            username=self.fake_username,
+            password=self.fake_password,
+            first_name=self.fake_first_name,
+            last_name=self.fake_last_name,
+        ))
+
         request = APIRequestFactory().post(
             'api/users/',
             {
                 'email': self.email_auth.email,
-                'username':'FakeTestingUsername',
-                'password':'FakeTestingPassword@3124587',
-                'first_name':'FirstNameOfFakeUser',
-                'last_name':'LastNameOfFakeUser',
+                'username': self.fake_username,
+                'password': self.fake_password,
+                'first_name': self.fake_first_name,
+                'last_name': self.fake_last_name,
             },
             format='json',
         )
-
         response = UserView.as_view({'post':'create'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(User.objects.filter(
+            email=self.email_auth.email,
+            username=self.fake_username,
+            password=self.fake_password,
+            first_name=self.fake_first_name,
+            last_name=self.fake_last_name,
+        ))
         return
 
     def test_create_user_invalid_email(self):
@@ -120,73 +144,75 @@ class UserViewPostTest(TestCase):
             'api/users/',
             {
                 'email': 'thisEmailDoesNotExist@usc.edu',
-                'username':'FakeTestingUsername',
-                'password':'FakeTestingPassword@3124587',
-                'first_name':'FirstNameOfFakeUser',
-                'last_name':'LastNameOfFakeUser',
+                'username': self.fake_username,
+                'password': self.fake_password,
+                'first_name': self.fake_first_name,
+                'last_name': self.fake_last_name,
             },
             format='json',
         )
-        
+
         with self.assertRaises(ValidationError):
             UserView.as_view({'post':'create'})(request)
         return
 
     def test_obtain_token_valid_user(self):
         user = User(
-            email= self.email_auth.email,
-            username= 'FakeTestingUsername',
+            email=self.email_auth.email,
+            username=self.fake_username,
         )
-        user.set_password('FakeTestingPassword@3124587')
+        user.set_password(self.fake_password)
         user.save()
 
         request = APIRequestFactory().post(
             'api-token/',
             {
-                'username': 'FakeTestingUsername', 
-                'password': 'FakeTestingPassword@3124587',
+                'username': self.fake_username, 
+                'password': self.fake_password,
             },
             format='json',
         )
-
         response = obtain_auth_token(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertIn('token', response.data)
         return
     
     def test_obtain_token_invalid_username(self):
         user = User(
-            email= self.email_auth.email,
-            username= 'FakeTestingUsername',
+            email=self.email_auth.email,
+            username=self.fake_username,
         )
-        user.set_password('FakeTestingPassword@3124587')
+        user.set_password(self.fake_password)
         user.save()
 
         request = APIRequestFactory().post(
             'api-token/',
             {
-                'username':'ThisUserDoesNotExist', 
-                'password':'FakeTestingPassword@3124587',
+                'username': 'ThisUserDoesNotExist', 
+                'password': self.fake_password,
             },
             format='json',
         )
         response = obtain_auth_token(request)
+
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn('token', response.data)
         return
     
     def test_obtain_token_invalid_password(self):
         user = User(
             email= self.email_auth.email,
-            username= 'FakeTestingUsername',
+            username= self.fake_username,
         )
-        user.set_password('FakeTestingPassword@3124587')
+        user.set_password(self.fake_password)
         user.save()
 
         request = APIRequestFactory().post(
             'api-token/',
             {
-                'username':'FakeTestingUsername', 
-                'password':'ThisPasswordDoesNotExist',
+                'username': self.fake_username, 
+                'password': 'ThisPasswordDoesNotExist',
             },
             format='json',
         )
@@ -194,6 +220,7 @@ class UserViewPostTest(TestCase):
         response = obtain_auth_token(request)
         
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn('token', response.data)
         return
 
 class UserViewGetTest(TestCase):
@@ -217,6 +244,8 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
 
@@ -229,6 +258,8 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
     
@@ -241,6 +272,8 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
 
@@ -253,6 +286,8 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
     
@@ -265,6 +300,8 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
 
@@ -277,6 +314,8 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
         
@@ -289,6 +328,8 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
 
@@ -302,7 +343,9 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
-        self.assertEquals(len(response.data), 0)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)
         return
 
     def test_query_user_by_invalid_full_username(self):
@@ -314,7 +357,9 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
-        self.assertEquals(len(response.data), 0)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)
         return
     
     def test_query_user_by_invalid_prefix_username(self):
@@ -326,7 +371,9 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
-        self.assertEquals(len(response.data), 0)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)        
         return
 
     def test_query_user_by_invalid_full_first_name(self):
@@ -338,7 +385,9 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
-        self.assertEquals(len(response.data), 0)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)        
         return
     
     def test_query_user_by_invalid_prefix_first_name(self):
@@ -350,7 +399,9 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
-        self.assertEquals(len(response.data), 0)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)        
         return
 
     def test_query_user_by_invalid_full_last_name(self):
@@ -362,7 +413,9 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
-        self.assertEquals(len(response.data), 0)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)        
         return
 
     def test_query_user_by_invalid_prefix_last_name(self):
@@ -374,7 +427,9 @@ class UserViewGetTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'get':'list'})(request)
-        self.assertEquals(len(response.data), 0)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)        
         return
 
 class UserViewDeleteTest(TestCase):
@@ -389,17 +444,23 @@ class UserViewDeleteTest(TestCase):
         self.unused_pk = 151
 
     def test_delete_valid_user(self):
+        self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
+
         request = APIRequestFactory().delete('api/users/')
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.valid_user.pk)
+
         self.assertEquals(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(User.objects.filter(email=self.valid_user.email))
+        self.assertFalse(User.objects.filter(pk=self.valid_user.pk))
         return
 
     def test_delete_invalid_user(self):
+        self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
+
         request = APIRequestFactory().delete('api/users/')
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.unused_pk)
+
         self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertTrue(User.objects.filter(email=self.valid_user.email))
+        self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
         return
 
 class UserViewPatchTest(TestCase):
@@ -409,31 +470,41 @@ class UserViewPatchTest(TestCase):
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
             last_name="notTheSameLastName")
-        self.valid_user.set_password("strongPassword@1354689$")
+        self.password = "strongPassword@1354689$"
+        self.valid_user.set_password(self.password)
         self.valid_user.save()
         self.unused_pk = 151
 
     def test_patch_invalid_user(self):
+        self.assertFalse(User.objects.filter(pk=self.unused_pk))
+
         request = APIRequestFactory().patch('api/users/')
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.unused_pk)
+
         self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertEquals(self.valid_user, User.objects.get(email=self.valid_user.email))
+        self.assertFalse(User.objects.filter(pk=self.unused_pk))
         return
         
     def test_patch_valid_username(self):
+        self.assertEquals(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
+        fake_new_username = 'FakeNewUsername'
+
         request = APIRequestFactory().patch(
             'api/users/',
             {
-                'username': 'newUsername',
+                'username': fake_new_username,
             },
             format='json',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals('newUsername', User.objects.get(email=self.valid_user.email).username)
+        self.assertEquals(fake_new_username, User.objects.get(pk=self.valid_user.pk).username)
         return
     
     def test_patch_invalid_username(self):
+        self.assertEquals(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
+
         request = APIRequestFactory().patch(
             'api/users/',
             {
@@ -442,61 +513,99 @@ class UserViewPatchTest(TestCase):
             format='json',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEquals(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
         return
     
     def test_patch_valid_password(self):
+        fake_new_password = 'anotherStrongPass@9703$'
+
+        self.assertIsNone(
+            authenticate(username=self.valid_user.username, 
+                        password=fake_new_password))
+        self.assertIsNotNone(
+            authenticate(username=self.valid_user.username, 
+                        password=self.password))
+        
         request = APIRequestFactory().patch(
             'api/users/',
             {
-                'password': 'anotherStrongPass@9703$',
+                'password': fake_new_password,
             },
             format='json',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+
         self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(
+            authenticate(username=self.valid_user.username, 
+                        password=self.password))
         self.assertIsNotNone(
             authenticate(username=self.valid_user.username, 
-                        password='anotherStrongPass@9703$'))
+                        password=fake_new_password))
         return
     
     def test_patch_invalid_password(self):
+        fake_new_password = '123'
+
+        self.assertIsNone(
+            authenticate(username=self.valid_user.username, 
+                        password=fake_new_password))
+        self.assertIsNotNone(
+            authenticate(username=self.valid_user.username, 
+                        password=self.password))
+
         request = APIRequestFactory().patch(
             'api/users/',
             {
-                'password': '123',
+                'password': fake_new_password,
             },
             format='json',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIsNone(
             authenticate(username=self.valid_user.username, 
-                        password=self.valid_user.password))
+                        password=fake_new_password))
+        self.assertIsNotNone(
+            authenticate(username=self.valid_user.username, 
+                        password=self.password))
         return
 
     def test_patch_first_name(self):
+        fake_first_name = 'heyMyRealFirstName'
+
+        self.assertEquals(self.valid_user.first_name, User.objects.get(pk=self.valid_user.pk).first_name)
+
         request = APIRequestFactory().patch(
             'api/users/',
             {
-                'first_name': 'heyMyRealFirstName',
+                'first_name': fake_first_name,
             },
             format='json',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals('heyMyRealFirstName', User.objects.get(email=self.valid_user.email).first_name)
+        self.assertEquals(fake_first_name, User.objects.get(pk=self.valid_user.pk).first_name)
         return
     
     def test_patch_last_name(self):
+        fake_last_name = 'heyMyRealLastName'
+
+        self.assertEquals(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+
         request = APIRequestFactory().patch(
             'api/users/',
             {
-                'last_name': 'heyMyRealLastName',
+                'last_name': fake_last_name,
             },
             format='json',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals('heyMyRealLastName', User.objects.get(email=self.valid_user.email).last_name)
+        self.assertEquals(fake_last_name, User.objects.get(pk=self.valid_user.pk).last_name)
         return
