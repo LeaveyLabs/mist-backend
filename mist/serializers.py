@@ -1,11 +1,5 @@
-import random
-from datetime import datetime, timedelta
-from django.forms import ValidationError
 from rest_framework import serializers
 from .models import Flag, Post, Comment, Message, Vote, Word
-from users.models import User
-from django.contrib.auth import authenticate
-from django.contrib.auth.password_validation import validate_password
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.ReadOnlyField(source='calculate_occurrences')
@@ -20,7 +14,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'uuid', 'title', 'text', 'latitude', 'longitude', 'location_description',
+        fields = ('id', 'title', 'text', 'latitude', 'longitude', 'location_description',
         'timestamp', 'author', 'averagerating', 'commentcount', )
 
 class VoteSerializer(serializers.ModelSerializer):

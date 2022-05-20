@@ -19,6 +19,7 @@ from .serializers import (
     WordSerializer,
 )
 from .models import (
+    Flag,
     Post, 
     Comment,
     Message,
@@ -139,7 +140,7 @@ class VoteView(viewsets.ModelViewSet):
 class FlagView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
     serializer_class = FlagSerializer
-    queryset = Vote.objects.all()
+    queryset = Flag.objects.all()
 
 class MessageView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
