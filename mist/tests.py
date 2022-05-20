@@ -9,6 +9,8 @@ from mist.views import CommentView, FlagView, PostView, VoteView, WordView
 from .models import Flag, Post, Comment, Vote, Word
 
 class PostTest(TestCase):
+    maxDiff = None
+
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)
 
@@ -135,7 +137,7 @@ class PostTest(TestCase):
     def test_get_all_posts(self):
         serialized_posts = [
             PostSerializer(self.post1).data, 
-            PostSerializer(self.post2).data
+            PostSerializer(self.post2).data,
         ]
 
         request = APIRequestFactory().get(
@@ -560,6 +562,8 @@ class FlagTest(TestCase):
         return
 
 class CommentTest(TestCase):
+    maxDiff = None
+
     def setUp(self):
         self.user = User(
             email='TestUser@usc.edu',
