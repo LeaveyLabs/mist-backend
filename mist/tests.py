@@ -75,7 +75,6 @@ class PostTest(TestCase):
         serialized_post = PostSerializer(test_post).data
 
         self.assertFalse(Post.objects.filter(
-            uuid=test_post.uuid,
             title=test_post.title,
             text=test_post.text,
             latitude=test_post.latitude,
@@ -99,7 +98,6 @@ class PostTest(TestCase):
         self.assertEqual(response_post.get('longitude'), serialized_post.get('longitude'))
         self.assertEqual(response_post.get('author'), serialized_post.get('author'))
         self.assertTrue(Post.objects.filter(
-            uuid=test_post.uuid,
             title=test_post.title,
             text=test_post.text,
             latitude=test_post.latitude,
