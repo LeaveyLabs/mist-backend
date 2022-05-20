@@ -1,12 +1,12 @@
 from rest_framework import serializers
-from .models import Flag, Post, Comment, Message, Vote, Word
+from .models import Block, Flag, Post, Comment, Message, Tag, Vote, Word
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.ReadOnlyField(source='calculate_occurrences')
 
     class Meta:
         model = Word
-        fields = ('text', 'occurrences')
+        fields = ('id', 'text', 'occurrences')
 
 class PostSerializer(serializers.ModelSerializer):
     averagerating = serializers.ReadOnlyField(source='calculate_averagerating')
@@ -25,7 +25,17 @@ class VoteSerializer(serializers.ModelSerializer):
 class FlagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Flag
-        fields = ('id', 'flagger', 'post', 'timestamp', 'rating') 
+        fields = ('id', 'flagger', 'post', 'timestamp', 'rating')
+
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ('id', 'post', 'tagged_user', 'tagging_user', 'timestamp')
+
+class BlockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Block
+        fields = ('id', 'blocked_user', 'blocking_user', 'timestamp')
 
 class CommentSerializer(serializers.ModelSerializer):
     author_picture = serializers.ReadOnlyField(source='author.picture')

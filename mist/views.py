@@ -1,28 +1,26 @@
-from datetime import datetime
 from decimal import Decimal
-import random
 from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from users.models import User
-from django.core.mail import send_mail
 
 from .serializers import (
+    BlockSerializer,
     FlagSerializer,
     PostSerializer, 
     CommentSerializer,
     MessageSerializer,
+    TagSerializer,
     VoteSerializer,
     WordSerializer,
 )
 from .models import (
+    Block,
     Flag,
     Post, 
     Comment,
     Message,
+    Tag,
     Vote,
     Word,
 )
@@ -123,7 +121,7 @@ class VoteView(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        If parameters are missing, return all votes. 
+        If parameters are missing, return all votes.
         Otherwise, return with username and post_id.
         """
         # parameters
@@ -140,9 +138,58 @@ class VoteView(viewsets.ModelViewSet):
 class FlagView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
     serializer_class = FlagSerializer
-    queryset = Flag.objects.all()
+
+    def get_queryset(self):
+        flagger = self.request.query_params.get("flagger")
+        post = self.request.query_params.get("post")
+        queryset = Flag.objects.all()
+        if flagger:
+            queryset = queryset.filter(flagger=flagger)
+        if post:
+            queryset = queryset.filter(post=post)
+        return queryset
+
+class TagView(viewsets.ModelViewSet):
+    # permission_classes = (IsAuthenticated,)
+    serializer_class = TagSerializer
+
+    def get_queryset(self):
+        tagged_user = self.request.query_params.get("tagged_user")
+        tagging_user = self.request.query_params.get("tagging_user")
+        post = self.request.query_params.get("post")
+        queryset = Tag.objects.all()
+        if tagged_user:
+            queryset = queryset.filter(tagged_user=tagged_user)
+        if tagging_user:
+            queryset = queryset.filter(tagging_user=tagging_user)
+        if post:
+            queryset = queryset.filter(post=post)
+        return queryset
+
+class BlockView(viewsets.ModelViewSet):
+    # permission_classes = (IsAuthenticated,)
+    serializer_class = BlockSerializer
+
+    def get_queryset(self):
+        blocked_user = self.request.query_params.get("blocked_user")
+        blocking_user = self.request.query_params.get("blocking_user")
+        queryset = Block.objects.all()
+        if blocked_user:
+            queryset = queryset.filter(blocked_user=blocked_user)
+        if blocking_user:
+            queryset = queryset.filter(blocking_user=blocking_user)
+        return queryset
 
 class MessageView(viewsets.ModelViewSet):
     # permission_classes = (IsAuthenticated,)
     serializer_class = MessageSerializer
-    queryset = Message.objects.all()  
+
+    def get_queryset(self):
+        to_user = self.request.query_params.get("to_user")
+        from_user = self.request.query_params.get("from_user")
+        queryset = Message.objects.all()
+        if to_user:
+            queryset = queryset.filter(to_user=to_user)
+        if from_user:
+            queryset = queryset.filter(from_user=from_user)
+        return queryset

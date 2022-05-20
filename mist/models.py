@@ -1,6 +1,5 @@
 from datetime import datetime
 from decimal import Decimal
-from tkinter.tix import MAX
 from django.conf import settings
 from django.db import models
 import uuid
@@ -97,6 +96,23 @@ class Flag(models.Model):
 
     def _str_(self):
         return self.flagger.pk
+
+class Tag(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    tagged_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tagged_user', on_delete=models.CASCADE)
+    tagging_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tagging_user', on_delete=models.CASCADE)
+    timestamp = models.FloatField(default=get_current_time, null=True)
+
+    class Meta:
+        unique_together = ('tagged_user', 'tagging_user',)
+
+class Block(models.Model):
+    blocking_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocking_user', on_delete=models.CASCADE)
+    blocked_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocked_user', on_delete=models.CASCADE)
+    timestamp = models.FloatField(default=get_current_time, null=True)
+
+    class Meta:
+        unique_together = ('blocking_user', 'blocked_user',)
 
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
