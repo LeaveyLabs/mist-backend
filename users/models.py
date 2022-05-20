@@ -3,7 +3,6 @@ import random
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
-import uuid
 
 class User(AbstractUser):
     picture = models.ImageField(upload_to='profiles', null=True)

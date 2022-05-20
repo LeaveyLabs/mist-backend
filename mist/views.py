@@ -2,6 +2,9 @@ from decimal import Decimal
 from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
+from mist.permissions import TestPermission
+from rest_framework.permissions import IsAuthenticated
+
 from users.models import User
 
 from .serializers import (
@@ -181,7 +184,7 @@ class BlockView(viewsets.ModelViewSet):
         return queryset
 
 class MessageView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (TestPermission,)
     serializer_class = MessageSerializer
 
     def get_queryset(self):

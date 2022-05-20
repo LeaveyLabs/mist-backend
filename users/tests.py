@@ -5,7 +5,8 @@ from django.contrib.auth import authenticate
 from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.views import obtain_auth_token
-from rest_framework.test import APIRequestFactory
+from rest_framework.authtoken.models import Token
+from rest_framework.test import APIRequestFactory, force_authenticate
 from .serializers import UserSerializer
 from .views import RegisterUserEmailView, UserView, ValidateUserEmailView
 from .models import User, EmailAuthentication
@@ -441,12 +442,14 @@ class UserViewDeleteTest(TestCase):
             last_name="notTheSameLastName")
         self.valid_user.set_password('randomPassword')
         self.valid_user.save()
+        self.auth_token = Token.objects.create(user=self.valid_user)
         self.unused_pk = 151
 
     def test_delete_valid_user(self):
         self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
 
         request = APIRequestFactory().delete('api/users/')
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -457,6 +460,7 @@ class UserViewDeleteTest(TestCase):
         self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
 
         request = APIRequestFactory().delete('api/users/')
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.unused_pk)
 
         self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -473,12 +477,14 @@ class UserViewPatchTest(TestCase):
         self.password = "strongPassword@1354689$"
         self.valid_user.set_password(self.password)
         self.valid_user.save()
+        self.auth_token = Token.objects.create(user=self.valid_user)
         self.unused_pk = 151
 
     def test_patch_invalid_user(self):
         self.assertFalse(User.objects.filter(pk=self.unused_pk))
 
         request = APIRequestFactory().patch('api/users/')
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.unused_pk)
 
         self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -496,6 +502,7 @@ class UserViewPatchTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -512,6 +519,7 @@ class UserViewPatchTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -535,6 +543,7 @@ class UserViewPatchTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -563,6 +572,7 @@ class UserViewPatchTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -586,6 +596,7 @@ class UserViewPatchTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -604,6 +615,7 @@ class UserViewPatchTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
