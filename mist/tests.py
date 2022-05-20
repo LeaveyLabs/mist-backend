@@ -150,7 +150,8 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        for serialized_post, response_post in zip(serialized_posts, response_posts):
+            self.assertDictEqual(serialized_post, response_post)
         return
     
     def test_get_posts_by_text(self):
@@ -169,7 +170,8 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        for serialized_post, response_post in zip(serialized_posts, response_posts):
+            self.assertDictEqual(serialized_post, response_post)
         return
     
     def test_get_posts_by_partial_text(self):
@@ -191,7 +193,8 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        for serialized_post, response_post in zip(serialized_posts, response_posts):
+            self.assertDictEqual(serialized_post, response_post)
         return
 
     def test_get_posts_by_timestamp(self):
@@ -210,7 +213,8 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        for serialized_post, response_post in zip(serialized_posts, response_posts):
+            self.assertDictEqual(serialized_post, response_post)
         return
     
     def test_get_posts_by_latitude_longitude(self):
@@ -245,7 +249,8 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts_from_usc, response_posts)
+        for serialized_post, response_post in zip(serialized_posts_from_usc, response_posts):
+            self.assertDictEqual(serialized_post, response_post)
         return
     
     def test_get_posts_by_loc_description(self):
@@ -274,7 +279,8 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts_from_north_pole, response_posts)
+        for serialized_post, response_post in zip(serialized_posts_from_north_pole, response_posts):
+            self.assertDictEqual(serialized_post, response_post)
         return
     
     def test_get_posts_by_partial_loc_description(self):
@@ -303,7 +309,8 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts_from_north_pole, response_posts)
+        for serialized_post, response_post in zip(serialized_posts_from_north_pole, response_posts):
+            self.assertDictEqual(serialized_post, response_post)
         return
     
     def test_put_post_title(self):
@@ -324,7 +331,7 @@ class PostTest(TestCase):
         response_post = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_post, response_post)
+        self.assertDictEqual(serialized_post, response_post)
         self.assertTrue(Post.objects.filter(title=fake_title))
         return
     
@@ -346,7 +353,7 @@ class PostTest(TestCase):
         response_post = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_post, response_post)
+        self.assertDictEqual(serialized_post, response_post)
         self.assertTrue(Post.objects.filter(text=fake_text))
         return
 
@@ -499,7 +506,7 @@ class VoteTest(TestCase):
         response_vote = response.data[0]
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_vote, response_vote)
+        self.assertDictEqual(serialized_vote, response_vote)
         return
 
 class FlagTest(TestCase):
@@ -603,7 +610,7 @@ class CommentTest(TestCase):
         response_comment = response.data[0]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_comment, response_comment)
+        self.assertDictEqual(serialized_comment, response_comment)
         self.assertIn('author_username', response_comment)
         return
     
