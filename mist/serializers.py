@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Block, Flag, Post, Comment, Message, Tag, Vote, Word
+from .models import Block, Flag, FriendRequest, Post, Comment, Message, Tag, Vote, Word
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.ReadOnlyField(source='calculate_occurrences')
@@ -36,6 +36,11 @@ class BlockSerializer(serializers.ModelSerializer):
     class Meta:
         model = Block
         fields = ('id', 'blocked_user', 'blocking_user', 'timestamp')
+
+class FriendRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FriendRequest
+        fields = ('id', 'friend_requesting_user', 'friend_requested_user', 'timestamp')
 
 class CommentSerializer(serializers.ModelSerializer):
     author_picture = serializers.ReadOnlyField(source='author.picture')

@@ -114,6 +114,14 @@ class Block(models.Model):
     class Meta:
         unique_together = ('blocking_user', 'blocked_user',)
 
+class FriendRequest(models.Model):
+    friend_requesting_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='friend_requesting_user', on_delete=models.CASCADE)
+    friend_requested_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='friend_requested_user', on_delete=models.CASCADE)
+    timestamp = models.FloatField(default=get_current_time, null=True)
+
+    class Meta:
+        unique_together = ('friend_requesting_user', 'friend_requested_user',)
+
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     text = models.CharField(max_length=500)
