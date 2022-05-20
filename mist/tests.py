@@ -6,7 +6,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
 from mist.serializers import BlockSerializer, CommentSerializer, FlagSerializer, PostSerializer, TagSerializer, VoteSerializer
 from mist.views import BlockView, CommentView, FlagView, PostView, TagView, VoteView, WordView
-from .models import Block, Flag, Post, Comment, Tag, Vote, Word
+from .models import Block, Flag, Post, Comment, Message, Tag, Vote, Word
 
 class PostTest(TestCase):
     maxDiff = None
@@ -1127,12 +1127,12 @@ class MessageTest(TestCase):
         self.user2.save()
         Token.objects.create(user=self.user2)
 
-        self.message1 = Block.objects.create(
+        self.message1 = Message.objects.create(
             from_user=self.user1,
             to_user=self.user2,
             text="TestMessageOne"
         )
-        self.message2 = Block.objects.create(
+        self.message2 = Message.objects.create(
             from_user=self.user2,
             to_user=self.user1,
             text="TestMessageTwo"
