@@ -4,8 +4,8 @@ from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
-from mist.serializers import BlockSerializer, CommentSerializer, FlagSerializer, PostSerializer, TagSerializer, VoteSerializer
-from mist.views import BlockView, CommentView, FlagView, PostView, TagView, VoteView, WordView
+from mist.serializers import BlockSerializer, CommentSerializer, FlagSerializer, MessageSerializer, PostSerializer, TagSerializer, VoteSerializer
+from mist.views import BlockView, CommentView, FlagView, MessageView, PostView, TagView, VoteView, WordView
 from .models import Block, Flag, Post, Comment, Message, Tag, Vote, Word
 
 class PostTest(TestCase):
@@ -1127,43 +1127,220 @@ class MessageTest(TestCase):
         self.user2.save()
         Token.objects.create(user=self.user2)
 
-        self.message1 = Message.objects.create(
-            from_user=self.user1,
-            to_user=self.user2,
-            text="TestMessageOne"
+        self.user3 = User(
+            email='TestUser3@usc.edu',
+            username='TestUser3',
         )
-        self.message2 = Message.objects.create(
-            from_user=self.user2,
-            to_user=self.user1,
-            text="TestMessageTwo"
-        )
+        self.user3.set_password("TestPassword3@98374")
+        self.user3.save()
+        Token.objects.create(user=self.user3)
         return
         
     def test_get_message_by_valid_from_user(self):
+        message = Message.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            text="TestMessageOne",
+            timestamp=0,
+        )
+        serialized_message = MessageSerializer(message).data
+
+        request = APIRequestFactory().get(
+            '/api/messages/',
+            {
+                'from_user': self.user1.pk,
+            },
+            format='json',
+        )
+
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = MessageView.as_view({'get':'list'})(request)
+        response_message = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_message, serialized_message)
         return
     
     def test_get_message_by_invalid_from_user(self):
+        request = APIRequestFactory().get(
+            '/api/messages/',
+            {
+                'from_user': self.user1.pk,
+            },
+            format='json',
+        )
+
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = MessageView.as_view({'get':'list'})(request)
+        response_messages = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_messages)
         return
     
     def test_get_message_by_valid_to_user(self):
+        message = Message.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            text="TestMessageOne",
+            timestamp=0,
+        )
+        serialized_message = MessageSerializer(message).data
+
+        request = APIRequestFactory().get(
+            '/api/messages/',
+            {
+                'to_user': self.user2.pk,
+            },
+            format='json',
+        )
+
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = MessageView.as_view({'get':'list'})(request)
+        response_message = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_message, serialized_message)
         return
 
     def test_get_message_by_invalid_to_user(self):
+        request = APIRequestFactory().get(
+            '/api/messages/',
+            {
+                'to_user': self.user2.pk,
+            },
+            format='json',
+        )
+
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = MessageView.as_view({'get':'list'})(request)
+        response_messages = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_messages)
         return
     
-    def test_get_messages_between_two_users(self):
+    def test_get_messages_by_valid_from_user(self):
+        message1 = Message.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            text="TestMessageOne",
+            timestamp=0,
+        )
+        message2 = Message.objects.create(
+            from_user=self.user2,
+            to_user=self.user1,
+            text="TestMessageTwo",
+            timestamp=0,
+        )
+        message3 = Message.objects.create(
+            from_user=self.user1,
+            to_user=self.user3,
+            text="TestMessageThree",
+            timestamp=0,
+        )
+        serialized_message1 = MessageSerializer(message1).data
+        serialized_message3 = MessageSerializer(message3).data
+        serialized_messages = [serialized_message1, 
+                                serialized_message3]
+
+        request = APIRequestFactory().get(
+            '/api/messages/',
+            {
+
+                'from_user': self.user1.pk,
+            },
+            format='json',
+        )
+
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = MessageView.as_view({'get':'list'})(request)
+        response_messages = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response_messages), len(serialized_messages))
+        self.assertCountEqual(serialized_messages, response_messages)
         return
 
     def test_post_valid_message(self):
+        message = Message(
+            from_user=self.user1,
+            to_user=self.user2,
+            text="TestMessageOne",
+            timestamp=0,
+        )
+        serialized_message = MessageSerializer(message).data
+
+        self.assertFalse(Message.objects.filter(
+            from_user=message.from_user,
+            to_user=message.to_user,
+            text=message.text,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/messages/',
+            serialized_message,
+            format='json',
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = MessageView.as_view({'post':'create'})(request)
+        response_message = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_message.get('to_user'), response_message.get('to_user'))
+        self.assertEqual(response_message.get('from_user'), response_message.get('from_user'))
+        self.assertEqual(response_message.get('text'), response_message.get('text'))
+        self.assertTrue(Message.objects.filter(
+            from_user=self.user1,
+            to_user=self.user2,
+            text=message.text,
+        ))
         return
     
     def test_post_invalid_message(self):
+        message = Message(
+            from_user=self.user1,
+            to_user=self.user2,
+            timestamp=0,
+        )
+        serialized_message = MessageSerializer(message).data
+
+        self.assertFalse(Message.objects.filter(
+            from_user=self.user1,
+            to_user=self.user2,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/messages/',
+            serialized_message,
+            format='json',
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = MessageView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Message.objects.filter(
+            from_user=self.user1,
+            to_user=self.user2,
+        ))
         return
     
-    def test_delete_valid_message(self):
-        return
-    
-    def test_delete_invalid_message(self):
+    def test_delete_message(self):
+        message = Message.objects.create(
+            from_user=self.user1,
+            to_user=self.user2,
+            text="TestMessageOne",
+            timestamp=0,  
+        )
+
+        self.assertTrue(Message.objects.filter(pk=message.pk))
+
+        request = APIRequestFactory().delete('/api/messages/')
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = MessageView.as_view({'delete':'destroy'})(request, pk=message.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Tag.objects.filter(pk=message.pk))
         return
 
 class WordTest(TestCase):

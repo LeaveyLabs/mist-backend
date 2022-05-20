@@ -55,4 +55,4 @@ class CommentSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = ('id', 'text', 'timestamp', 'from_user_id', 'to_user_id')
+        fields = ('id', 'text', 'timestamp', 'from_user', 'to_user')
