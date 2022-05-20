@@ -22,6 +22,7 @@ jsonpickle = "*"
 requests = "*"
 django-phonenumber-field = "*"
 phonenumbers = "*"
+coverage = "*"
 django-nose = "*"
 
 [dev-packages]
