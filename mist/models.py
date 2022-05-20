@@ -9,7 +9,6 @@ def get_current_time():
     return datetime.now().timestamp()
 
 class Post(models.Model):
-    # Default coordinates are at USC
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)
 
@@ -67,10 +66,14 @@ class Word(models.Model):
         return self.posts.count()
 
 class Vote(models.Model):
+    MIN_RATING = 0
+    MAX_RATING = 10
+    AVG_RATING = (MIN_RATING+MAX_RATING)//2
+
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=5)
+    rating = models.IntegerField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('voter', 'post',)
@@ -79,16 +82,37 @@ class Vote(models.Model):
         return self.voter.pk
 
 class Flag(models.Model):
+    MIN_RATING = 0
+    MAX_RATING = 10
+    AVG_RATING = (MIN_RATING+MAX_RATING)//2
+
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=5)
+    rating = models.IntegerField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('flagger', 'post',)
 
     def _str_(self):
         return self.flagger.pk
+
+class Tag(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    tagged_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tagged_user', on_delete=models.CASCADE)
+    tagging_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tagging_user', on_delete=models.CASCADE)
+    timestamp = models.FloatField(default=get_current_time, null=True)
+
+    class Meta:
+        unique_together = ('tagged_user', 'tagging_user',)
+
+class Block(models.Model):
+    blocking_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocking_user', on_delete=models.CASCADE)
+    blocked_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocked_user', on_delete=models.CASCADE)
+    timestamp = models.FloatField(default=get_current_time, null=True)
+
+    class Meta:
+        unique_together = ('blocking_user', 'blocked_user',)
 
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)

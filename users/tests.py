@@ -235,7 +235,7 @@ class UserViewGetTest(TestCase):
         self.serialized_user = UserSerializer(self.valid_user)
 
     # Valid Queries
-    def test_query_user_by_valid_text(self):
+    def test_get_user_by_valid_text(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -249,7 +249,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
 
-    def test_query_user_by_valid_full_username(self):
+    def test_get_user_by_full_username(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -263,7 +263,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
     
-    def test_query_user_by_valid_prefix_username(self):
+    def test_get_user_by_prefix_username(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -277,7 +277,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
 
-    def test_query_valid_user_by_full_first_name(self):
+    def test_get_valid_user_by_full_first_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -291,7 +291,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
     
-    def test_query_valid_user_by_prefix_first_name(self):
+    def test_get_valid_user_by_prefix_first_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -305,7 +305,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
 
-    def test_query_valid_user_by_full_last_name(self):
+    def test_get_valid_user_by_full_last_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -319,7 +319,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.serialized_user.data)
         return
         
-    def test_query_valid_user_by_prefix_last_name(self):
+    def test_get_valid_user_by_prefix_last_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -334,7 +334,7 @@ class UserViewGetTest(TestCase):
         return
 
     # Invalid User
-    def test_query_user_by_invalid_text(self):
+    def test_get_user_by_invalid_text(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -348,7 +348,7 @@ class UserViewGetTest(TestCase):
         self.assertFalse(response.data)
         return
 
-    def test_query_user_by_invalid_full_username(self):
+    def test_get_user_by_invalid_full_username(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -362,7 +362,7 @@ class UserViewGetTest(TestCase):
         self.assertFalse(response.data)
         return
     
-    def test_query_user_by_invalid_prefix_username(self):
+    def test_get_user_by_invalid_prefix_username(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -376,7 +376,7 @@ class UserViewGetTest(TestCase):
         self.assertFalse(response.data)        
         return
 
-    def test_query_user_by_invalid_full_first_name(self):
+    def test_get_user_by_invalid_full_first_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -390,7 +390,7 @@ class UserViewGetTest(TestCase):
         self.assertFalse(response.data)        
         return
     
-    def test_query_user_by_invalid_prefix_first_name(self):
+    def test_get_user_by_invalid_prefix_first_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -404,7 +404,7 @@ class UserViewGetTest(TestCase):
         self.assertFalse(response.data)        
         return
 
-    def test_query_user_by_invalid_full_last_name(self):
+    def test_get_user_by_invalid_full_last_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -418,7 +418,7 @@ class UserViewGetTest(TestCase):
         self.assertFalse(response.data)        
         return
 
-    def test_query_user_by_invalid_prefix_last_name(self):
+    def test_get_user_by_invalid_prefix_last_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
