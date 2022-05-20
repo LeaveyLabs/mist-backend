@@ -224,6 +224,7 @@ class PostTest(TestCase):
         post_from_usc = Post.objects.create(
             title='FakeTitleOfUSCPost',
             text='HereIsAPostFromUSC',
+            timestamp=0,
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
             author=self.user,
@@ -231,6 +232,7 @@ class PostTest(TestCase):
         post_from_north_pole = Post.objects.create(
             title='FakeTitleOfNorthPolePost',
             text='HereIsAPostFromTheNorthPole',
+            timestamp=0,
             latitude=Decimal(0),
             longitude=Decimal(0),
             author=self.user,
@@ -260,6 +262,7 @@ class PostTest(TestCase):
             title='FakeTitleOfNorthPolePost',
             text='HereIsAPostFromTheNorthPole',
             location_description='North Pole',
+            timestamp=0,
             latitude=Decimal(0),
             longitude=Decimal(0),
             author=self.user,
@@ -289,6 +292,7 @@ class PostTest(TestCase):
             title='FakeTitleOfNorthPolePost',
             text='HereIsAPostFromTheNorthPole',
             location_description='North Pole',
+            timestamp=0,
             latitude=Decimal(0),
             longitude=Decimal(0),
             author=self.user,
@@ -483,12 +487,14 @@ class VoteTest(TestCase):
         vote = Vote.objects.create(
             voter=self.user,
             post=self.post,
+            timestamp=0,
             rating=10,
         )
         serialized_vote = VoteSerializer(vote).data
         self.assertTrue(Vote.objects.filter(
             voter=vote.voter,
             post=vote.post,
+            timestamp=vote.timestamp,
             rating=vote.rating,
         ))
 
@@ -529,12 +535,14 @@ class FlagTest(TestCase):
     def test_post_flag(self):
         flag = Flag(
             flagger=self.user,
-            post=self.post
+            post=self.post,
+            timestamp=0,
         )
         serialized_flag = FlagSerializer(flag).data
         self.assertFalse(Flag.objects.filter(
             flagger=flag.flagger,
-            post=flag.post
+            post=flag.post,
+            timestamp=flag.timestamp,
         ))
 
         request = APIRequestFactory().post(
@@ -551,7 +559,8 @@ class FlagTest(TestCase):
         self.assertEqual(response_flag.get('post'), serialized_flag.get('post'))
         self.assertTrue(Flag.objects.filter(
             flagger=flag.flagger,
-            post=flag.post
+            post=flag.post,
+            timestamp=flag.timestamp,
         ))
         return
     
@@ -589,7 +598,8 @@ class CommentTest(TestCase):
         self.comment = Comment.objects.create(
             text='FakeTextForComment',
             post=self.post,
-            author=self.user
+            author=self.user,
+            timestamp=0,
         )
 
         self.unused_post_id = 155
@@ -601,7 +611,7 @@ class CommentTest(TestCase):
         request = APIRequestFactory().get(
             '/api/comments',
             {
-                'post_id':self.post.pk
+                'post_id':self.post.pk,
             },
             format="json"
         )
