@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from tkinter.tix import MAX
 from django.conf import settings
 from django.db import models
 import uuid
@@ -9,7 +10,6 @@ def get_current_time():
     return datetime.now().timestamp()
 
 class Post(models.Model):
-    # Default coordinates are at USC
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)
 
@@ -67,10 +67,14 @@ class Word(models.Model):
         return self.posts.count()
 
 class Vote(models.Model):
+    MIN_RATING = 0
+    MAX_RATING = 10
+    AVG_RATING = (MIN_RATING+MAX_RATING)//2
+
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=5)
+    rating = models.IntegerField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('voter', 'post',)
@@ -79,10 +83,14 @@ class Vote(models.Model):
         return self.voter.pk
 
 class Flag(models.Model):
+    MIN_RATING = 0
+    MAX_RATING = 10
+    AVG_RATING = (MIN_RATING+MAX_RATING)//2
+
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=5)
+    rating = models.IntegerField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('flagger', 'post',)
