@@ -148,3 +148,12 @@ AUTH_USER_MODEL = 'users.User'
 #     '--with-coverage',
 #     '--cover-package=mist,users',
 # ]
+
+import sys
+
+TESTING = 'test' in sys.argv
+
+if TESTING:
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
