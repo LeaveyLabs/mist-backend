@@ -745,6 +745,7 @@ class FlagTest(TestCase):
         )
         self.assertTrue(Flag.objects.filter(pk=flag.pk))
         request = APIRequestFactory().delete('/api/flags/')
+        force_authenticate(request, user=self.user, token=self.user.auth_token)
         response = FlagView.as_view({'delete':'destroy'})(request, pk=flag.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -861,15 +862,15 @@ class TagTest(TestCase):
     def test_post_valid_tag(self):
         tag = Tag(
             post=self.post,
-            tagged_user=self.user1,
-            tagging_user=self.user2,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
         )
         serialized_tag = TagSerializer(tag).data
 
         self.assertFalse(Tag.objects.filter(
             post=self.post,
-            tagged_user=self.user1,
-            tagging_user=self.user2,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
         ))
 
         request = APIRequestFactory().post(
@@ -887,21 +888,21 @@ class TagTest(TestCase):
         self.assertEqual(response_tag.get('tagging_user'), serialized_tag.get('tagging_user'))
         self.assertTrue(Tag.objects.filter(
             post=self.post,
-            tagged_user=self.user1,
-            tagging_user=self.user2,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
         ))
         return
     
     def test_post_invalid_tag(self):
         tag = Tag(
             post=self.post,
-            tagged_user=self.user1,
+            tagging_user=self.user1,
         )
         serialized_tag = TagSerializer(tag).data
 
         self.assertFalse(Tag.objects.filter(
             post=self.post,
-            tagged_user=self.user1,
+            tagging_user=self.user1,
         ))
 
         request = APIRequestFactory().post(
@@ -915,15 +916,15 @@ class TagTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(Tag.objects.filter(
             post=self.post,
-            tagged_user=self.user1,
+            tagging_user=self.user1,
         ))
         return
     
     def test_delete_tag(self):
         tag = Tag.objects.create(
             post=self.post,
-            tagged_user=self.user1,
-            tagging_user=self.user2,            
+            tagged_user=self.user2,
+            tagging_user=self.user1,            
         )
 
         self.assertTrue(Tag.objects.filter(pk=tag.pk))
@@ -944,7 +945,7 @@ class BlockTest(TestCase):
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
-        Token.objects.create(user=self.user1)
+        self.auth_token1 = Token.objects.create(user=self.user1)
 
         self.user2 = User(
             email='TestUser2@usc.edu',
@@ -965,8 +966,8 @@ class BlockTest(TestCase):
     
     def test_get_block_by_valid_blocked_user(self):
         block = Block.objects.create(
-            blocked_user=self.user1,
-            blocking_user=self.user2,
+            blocking_user=self.user1,
+            blocked_user=self.user2,
             timestamp=0,
         )
         serialized_block = BlockSerializer(block).data
@@ -978,7 +979,7 @@ class BlockTest(TestCase):
             },
             format='json',
         )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        force_authenticate(request, user=self.user1, token=self.auth_token1)
         response = BlockView.as_view({'get':'list'})(request)
         response_block = response.data[0]
 
@@ -994,7 +995,7 @@ class BlockTest(TestCase):
             },
             format='json',
         )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        force_authenticate(request, user=self.user1, token=self.auth_token1)
         response = BlockView.as_view({'get':'list'})(request)
         response_blocks = response.data
 
@@ -1004,8 +1005,8 @@ class BlockTest(TestCase):
     
     def test_get_block_by_valid_blocking_user(self):
         block = Block.objects.create(
-            blocked_user=self.user1,
-            blocking_user=self.user2,
+            blocking_user=self.user1,
+            blocked_user=self.user2,
             timestamp=0,
         )
         serialized_block = BlockSerializer(block).data
@@ -1017,7 +1018,7 @@ class BlockTest(TestCase):
             },
             format='json',
         )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        force_authenticate(request, user=self.user1, token=self.auth_token1)
         response = BlockView.as_view({'get':'list'})(request)
         response_block = response.data[0]
 
@@ -1033,7 +1034,7 @@ class BlockTest(TestCase):
             },
             format='json',
         )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        force_authenticate(request, user=self.user1, token=self.auth_token1)
         response = BlockView.as_view({'get':'list'})(request)
         response_blocks = response.data
 
@@ -1043,15 +1044,15 @@ class BlockTest(TestCase):
 
     def test_post_valid_block(self):
         block = Block(
-            blocked_user=self.user1,
-            blocking_user=self.user2,
+            blocking_user=self.user1,
+            blocked_user=self.user2,
             timestamp=0,
         )
         serialized_block = BlockSerializer(block).data
 
         self.assertFalse(Block.objects.filter(
-            blocked_user=self.user1,
-            blocking_user=self.user2,
+            blocking_user=self.user1,
+            blocked_user=self.user2,
         ))
 
         request = APIRequestFactory().post(
@@ -1059,27 +1060,27 @@ class BlockTest(TestCase):
             serialized_block,
             format='json',
         )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        force_authenticate(request, user=self.user1, token=self.auth_token1)
         response = BlockView.as_view({'post':'create'})(request)
         response_block = response.data
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response_block.get('blocked_user'), serialized_block.get('blocked_user'))
         self.assertEqual(response_block.get('blocking_user'), serialized_block.get('blocking_user'))
+        self.assertEqual(response_block.get('blocked_user'), serialized_block.get('blocked_user'))
         self.assertTrue(Block.objects.filter(
-            blocked_user=self.user1,
-            blocking_user=self.user2,
+            blocking_user=self.user1,
+            blocked_user=self.user2,
         ))
         return
     
-    def test_post_invalid_tag(self):
+    def test_post_invalid_block(self):
         block = Block(
-            blocked_user=self.user1,
+            blocking_user=self.user1,
         )
         serialized_block = BlockSerializer(block).data
 
         self.assertFalse(Block.objects.filter(
-            blocked_user=self.user1,
+            blocking_user=self.user1,
         ))
 
         request = APIRequestFactory().post(
@@ -1087,30 +1088,30 @@ class BlockTest(TestCase):
             serialized_block,
             format='json',
         )
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        force_authenticate(request, user=self.user1, token=self.auth_token1)
         response = BlockView.as_view({'post':'create'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(Block.objects.filter(
-            blocked_user=self.user1,
+            blocking_user=self.user1,
         ))
         return
     
     def test_delete_block(self):
         block = Block.objects.create(
-            blocked_user=self.user1,
-            blocking_user=self.user2,
+            blocking_user=self.user1,
+            blocked_user=self.user2,
             timestamp=0,        
         )
 
         self.assertTrue(Block.objects.filter(pk=block.pk))
 
         request = APIRequestFactory().delete('/api/blocks/')
-        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        force_authenticate(request, user=self.user1, token=self.auth_token1)
         response = BlockView.as_view({'delete':'destroy'})(request, pk=block.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Tag.objects.filter(pk=block.pk))
+        self.assertFalse(Block.objects.filter(pk=block.pk))
         return
 
 class MessageTest(TestCase):

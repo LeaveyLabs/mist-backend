@@ -233,6 +233,7 @@ class UserViewGetTest(TestCase):
             last_name="notTheSameLastName")
         self.valid_user.set_password('randomPassword')
         self.valid_user.save()
+        self.auth_token = Token.objects.create(user=self.valid_user)
         self.serialized_user = UserSerializer(self.valid_user)
 
     # Valid Queries
@@ -244,6 +245,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -258,6 +260,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -272,6 +275,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -286,6 +290,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -300,6 +305,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -314,6 +320,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -328,6 +335,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -343,6 +351,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -357,6 +366,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -371,6 +381,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -385,6 +396,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -399,6 +411,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -413,6 +426,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -427,6 +441,7 @@ class UserViewGetTest(TestCase):
             },
             format='json',
         )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)

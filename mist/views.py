@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
-from mist.permissions import TestPermission
+from mist.permissions import BlockPermission, CommentPermission, FlagPermission, MessagePermission, PostPermission, TagPermission, VotePermission
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
@@ -29,7 +29,7 @@ from .models import (
 )
 
 class PostView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, PostPermission,)
     serializer_class = PostSerializer
 
     # Max distance around post is 1 kilometer
@@ -95,7 +95,7 @@ class PostView(viewsets.ModelViewSet):
             ).order_by('-vote_count')
 
 class WordView(generics.ListAPIView):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = WordSerializer
 
     def get_queryset(self):
@@ -108,7 +108,7 @@ class WordView(generics.ListAPIView):
         ).filter(post_count__gt=0)
 
 class CommentView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, CommentPermission)
     serializer_class = CommentSerializer
     
     def get_queryset(self):
@@ -119,7 +119,7 @@ class CommentView(viewsets.ModelViewSet):
         return Comment.objects.filter(post_id=post_id)
 
 class VoteView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, VotePermission)
     serializer_class = VoteSerializer
 
     def get_queryset(self):
@@ -139,7 +139,7 @@ class VoteView(viewsets.ModelViewSet):
             return Vote.objects.filter(voter=matching_users[0], post_id=post_id)
 
 class FlagView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, FlagPermission)
     serializer_class = FlagSerializer
 
     def get_queryset(self):
@@ -153,7 +153,7 @@ class FlagView(viewsets.ModelViewSet):
         return queryset
 
 class TagView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, TagPermission)
     serializer_class = TagSerializer
 
     def get_queryset(self):
@@ -170,7 +170,7 @@ class TagView(viewsets.ModelViewSet):
         return queryset
 
 class BlockView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, BlockPermission)
     serializer_class = BlockSerializer
 
     def get_queryset(self):
@@ -184,7 +184,7 @@ class BlockView(viewsets.ModelViewSet):
         return queryset
 
 class MessageView(viewsets.ModelViewSet):
-    permission_classes = (TestPermission,)
+    permission_classes = (IsAuthenticated, MessagePermission)
     serializer_class = MessageSerializer
 
     def get_queryset(self):
