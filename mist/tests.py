@@ -631,6 +631,7 @@ class FlagTest(TestCase):
         flag = Flag.objects.create(
             flagger=self.user,
             post=self.post,
+            timestamp=0,
         )
         serialized_flag = FlagSerializer(flag).data
 
@@ -669,6 +670,7 @@ class FlagTest(TestCase):
         flag = Flag.objects.create(
             flagger=self.user,
             post=self.post,
+            timestamp=0,
         )
         serialized_flag = FlagSerializer(flag).data
 
@@ -781,6 +783,7 @@ class TagTest(TestCase):
             post=self.post,
             tagged_user=self.user1,
             tagging_user=self.user2,
+            timestamp=0,
         )
         serialized_tag = TagSerializer(tag).data
 
@@ -820,6 +823,7 @@ class TagTest(TestCase):
             post=self.post,
             tagged_user=self.user1,
             tagging_user=self.user2,
+            timestamp=0,
         )
         serialized_tag = TagSerializer(tag).data
 
