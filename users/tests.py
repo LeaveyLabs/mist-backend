@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.core import mail
 from django.forms import ValidationError
 from django.test import TestCase
 from django.contrib.auth import authenticate
@@ -25,10 +26,14 @@ class RegisterUserEmailViewTest(TestCase):
             format='json',
         )
         response = RegisterUserEmailView.as_view()(request)
+        email_auths = EmailAuthentication.objects.filter(
+            email='RegisterThisFakeEmail@usc.edu')
 
         self.assertEquals(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(EmailAuthentication.objects.filter(
-            email='RegisterThisFakeEmail@usc.edu'))
+        self.assertTrue(email_auths)
+        self.assertTrue(mail.outbox)
+        self.assertEquals(mail.outbox[0].to[0], 'RegisterThisFakeEmail@usc.edu')
+        self.assertTrue(mail.outbox[0].body.find(str(email_auths[0].code)))
         return
     
     def test_register_user_invalid_email(self):
@@ -44,6 +49,7 @@ class RegisterUserEmailViewTest(TestCase):
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(EmailAuthentication.objects.filter(
             email='ThisIsAnInvalidEmail'))
+        self.assertFalse(mail.outbox)
         return
 
 class ValidateUserEmailViewTest(TestCase):
