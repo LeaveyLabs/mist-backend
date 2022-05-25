@@ -1,5 +1,5 @@
 from datetime import datetime
-from django.core import mail
+from django.core import mail, cache
 from django.forms import ValidationError
 from django.test import TestCase
 from django.contrib.auth import authenticate
@@ -13,7 +13,125 @@ from .views import RegisterUserEmailView, UserView, ValidateUserEmailView
 from .models import User, EmailAuthentication
 
 # Create your tests here.
+class ThrottleTest(TestCase):
+    def setUp(self):
+        cache.cache.clear()
+
+        self.valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        self.valid_user.set_password('randomPassword')
+        self.valid_user.save()
+        self.auth_token = Token.objects.create(user=self.valid_user)
+
+    def test_throttle_anonymous_user_above_50_calls(self):
+        number_of_calls = 50
+        self.run_fake_stranger_request(number_of_calls)
+
+        number_of_email_registration_requests = len(mail.outbox)
+        self.assertEqual(number_of_email_registration_requests, number_of_calls)
+        
+        request = APIRequestFactory().post(
+            'api-register/',
+            {
+                'email': 'validEmail@usc.edu',
+            },
+            format='json',
+        )
+        response = RegisterUserEmailView.as_view()(request)
+
+        self.assertEquals(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        return
+        
+    def test_do_not_throttle_anonymous_user_at_or_below_50_calls(self):
+        number_of_calls = 49
+        self.run_fake_stranger_request(number_of_calls)
+
+        number_of_email_registration_requests = len(mail.outbox)
+        self.assertEqual(number_of_email_registration_requests, number_of_calls)
+        
+        request = APIRequestFactory().post(
+            'api-register/',
+            {
+                'email': 'validEmail@usc.edu',
+            },
+            format='json',
+        )
+        response = RegisterUserEmailView.as_view()(request)
+
+        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        return
+
+    def test_throttle_authenticated_user_above_100_calls(self):
+        number_of_calls = 100
+        self.run_fake_authenticated_user_request(number_of_calls)
+
+        number_of_email_registration_requests = len(mail.outbox)
+        self.assertEqual(number_of_email_registration_requests, number_of_calls)
+        
+        request = APIRequestFactory().post(
+            'api-register/',
+            {
+                'email': 'validEmail@usc.edu',
+            },
+            format='json',
+        )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
+        response = RegisterUserEmailView.as_view()(request)
+
+        self.assertEquals(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        return
+
+    def test_do_not_throttle_authenticated_user_at_or_below_100_calls(self):
+        number_of_calls = 99
+        self.run_fake_authenticated_user_request(number_of_calls)
+
+        number_of_email_registration_requests = len(mail.outbox)
+        self.assertEqual(number_of_email_registration_requests, number_of_calls)
+        
+        request = APIRequestFactory().post(
+            'api-register/',
+            {
+                'email': 'validEmail@usc.edu',
+            },
+            format='json',
+        )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
+        response = RegisterUserEmailView.as_view()(request)
+
+        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        return
+    
+    def run_fake_stranger_request(self, number_of_repeats):
+        for _ in range(number_of_repeats):
+            fake_request = APIRequestFactory().post(
+                'api-register/',
+                {
+                    'email': 'validEmail@usc.edu',
+                },
+                format='json',
+            )
+            fake_response = RegisterUserEmailView.as_view()(fake_request)
+    
+    def run_fake_authenticated_user_request(self, number_of_repeats):
+        for _ in range(number_of_repeats):
+            fake_request = APIRequestFactory().post(
+                'api-register/',
+                {
+                    'email': 'validEmail@usc.edu',
+                },
+                format='json',
+            )
+            force_authenticate(fake_request, user=self.valid_user, token=self.auth_token)
+            fake_response = RegisterUserEmailView.as_view()(fake_request)
+        
+
 class RegisterUserEmailViewTest(TestCase):
+    def setUp(self):
+        cache.cache.clear()
+
     def test_register_user_valid_email(self):
         self.assertFalse(EmailAuthentication.objects.filter(
             email='RegisterThisFakeEmail@usc.edu'))
@@ -102,6 +220,8 @@ class ValidateUserEmailViewTest(TestCase):
 
 class UserViewPostTest(TestCase):
     def setUp(self):
+        cache.cache.clear()
+
         self.email_auth = EmailAuthentication.objects.create(
             email='thisEmailDoesExist@usc.edu',
         )
@@ -232,6 +352,8 @@ class UserViewPostTest(TestCase):
 
 class UserViewGetTest(TestCase):
     def setUp(self):
+        cache.cache.clear()
+
         self.valid_user = User.objects.create(
             email="email@usc.edu",
             username="unrelatedUsername",
@@ -530,6 +652,8 @@ class UserViewGetTest(TestCase):
 
 class UserViewDeleteTest(TestCase):
     def setUp(self):
+        cache.cache.clear()
+
         self.valid_user = User.objects.create(
             email="email@usc.edu",
             username="unrelatedUsername",
@@ -564,6 +688,8 @@ class UserViewDeleteTest(TestCase):
 
 class UserViewPatchTest(TestCase):
     def setUp(self):
+        cache.cache.clear()
+
         self.valid_user = User.objects.create(
             email="email@usc.edu",
             username="unrelatedUsername",
