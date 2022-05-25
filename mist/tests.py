@@ -4,9 +4,9 @@ from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
-from mist.serializers import BlockSerializer, CommentSerializer, FlagSerializer, MessageSerializer, PostSerializer, TagSerializer, VoteSerializer
-from mist.views import BlockView, CommentView, FlagView, MessageView, PostView, TagView, VoteView, WordView
-from .models import Block, Flag, Post, Comment, Message, Tag, Vote, Word
+from mist.serializers import BlockSerializer, CommentSerializer, FlagSerializer, FriendRequestSerializer, MessageSerializer, PostSerializer, TagSerializer, VoteSerializer
+from mist.views import BlockView, CommentView, FlagView, FriendRequestView, MessageView, PostView, TagView, VoteView, WordView
+from .models import Block, Flag, FriendRequest, Post, Comment, Message, Tag, Vote, Word
 
 class PostTest(TestCase):
     maxDiff = None
@@ -1345,7 +1345,7 @@ class MessageTest(TestCase):
         response = MessageView.as_view({'delete':'destroy'})(request, pk=message.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Tag.objects.filter(pk=message.pk))
+        self.assertFalse(Message.objects.filter(pk=message.pk))
         return
 
 class WordTest(TestCase):
@@ -1406,4 +1406,195 @@ class WordTest(TestCase):
         for word in response.data:
             self.assertFalse(word.get('text').find(word_to_search), -1)
         self.assertTrue(Word.objects.filter(text__contains=word_to_search))
+        return
+
+class FriendRequestTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        Token.objects.create(user=self.user2)
+
+        self.user3 = User(
+            email='TestUser3@usc.edu',
+            username='TestUser3',
+        )
+        self.user3.set_password("TestPassword3@98374")
+        self.user3.save()
+        Token.objects.create(user=self.user3)
+        return
+
+    def test_get_friend_request_by_valid_friend_requesting_user(self):
+        friend_request1 = FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+            timestamp=0,
+        )
+        friend_request2 = FriendRequest.objects.create(
+            friend_requesting_user=self.user2,
+            friend_requested_user=self.user3,
+            timestamp=0,
+        )
+        serialized_friend_request1 = FriendRequestSerializer(friend_request1).data
+        serialized_friend_request2 = FriendRequestSerializer(friend_request2).data
+        
+        request = APIRequestFactory().get(
+            '/api/friend-request',
+            {
+                'friend_requesting_user': friend_request1.friend_requesting_user.pk,
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = FriendRequestView.as_view({'get':'list'})(request)
+        response_friend_request = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_friend_request, serialized_friend_request1)
+        return
+    
+    def test_get_friend_request_by_invalid_friend_requesting_user(self):
+        request = APIRequestFactory().get(
+            '/api/friend-request',
+            {
+                'friend_requesting_user': self.user1.pk,
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = FriendRequestView.as_view({'get':'list'})(request)
+        response_friend_requests = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_friend_requests)
+        return
+    
+    def test_get_friend_request_by_valid_friend_requested_user(self):
+        friend_request1 = FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+            timestamp=0,
+        )
+        friend_request2 = FriendRequest.objects.create(
+            friend_requesting_user=self.user2,
+            friend_requested_user=self.user3,
+            timestamp=0,
+        )
+        serialized_friend_request1 = FriendRequestSerializer(friend_request1).data
+        serialized_friend_request2 = FriendRequestSerializer(friend_request2).data
+        
+        request = APIRequestFactory().get(
+            '/api/friend-request',
+            {
+                'friend_requested_user': friend_request1.friend_requested_user.pk,
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = FriendRequestView.as_view({'get':'list'})(request)
+        response_friend_request = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_friend_request, serialized_friend_request1)
+        return
+    
+    def test_get_friend_request_by_invalid_friend_requested_user(self):
+        request = APIRequestFactory().get(
+            '/api/friend-request',
+            {
+                'friend_requested_user': self.user1.pk,
+            },
+            format='json'
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = FriendRequestView.as_view({'get':'list'})(request)
+        response_friend_requests = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_friend_requests)
+        return
+    
+    def test_post_valid_friend_request(self):
+        friend_request = FriendRequest(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+            timestamp=0,
+        )
+        serialized_friend_request = FriendRequestSerializer(friend_request).data
+
+        self.assertFalse(FriendRequest.objects.filter(
+            friend_requesting_user=friend_request.friend_requesting_user,
+            friend_requested_user=friend_request.friend_requested_user,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/friend-request/',
+            serialized_friend_request,
+            format='json'
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = FriendRequestView.as_view({'post':'create'})(request)
+        response_friend_request = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_friend_request.get('friend_requesting_user'), 
+                        serialized_friend_request.get('friend_requesting_user'))
+        self.assertEqual(response_friend_request.get('friend_requested_user'), 
+                        serialized_friend_request.get('friend_requested_user'))
+        self.assertTrue(FriendRequest.objects.filter(
+            friend_requesting_user=friend_request.friend_requesting_user,
+            friend_requested_user=friend_request.friend_requested_user,
+        ))
+        return
+    
+    def test_post_invalid_friend_request(self):
+        friend_request = FriendRequest(
+            friend_requesting_user=self.user1,
+        )
+        serialized_friend_request = FriendRequestSerializer(friend_request).data
+
+        self.assertFalse(FriendRequest.objects.filter(
+            friend_requesting_user=friend_request.friend_requesting_user,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/friend-request/',
+            serialized_friend_request,
+            format='json'
+        )
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = FriendRequestView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(FriendRequest.objects.filter(
+            friend_requesting_user=friend_request.friend_requesting_user,
+        ))
+        return
+    
+    def test_delete_friend_request(self):
+        friend_request = FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+            timestamp=0,
+        )
+
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request.pk))
+
+        request = APIRequestFactory().delete('/api/friend-request/')
+        force_authenticate(request, user=self.user1, token=self.user1.auth_token)
+        response = FriendRequestView.as_view({'delete':'destroy'})(request, pk=friend_request.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(FriendRequest.objects.filter(pk=friend_request.pk))
         return

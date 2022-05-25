@@ -2,7 +2,7 @@ from decimal import Decimal
 from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
-from mist.permissions import BlockPermission, CommentPermission, FlagPermission, MessagePermission, PostPermission, TagPermission, VotePermission
+from mist.permissions import BlockPermission, CommentPermission, FlagPermission, FriendRequestPermission, MessagePermission, PostPermission, TagPermission, VotePermission
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
@@ -10,6 +10,7 @@ from users.models import User
 from .serializers import (
     BlockSerializer,
     FlagSerializer,
+    FriendRequestSerializer,
     PostSerializer, 
     CommentSerializer,
     MessageSerializer,
@@ -20,6 +21,7 @@ from .serializers import (
 from .models import (
     Block,
     Flag,
+    FriendRequest,
     Post, 
     Comment,
     Message,
@@ -195,4 +197,18 @@ class MessageView(viewsets.ModelViewSet):
             queryset = queryset.filter(to_user=to_user)
         if from_user:
             queryset = queryset.filter(from_user=from_user)
+        return queryset
+
+class FriendRequestView(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated, FriendRequestPermission)
+    serializer_class = FriendRequestSerializer
+
+    def get_queryset(self):
+        friend_requesting_user = self.request.query_params.get("friend_requesting_user")
+        friend_requested_user = self.request.query_params.get("friend_requested_user")
+        queryset = FriendRequest.objects.all()
+        if friend_requesting_user:
+            queryset = queryset.filter(friend_requesting_user=friend_requesting_user)
+        if friend_requested_user:
+            queryset = queryset.filter(friend_requested_user=friend_requested_user)
         return queryset
