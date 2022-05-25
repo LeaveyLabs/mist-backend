@@ -76,6 +76,7 @@ class PostView(viewsets.ModelViewSet):
         text = self.request.query_params.get('text')
         timestamp = self.request.query_params.get('timestamp')
         location_description = self.request.query_params.get('location_description')
+        author = self.request.query_params.get('author')
         # filter
         queryset = Post.objects.all()
         if latitude != None and longitude != None:
@@ -91,6 +92,8 @@ class PostView(viewsets.ModelViewSet):
             loc_set = queryset.filter(location_description__isnull=False)
             queryset = loc_set.filter(
                 location_description__contains=location_description)
+        if author != None:
+            queryset = queryset.filter(author=author)
         # order
         return queryset.annotate(
             vote_count=Avg('vote__rating', default=0)
