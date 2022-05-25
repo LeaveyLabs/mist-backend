@@ -49,7 +49,12 @@ class UserEmailValidationRequestSerializer(serializers.Serializer):
 
         return data
 
-class UserSerializer(serializers.ModelSerializer):
+class ReadOnlyUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'first_name', 'last_name', 'picture', )
+
+class CompleteUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=50, write_only=True, required=False)
 
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()

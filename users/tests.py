@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory, force_authenticate
-from .serializers import UserSerializer
+from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
 from .views import RegisterUserEmailView, UserView, ValidateUserEmailView
 from .models import User, EmailAuthentication
 
@@ -234,7 +234,44 @@ class UserViewGetTest(TestCase):
         self.valid_user.set_password('randomPassword')
         self.valid_user.save()
         self.auth_token = Token.objects.create(user=self.valid_user)
-        self.serialized_user = UserSerializer(self.valid_user)
+        self.user_serializer = CompleteUserSerializer(self.valid_user)
+
+    # Custom serialization
+    def test_return_readonly_user_with_nonmatching_token(self):
+        non_matching_user = User.objects.create(
+            email="nonMatchingEmail@usc.edu",
+            username="nonMatchingUsername",
+            first_name="thisFirstNameHasNotBeenTaken",
+            last_name="thisLastNameHasNotBeenTaken")
+        non_matching_user.set_password('nonMatchingPassword')
+        non_matching_user.save()  
+        auth_token = Token.objects.create(user=non_matching_user)
+
+        user_serializer = ReadOnlyUserSerializer(non_matching_user)
+
+        request = APIRequestFactory().get(
+            'api/users/',
+            format='json',
+        )
+        force_authenticate(request, user=non_matching_user, token=auth_token)
+        response = UserView.as_view({'get':'retrieve'})(request, pk=non_matching_user.id)
+        
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEquals(response.data, user_serializer.data)
+        return
+    
+    def test_return_full_user_with_matching_token(self):
+        request = APIRequestFactory().get(
+            'api/users/',
+            format='json',
+        )
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
+        response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
+        response_user = response.data
+        
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEquals(response_user, self.user_serializer.data)
+        return
 
     # Valid Queries
     def test_get_user_by_valid_text(self):
@@ -249,7 +286,7 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.serialized_user.data)
+        self.assertEquals(response.data[0], self.user_serializer.data)
         return
 
     def test_get_user_by_full_username(self):
@@ -264,7 +301,7 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.serialized_user.data)
+        self.assertEquals(response.data[0], self.user_serializer.data)
         return
     
     def test_get_user_by_prefix_username(self):
@@ -279,7 +316,7 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.serialized_user.data)
+        self.assertEquals(response.data[0], self.user_serializer.data)
         return
 
     def test_get_valid_user_by_full_first_name(self):
@@ -294,7 +331,7 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.serialized_user.data)
+        self.assertEquals(response.data[0], self.user_serializer.data)
         return
     
     def test_get_valid_user_by_prefix_first_name(self):
@@ -309,7 +346,7 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.serialized_user.data)
+        self.assertEquals(response.data[0], self.user_serializer.data)
         return
 
     def test_get_valid_user_by_full_last_name(self):
@@ -324,7 +361,7 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.serialized_user.data)
+        self.assertEquals(response.data[0], self.user_serializer.data)
         return
         
     def test_get_valid_user_by_prefix_last_name(self):
@@ -339,7 +376,7 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.serialized_user.data)
+        self.assertEquals(response.data[0], self.user_serializer.data)
         return
 
     # Invalid User
