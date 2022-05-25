@@ -1,4 +1,5 @@
 from datetime import datetime
+from requests import request
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -34,6 +35,8 @@ class UserView(viewsets.ModelViewSet):
         first_name = self.request.query_params.get('first_name')
         last_name = self.request.query_params.get('last_name')
         text = self.request.query_params.get('text')
+        token = self.request.query_params.get('token')
+        requesting_user = get_user_from_request(self.request)
 
         # default is to return all users
         queryset = User.objects.all()
@@ -56,10 +59,16 @@ class UserView(viewsets.ModelViewSet):
             if last_name:
                 last_name_set = User.objects.filter(last_name__startswith=last_name)
             queryset = (username_set | first_name_set | last_name_set).distinct()
+        # or token
+        elif token:
+            matching_tokens = Token.objects.filter(key=token)
+            if not matching_tokens: 
+                queryset = User.objects.none()
+            else:
+                matching_token = matching_tokens[0]
+                queryset = User.objects.filter(id=matching_token.user.id)
 
         # set serializers based on requesting user
-        requesting_user = get_user_from_request(self.request)
-
         if not requesting_user: 
             self.serializer_class = ReadOnlyUserSerializer
 

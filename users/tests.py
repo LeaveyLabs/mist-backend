@@ -250,18 +250,18 @@ class UserViewGetTest(TestCase):
             first_name="thisFirstNameHasNotBeenTaken",
             last_name="thisLastNameHasNotBeenTaken")
         non_matching_user.set_password('nonMatchingPassword')
-        non_matching_user.save()  
+        non_matching_user.save()
         auth_token = Token.objects.create(user=non_matching_user)
 
-        user_serializer = ReadOnlyUserSerializer(non_matching_user)
+        user_serializer = ReadOnlyUserSerializer(self.valid_user)
 
         request = APIRequestFactory().get(
             'api/users/',
             format='json',
         )
         force_authenticate(request, user=non_matching_user, token=auth_token)
-        response = UserView.as_view({'get':'retrieve'})(request, pk=non_matching_user.id)
-        
+        response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
+        print(response.data, user_serializer.data)
         self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(response.data, user_serializer.data)
         return
@@ -325,7 +325,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.user_serializer.data)
         return
 
-    def test_get_valid_user_by_full_first_name(self):
+    def test_get_user_by_full_first_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -340,7 +340,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.user_serializer.data)
         return
     
-    def test_get_valid_user_by_prefix_first_name(self):
+    def test_get_user_by_prefix_first_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -355,7 +355,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.user_serializer.data)
         return
 
-    def test_get_valid_user_by_full_last_name(self):
+    def test_get_user_by_full_last_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -370,7 +370,7 @@ class UserViewGetTest(TestCase):
         self.assertEquals(response.data[0], self.user_serializer.data)
         return
         
-    def test_get_valid_user_by_prefix_last_name(self):
+    def test_get_user_by_prefix_last_name(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
@@ -383,6 +383,25 @@ class UserViewGetTest(TestCase):
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertEquals(response.data[0], self.user_serializer.data)
+        return
+
+    def test_get_user_by_valid_token(self):
+        serialized_users = [self.user_serializer.data]
+
+        request = APIRequestFactory().get(
+            'api/users/',
+            {
+                'token': self.auth_token,
+            },
+            format='json',
+        )
+
+        force_authenticate(request, user=self.valid_user, token=self.auth_token)
+        response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEquals(response_users, serialized_users)
         return
 
     # Invalid User
@@ -489,6 +508,24 @@ class UserViewGetTest(TestCase):
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)        
+        return
+    
+    def test_get_user_by_invalid_token(self):
+        invalid_token = "InvalidToken"
+        request = APIRequestFactory().get(
+            'api/users/',
+            {
+                'token': invalid_token,
+            },
+            format='json',
+        )
+
+        force_authenticate(request, user=self.valid_user, token=invalid_token)
+        response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
+        
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_users)
         return
 
 class UserViewDeleteTest(TestCase):
