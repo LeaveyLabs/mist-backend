@@ -242,7 +242,7 @@ class UserViewGetTest(TestCase):
         self.auth_token = Token.objects.create(user=self.valid_user)
         self.user_serializer = CompleteUserSerializer(self.valid_user)
 
-    # Custom serialization
+    # Serialization
     def test_return_readonly_user_with_nonmatching_token(self):
         non_matching_user = User.objects.create(
             email="nonMatchingEmail@usc.edu",
