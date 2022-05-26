@@ -7,7 +7,7 @@ from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
-from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
 from .views import RegisterUserEmailView, UserView, ValidateUserEmailView
 from .models import User, EmailAuthentication
@@ -39,6 +39,7 @@ class ThrottleTest(TestCase):
                 'email': 'validEmail@usc.edu',
             },
             format='json',
+            
         )
         response = RegisterUserEmailView.as_view()(request)
 
@@ -77,8 +78,8 @@ class ThrottleTest(TestCase):
                 'email': 'validEmail@usc.edu',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = RegisterUserEmailView.as_view()(request)
 
         self.assertEquals(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
@@ -97,8 +98,8 @@ class ThrottleTest(TestCase):
                 'email': 'validEmail@usc.edu',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = RegisterUserEmailView.as_view()(request)
 
         self.assertEquals(response.status_code, status.HTTP_201_CREATED)
@@ -123,8 +124,8 @@ class ThrottleTest(TestCase):
                     'email': 'validEmail@usc.edu',
                 },
                 format='json',
+                HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
             )
-            force_authenticate(fake_request, user=self.valid_user, token=self.auth_token)
             fake_response = RegisterUserEmailView.as_view()(fake_request)
         
 
@@ -380,8 +381,8 @@ class UserViewGetTest(TestCase):
         request = APIRequestFactory().get(
             'api/users/',
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=non_matching_user, token=auth_token)
         response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
         print(response.data, user_serializer.data)
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -392,8 +393,8 @@ class UserViewGetTest(TestCase):
         request = APIRequestFactory().get(
             'api/users/',
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
         response_user = response.data
         
@@ -409,8 +410,8 @@ class UserViewGetTest(TestCase):
                 'text': 'name',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -424,8 +425,8 @@ class UserViewGetTest(TestCase):
                 'username': 'unrelatedUsername',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -439,8 +440,8 @@ class UserViewGetTest(TestCase):
                 'username': 'unrelated',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -454,8 +455,8 @@ class UserViewGetTest(TestCase):
                 'first_name': 'completelyDifferentFirstName',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -469,8 +470,8 @@ class UserViewGetTest(TestCase):
                 'first_name': 'completely',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -484,8 +485,8 @@ class UserViewGetTest(TestCase):
                 'last_name': 'notTheSameLastName',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -499,8 +500,8 @@ class UserViewGetTest(TestCase):
                 'last_name': 'notTheSame',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -516,9 +517,8 @@ class UserViewGetTest(TestCase):
                 'token': self.auth_token,
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
         response_users = response.data
 
@@ -534,8 +534,8 @@ class UserViewGetTest(TestCase):
                 'text': 'notInTheTextAtAll',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -549,8 +549,8 @@ class UserViewGetTest(TestCase):
                 'username': 'thisUsernameDoesNotExist',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -564,8 +564,8 @@ class UserViewGetTest(TestCase):
                 'username': 'sername',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -579,8 +579,8 @@ class UserViewGetTest(TestCase):
                 'first_name': 'thisFirstNameDoesNotExist',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -594,8 +594,8 @@ class UserViewGetTest(TestCase):
                 'first_name': 'DifferentFirstName',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -609,8 +609,8 @@ class UserViewGetTest(TestCase):
                 'last_name': 'thisLastNameDoesNotExist',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -624,8 +624,8 @@ class UserViewGetTest(TestCase):
                 'last_name': 'astName',
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -640,9 +640,8 @@ class UserViewGetTest(TestCase):
                 'token': invalid_token,
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-
-        force_authenticate(request, user=self.valid_user, token=invalid_token)
         response = UserView.as_view({'get':'list'})(request)
         response_users = response.data
         
@@ -667,8 +666,7 @@ class UserViewDeleteTest(TestCase):
     def test_delete_valid_user(self):
         self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
 
-        request = APIRequestFactory().delete('api/users/')
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
+        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -678,8 +676,7 @@ class UserViewDeleteTest(TestCase):
     def test_delete_invalid_user(self):
         self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
 
-        request = APIRequestFactory().delete('api/users/')
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
+        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.unused_pk)
 
         self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -704,8 +701,7 @@ class UserViewPatchTest(TestCase):
     def test_patch_invalid_user(self):
         self.assertFalse(User.objects.filter(pk=self.unused_pk))
 
-        request = APIRequestFactory().patch('api/users/')
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
+        request = APIRequestFactory().patch('api/users/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.unused_pk)
 
         self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -722,8 +718,8 @@ class UserViewPatchTest(TestCase):
                 'username': fake_new_username,
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -739,8 +735,8 @@ class UserViewPatchTest(TestCase):
                 'username': "",
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -763,8 +759,8 @@ class UserViewPatchTest(TestCase):
                 'password': fake_new_password,
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -792,8 +788,8 @@ class UserViewPatchTest(TestCase):
                 'password': fake_new_password,
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -816,8 +812,8 @@ class UserViewPatchTest(TestCase):
                 'first_name': fake_first_name,
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
@@ -835,8 +831,8 @@ class UserViewPatchTest(TestCase):
                 'last_name': fake_last_name,
             },
             format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        force_authenticate(request, user=self.valid_user, token=self.auth_token)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
