@@ -24,6 +24,7 @@ django-phonenumber-field = "*"
 phonenumbers = "*"
 coverage = "*"
 django-nose = "*"
+locust = "*"
 
 [dev-packages]
 
