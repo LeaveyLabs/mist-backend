@@ -2,5 +2,6 @@
 .DS_Store
 *.lock
 *.env
+.coverage
 test_images
 media

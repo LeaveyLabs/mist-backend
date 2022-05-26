@@ -1,19 +1,21 @@
 from datetime import datetime
-from decimal import Decimal
-import random
-from django.db.models import Avg, Count
-from django.db.models.expressions import RawSQL
+from requests import request
 from rest_framework import viewsets, generics
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
+from users.generics import get_user_from_request
+from users.permissions import UserPermissions
 from users.models import User
 from django.core.mail import send_mail
+from django.db.models import Q
 
 from .serializers import (
+    ReadOnlyUserSerializer,
     UserEmailRegistrationSerializer,
     UserEmailValidationRequestSerializer,
-    UserSerializer,
+    CompleteUserSerializer,
 )
 from .models import (
     User,
@@ -21,8 +23,8 @@ from .models import (
 )
 
 class UserView(viewsets.ModelViewSet):
-    permission_classes = (AllowAny, )
-    serializer_class = UserSerializer
+    permission_classes = (UserPermissions, )
+    serializer_class = CompleteUserSerializer
 
     def get_queryset(self):
         """
@@ -33,20 +35,20 @@ class UserView(viewsets.ModelViewSet):
         first_name = self.request.query_params.get('first_name')
         last_name = self.request.query_params.get('last_name')
         text = self.request.query_params.get('text')
+        token = self.request.query_params.get('token')
+        requesting_user = get_user_from_request(self.request)
 
-        # if no filter parameters, return everything
-        if (username == None and first_name == None and 
-            last_name == None and text == None):
-            return User.objects.all()
-
+        # default is to return all users
+        queryset = User.objects.all()
+        
         # filter by text...
         if text != None:
             username_set = User.objects.filter(username__contains=text)
             first_name_set = User.objects.filter(first_name__contains=text)
             last_name_set = User.objects.filter(last_name__contains=text)
-            return (username_set | first_name_set | last_name_set).distinct()
+            queryset = (username_set | first_name_set | last_name_set).distinct()
         # or username, first_name, and last_name
-        else:
+        elif username or first_name or last_name:
             username_set = User.objects.none()
             first_name_set = User.objects.none()
             last_name_set = User.objects.none()
@@ -56,7 +58,30 @@ class UserView(viewsets.ModelViewSet):
                 first_name_set = User.objects.filter(first_name__startswith=first_name)
             if last_name:
                 last_name_set = User.objects.filter(last_name__startswith=last_name)
-            return (username_set | first_name_set | last_name_set).distinct()
+            queryset = (username_set | first_name_set | last_name_set).distinct()
+        # or token
+        elif token:
+            matching_tokens = Token.objects.filter(key=token)
+            if not matching_tokens: 
+                queryset = User.objects.none()
+            else:
+                matching_token = matching_tokens[0]
+                queryset = User.objects.filter(id=matching_token.user.id)
+
+        # set serializers based on requesting user
+        if not requesting_user: 
+            self.serializer_class = ReadOnlyUserSerializer
+
+        else:
+            non_matching_users = ~Q(id=requesting_user.id)
+            readonly_users = queryset.filter(non_matching_users)
+
+            if readonly_users:
+                self.serializer_class = ReadOnlyUserSerializer
+            else:
+                self.serializer_class = CompleteUserSerializer
+
+        return queryset   
 
 class RegisterUserEmailView(generics.CreateAPIView):
     permission_classes = (AllowAny, )

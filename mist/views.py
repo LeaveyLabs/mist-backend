@@ -2,11 +2,15 @@ from decimal import Decimal
 from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
+from mist.permissions import BlockPermission, CommentPermission, FlagPermission, FriendRequestPermission, MessagePermission, PostPermission, TagPermission, VotePermission
+from rest_framework.permissions import IsAuthenticated
+
 from users.models import User
 
 from .serializers import (
     BlockSerializer,
     FlagSerializer,
+    FriendRequestSerializer,
     PostSerializer, 
     CommentSerializer,
     MessageSerializer,
@@ -17,6 +21,7 @@ from .serializers import (
 from .models import (
     Block,
     Flag,
+    FriendRequest,
     Post, 
     Comment,
     Message,
@@ -26,7 +31,7 @@ from .models import (
 )
 
 class PostView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, PostPermission,)
     serializer_class = PostSerializer
 
     # Max distance around post is 1 kilometer
@@ -71,6 +76,7 @@ class PostView(viewsets.ModelViewSet):
         text = self.request.query_params.get('text')
         timestamp = self.request.query_params.get('timestamp')
         location_description = self.request.query_params.get('location_description')
+        author = self.request.query_params.get('author')
         # filter
         queryset = Post.objects.all()
         if latitude != None and longitude != None:
@@ -86,13 +92,15 @@ class PostView(viewsets.ModelViewSet):
             loc_set = queryset.filter(location_description__isnull=False)
             queryset = loc_set.filter(
                 location_description__contains=location_description)
+        if author != None:
+            queryset = queryset.filter(author=author)
         # order
         return queryset.annotate(
             vote_count=Avg('vote__rating', default=0)
             ).order_by('-vote_count')
 
 class WordView(generics.ListAPIView):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = WordSerializer
 
     def get_queryset(self):
@@ -105,7 +113,7 @@ class WordView(generics.ListAPIView):
         ).filter(post_count__gt=0)
 
 class CommentView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, CommentPermission)
     serializer_class = CommentSerializer
     
     def get_queryset(self):
@@ -116,7 +124,7 @@ class CommentView(viewsets.ModelViewSet):
         return Comment.objects.filter(post_id=post_id)
 
 class VoteView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, VotePermission)
     serializer_class = VoteSerializer
 
     def get_queryset(self):
@@ -136,7 +144,7 @@ class VoteView(viewsets.ModelViewSet):
             return Vote.objects.filter(voter=matching_users[0], post_id=post_id)
 
 class FlagView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, FlagPermission)
     serializer_class = FlagSerializer
 
     def get_queryset(self):
@@ -150,7 +158,7 @@ class FlagView(viewsets.ModelViewSet):
         return queryset
 
 class TagView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, TagPermission)
     serializer_class = TagSerializer
 
     def get_queryset(self):
@@ -167,7 +175,7 @@ class TagView(viewsets.ModelViewSet):
         return queryset
 
 class BlockView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, BlockPermission)
     serializer_class = BlockSerializer
 
     def get_queryset(self):
@@ -181,7 +189,7 @@ class BlockView(viewsets.ModelViewSet):
         return queryset
 
 class MessageView(viewsets.ModelViewSet):
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, MessagePermission)
     serializer_class = MessageSerializer
 
     def get_queryset(self):
@@ -192,4 +200,18 @@ class MessageView(viewsets.ModelViewSet):
             queryset = queryset.filter(to_user=to_user)
         if from_user:
             queryset = queryset.filter(from_user=from_user)
+        return queryset
+
+class FriendRequestView(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated, FriendRequestPermission)
+    serializer_class = FriendRequestSerializer
+
+    def get_queryset(self):
+        friend_requesting_user = self.request.query_params.get("friend_requesting_user")
+        friend_requested_user = self.request.query_params.get("friend_requested_user")
+        queryset = FriendRequest.objects.all()
+        if friend_requesting_user:
+            queryset = queryset.filter(friend_requesting_user=friend_requesting_user)
+        if friend_requested_user:
+            queryset = queryset.filter(friend_requested_user=friend_requested_user)
         return queryset
