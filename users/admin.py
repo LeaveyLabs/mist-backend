@@ -6,4 +6,4 @@ class UserAdmin(UserAdmin):
     model = User
 
 admin.site.register(User, UserAdmin)
-admin.site.register(EmailAuthentication, UserAdmin)
+admin.site.register(EmailAuthentication)
