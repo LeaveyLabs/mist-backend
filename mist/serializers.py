@@ -53,8 +53,8 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         repr = super().to_representation(instance)
-        if not repr['author_picture']:
-            repr.pop('author_picture')
+        pic = repr.pop('author_picture')
+        if pic: repr['author_picture'] = pic.url
         return repr
 
 class MessageSerializer(serializers.ModelSerializer):
