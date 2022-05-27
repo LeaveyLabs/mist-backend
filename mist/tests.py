@@ -1245,10 +1245,10 @@ class MessageTest(TestCase):
         self.auth_token3 = Token.objects.create(user=self.user3)
         return
         
-    def test_get_message_by_valid_from_user(self):
+    def test_get_message_by_valid_sender(self):
         message = Message.objects.create(
-            from_user=self.user1,
-            to_user=self.user2,
+            sender=self.user1,
+            receiver=self.user2,
             text="TestMessageOne",
             timestamp=0,
         )
@@ -1257,7 +1257,7 @@ class MessageTest(TestCase):
         request = APIRequestFactory().get(
             '/api/messages/',
             {
-                'from_user': self.user1.pk,
+                'sender': self.user1.pk,
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
@@ -1269,11 +1269,11 @@ class MessageTest(TestCase):
         self.assertEqual(response_message, serialized_message)
         return
     
-    def test_get_message_by_invalid_from_user(self):
+    def test_get_message_by_invalid_sender(self):
         request = APIRequestFactory().get(
             '/api/messages/',
             {
-                'from_user': self.user1.pk,
+                'sender': self.user1.pk,
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
@@ -1285,10 +1285,10 @@ class MessageTest(TestCase):
         self.assertFalse(response_messages)
         return
     
-    def test_get_message_by_valid_to_user(self):
+    def test_get_message_by_valid_receiver(self):
         message = Message.objects.create(
-            from_user=self.user1,
-            to_user=self.user2,
+            sender=self.user1,
+            receiver=self.user2,
             text="TestMessageOne",
             timestamp=0,
         )
@@ -1297,7 +1297,7 @@ class MessageTest(TestCase):
         request = APIRequestFactory().get(
             '/api/messages/',
             {
-                'to_user': self.user2.pk,
+                'receiver': self.user2.pk,
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
@@ -1309,11 +1309,11 @@ class MessageTest(TestCase):
         self.assertEqual(response_message, serialized_message)
         return
 
-    def test_get_message_by_invalid_to_user(self):
+    def test_get_message_by_invalid_receiver(self):
         request = APIRequestFactory().get(
             '/api/messages/',
             {
-                'to_user': self.user2.pk,
+                'receiver': self.user2.pk,
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
@@ -1325,22 +1325,22 @@ class MessageTest(TestCase):
         self.assertFalse(response_messages)
         return
     
-    def test_get_messages_by_valid_from_user(self):
+    def test_get_messages_by_valid_sender(self):
         message1 = Message.objects.create(
-            from_user=self.user1,
-            to_user=self.user2,
+            sender=self.user1,
+            receiver=self.user2,
             text="TestMessageOne",
             timestamp=0,
         )
         message2 = Message.objects.create(
-            from_user=self.user2,
-            to_user=self.user1,
+            sender=self.user2,
+            receiver=self.user1,
             text="TestMessageTwo",
             timestamp=0,
         )
         message3 = Message.objects.create(
-            from_user=self.user1,
-            to_user=self.user3,
+            sender=self.user1,
+            receiver=self.user3,
             text="TestMessageThree",
             timestamp=0,
         )
@@ -1352,7 +1352,7 @@ class MessageTest(TestCase):
         request = APIRequestFactory().get(
             '/api/messages/',
             {
-                'from_user': self.user1.pk,
+                'sender': self.user1.pk,
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
@@ -1367,16 +1367,16 @@ class MessageTest(TestCase):
 
     def test_post_valid_message(self):
         message = Message(
-            from_user=self.user1,
-            to_user=self.user2,
+            sender=self.user1,
+            receiver=self.user2,
             text="TestMessageOne",
             timestamp=0,
         )
         serialized_message = MessageSerializer(message).data
 
         self.assertFalse(Message.objects.filter(
-            from_user=message.from_user,
-            to_user=message.to_user,
+            sender=message.sender,
+            receiver=message.receiver,
             text=message.text,
         ))
 
@@ -1390,27 +1390,27 @@ class MessageTest(TestCase):
         response_message = response.data
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response_message.get('to_user'), response_message.get('to_user'))
-        self.assertEqual(response_message.get('from_user'), response_message.get('from_user'))
+        self.assertEqual(response_message.get('receiver'), response_message.get('receiver'))
+        self.assertEqual(response_message.get('sender'), response_message.get('sender'))
         self.assertEqual(response_message.get('text'), response_message.get('text'))
         self.assertTrue(Message.objects.filter(
-            from_user=self.user1,
-            to_user=self.user2,
+            sender=self.user1,
+            receiver=self.user2,
             text=message.text,
         ))
         return
     
     def test_post_invalid_message(self):
         message = Message(
-            from_user=self.user1,
-            to_user=self.user2,
+            sender=self.user1,
+            receiver=self.user2,
             timestamp=0,
         )
         serialized_message = MessageSerializer(message).data
 
         self.assertFalse(Message.objects.filter(
-            from_user=self.user1,
-            to_user=self.user2,
+            sender=self.user1,
+            receiver=self.user2,
         ))
 
         request = APIRequestFactory().post(
@@ -1423,15 +1423,15 @@ class MessageTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(Message.objects.filter(
-            from_user=self.user1,
-            to_user=self.user2,
+            sender=self.user1,
+            receiver=self.user2,
         ))
         return
     
     def test_delete_message(self):
         message = Message.objects.create(
-            from_user=self.user1,
-            to_user=self.user2,
+            sender=self.user1,
+            receiver=self.user2,
             text="TestMessageOne",
             timestamp=0,  
         )

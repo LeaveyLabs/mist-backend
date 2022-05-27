@@ -135,8 +135,8 @@ class Comment(models.Model):
 class Message(models.Model):
     text = models.CharField(max_length=1000)
     timestamp = models.FloatField(default=get_current_time)
-    from_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='from_user', on_delete=models.CASCADE)
-    to_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='to_user', on_delete=models.CASCADE)
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sender', on_delete=models.CASCADE)
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='receiver', on_delete=models.CASCADE)
 
     def _str_(self):
         return self.text
