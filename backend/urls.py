@@ -20,7 +20,7 @@ from django.urls import path, include
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 from mist.views import BlockView, FlagView, FriendRequestView, PostView, CommentView, MessageView, TagView, VoteView, WordView
-from users.views import RegisterUserEmailView, ValidateUserEmailView, UserView
+from users.views import RegisterUserEmailView, ValidateUserEmailView, UserView, ValidateUsernameView
 
 router = routers.DefaultRouter()
 router.register(r'users', UserView, 'user')
@@ -37,8 +37,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/words/', WordView.as_view()),
-    path('api-register/', RegisterUserEmailView.as_view()),
-    path('api-validate/', ValidateUserEmailView.as_view()),
+    path('api-register-email/', RegisterUserEmailView.as_view()),
+    path('api-validate-email/', ValidateUserEmailView.as_view()),
+    path('api-validate-username/', ValidateUsernameView.as_view()),
     path('api-token/', obtain_auth_token),
     # TODO: implement OAuth 2.0 login
     # path('accounts/', include('allauth.urls')),
