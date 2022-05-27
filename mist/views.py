@@ -121,7 +121,10 @@ class CommentView(viewsets.ModelViewSet):
         Returns comments matching the post_id.
         """
         post_id = self.request.query_params.get('post_id')
-        return Comment.objects.filter(post_id=post_id)
+        if post_id != None:
+            return Comment.objects.filter(post_id=post_id)
+        else:
+            return Comment.objects.all()
 
 class VoteView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, VotePermission)
@@ -136,12 +139,12 @@ class VoteView(viewsets.ModelViewSet):
         username = self.request.query_params.get("username")
         post_id = self.request.query_params.get("post_id")
         # filters
-        if username == None or post_id == None:
-            return Vote.objects.all()
-        else:
+        if username and post_id:
             matching_users = User.objects.filter(username=username)
             if not matching_users: return Vote.objects.none()
             return Vote.objects.filter(voter=matching_users[0], post_id=post_id)
+        else:
+            return Vote.objects.all()
 
 class FlagView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, FlagPermission)

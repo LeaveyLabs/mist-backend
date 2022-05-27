@@ -687,6 +687,16 @@ class CommentTest(TestCase):
             author=test_comment.author))
         return
 
+    def test_delete_comment(self):
+        self.assertTrue(Comment.objects.filter(pk=self.comment.pk))
+
+        request = APIRequestFactory().delete('/api/comment/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token))
+        response = CommentView.as_view({'delete':'destroy'})(request, pk=self.comment.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Comment.objects.filter(pk=self.comment.pk))
+        return
+
 class FlagTest(TestCase):
     def setUp(self):
         self.user = User(
