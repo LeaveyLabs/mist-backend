@@ -57,7 +57,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
         users_with_matching_email = User.objects.filter(email=email)
         if len(users_with_matching_email):
-            raise serializers.ValidationError("Email already taken.")
+            raise serializers.ValidationError({"email": "Email already taken."})
 
         username = validated_data.get('username')
         users_with_matching_username = User.objects.filter(username=username)
@@ -92,7 +92,7 @@ class UserEmailRegistrationSerializer(serializers.ModelSerializer):
         email = data.get('email')
         domain = email.split('@')[1]
         if domain not in self.ACCEPTABLE_DOMAINS:
-            raise ValidationError("Invalid email domain")
+            raise ValidationError({"email": "Invalid email domain"})
         return data
 
 class UserEmailValidationRequestSerializer(serializers.Serializer):
@@ -107,19 +107,19 @@ class UserEmailValidationRequestSerializer(serializers.Serializer):
                 email=email).order_by('-code_time')
 
         if not registrations:
-            raise ValidationError("Email was not registered.")
+            raise ValidationError({"email": "Email was not registered."})
 
         code = data.get('code')
         registration = registrations[0]
         if code != registration.code:
-            raise ValidationError("Code does not match.")
+            raise ValidationError({"code": "Code does not match."})
 
         current_time = datetime.now().timestamp()
         time_since_registration = current_time - registration.code_time 
         registration_expired = time_since_registration > self.EXPIRATION_TIME
 
         if registration_expired:
-            raise ValidationError("Code expired (10 minutes).")
+            raise ValidationError({"code": "Code expired (10 minutes)."})
 
         return data
 
@@ -130,10 +130,10 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
         username = data.get('username')
 
         if not username:
-            raise ValidationError("Username was not provided.")
+            raise ValidationError({"username": "Username was not provided."})
 
         users_with_matching_username = User.objects.filter(username=username)
         if users_with_matching_username:
-            raise ValidationError("Username is not unique.")
+            raise ValidationError({"username": "Username is not unique."})
 
         return data
