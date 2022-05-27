@@ -134,9 +134,10 @@ class RegisterUserEmailViewTest(TestCase):
         cache.cache.clear()
 
     def test_register_user_valid_email(self):
-        fake_email = 'RegisterThisFakeEmail@usc.edu'.lower()
+        fake_email = 'RegisterThisFakeEmail@usc.edu'
+
         self.assertFalse(EmailAuthentication.objects.filter(
-            email=fake_email))
+            email__iexact=fake_email))
 
         request = APIRequestFactory().post(
             'api-register/',
@@ -147,17 +148,17 @@ class RegisterUserEmailViewTest(TestCase):
         )
         response = RegisterUserEmailView.as_view()(request)
         email_auths = EmailAuthentication.objects.filter(
-            email=fake_email)
+            email__iexact=fake_email)
 
         self.assertEquals(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(email_auths)
         self.assertTrue(mail.outbox)
-        self.assertEquals(mail.outbox[0].to[0], fake_email)
+        self.assertEquals(mail.outbox[0].to[0], fake_email.lower())
         self.assertTrue(mail.outbox[0].body.find(str(email_auths[0].code)))
         return
     
     def test_register_user_invalid_email(self):
-        invalid_email = 'ThisIsAnInvalidEmail'.lower()
+        invalid_email = 'ThisIsAnInvalidEmail'
 
         request = APIRequestFactory().post(
             'api-register/',
@@ -170,20 +171,20 @@ class RegisterUserEmailViewTest(TestCase):
 
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(EmailAuthentication.objects.filter(
-            email='ThisIsAnInvalidEmail'))
+            email__iexact='ThisIsAnInvalidEmail'))
         self.assertFalse(mail.outbox)
         return
 
 class ValidateUserEmailViewTest(TestCase):
     def test_validate_user_valid_code(self):
-        email_to_validate = 'ValidateThisFakeEmail@usc.edu'.lower()
+        email_to_validate = 'ValidateThisFakeEmail@usc.edu'
         registration = EmailAuthentication(
             email=email_to_validate,
         )
         registration.save()
 
         self.assertFalse(EmailAuthentication.objects.get(
-            email=email_to_validate).validated)
+            email__iexact=email_to_validate).validated)
 
         request = APIRequestFactory().post('api-validate/',
             {
@@ -196,11 +197,11 @@ class ValidateUserEmailViewTest(TestCase):
 
         self.assertEquals(response.status_code, status.HTTP_200_OK)
         self.assertTrue(EmailAuthentication.objects.get(
-            email=email_to_validate).validated)
+            email__iexact=email_to_validate).validated)
         return
     
     def test_validate_user_invalid_code(self):
-        email_to_validate = 'ValidateThisFakeEmail@usc.edu'.lower()
+        email_to_validate = 'ValidateThisFakeEmail@usc.edu'
         registration = EmailAuthentication(
             email=email_to_validate,
         )
@@ -221,7 +222,7 @@ class ValidateUserEmailViewTest(TestCase):
 
         self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(EmailAuthentication.objects.get(
-            email=email_to_validate).validated)
+            email__iexact=email_to_validate).validated)
         return
 
 class ValidateUsernameViewTest(TestCase):

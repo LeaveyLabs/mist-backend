@@ -37,8 +37,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         email = validated_data.get('email')
-        email_auth_requests = EmailAuthentication.objects.filter(
-            email=email).order_by('-validation_time')
+        validations_with_matching_email = EmailAuthentication.objects.filter(
+            email__iexact=email)
+        email_auth_requests = validations_with_matching_email.order_by('-validation_time')
 
         if not email_auth_requests:
             raise serializers.ValidationError({"email": "Email was not registered."})
@@ -89,10 +90,16 @@ class UserEmailRegistrationSerializer(serializers.ModelSerializer):
     ACCEPTABLE_DOMAINS = ('usc.edu', 'gmail.com')
     
     def validate(self, data):
-        email = data.get('email')
+        email = data.get('email').lower()
+
+        users_with_matching_email = User.objects.filter(email__iexact=email)
+        if users_with_matching_email:
+            raise ValidationError({"email": "Email has already been registered."})
+
         domain = email.split('@')[1]
         if domain not in self.ACCEPTABLE_DOMAINS:
-            raise ValidationError({"email": "Invalid email domain"})
+            raise ValidationError({"email": "Email has an invalid domain."})
+
         return data
 
 class UserEmailValidationRequestSerializer(serializers.Serializer):
@@ -102,15 +109,15 @@ class UserEmailValidationRequestSerializer(serializers.Serializer):
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
 
     def validate(self, data):
-        email = data.get('email')
-        registrations = EmailAuthentication.objects.filter(
-                email=email).order_by('-code_time')
+        email = data.get('email').lower()
+        registrations_with_matching_email = EmailAuthentication.objects.filter(
+                email__iexact=email).order_by('-code_time')
 
-        if not registrations:
+        if not registrations_with_matching_email:
             raise ValidationError({"email": "Email was not registered."})
 
         code = data.get('code')
-        registration = registrations[0]
+        registration = registrations_with_matching_email[0]
         if code != registration.code:
             raise ValidationError({"code": "Code does not match."})
 
