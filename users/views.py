@@ -81,7 +81,7 @@ class UserView(viewsets.ModelViewSet):
             else:
                 self.serializer_class = CompleteUserSerializer
 
-        return queryset   
+        return queryset
 
 class RegisterUserEmailView(generics.CreateAPIView):
     permission_classes = (AllowAny, )
@@ -99,6 +99,7 @@ class RegisterUserEmailView(generics.CreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST)
         else:
             email = registration_request.data['email']
+            EmailAuthentication.objects.filter(email=email).delete()
             email_auth = EmailAuthentication.objects.create(email=email)
             send_mail(
                 "Your code awaits!",
@@ -146,5 +147,5 @@ class ValidateUserEmailView(generics.CreateAPIView):
                 {
                     "status": "success",
                     "data": validation_request.data,
-                }, 
+                },
                 status=status.HTTP_200_OK)
