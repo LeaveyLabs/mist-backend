@@ -239,7 +239,6 @@ class UserViewPostTest(TestCase):
         self.assertFalse(User.objects.filter(
             email=self.email_auth.email,
             username=self.fake_username,
-            password=self.fake_password,
             first_name=self.fake_first_name,
             last_name=self.fake_last_name,
         ))
@@ -261,7 +260,6 @@ class UserViewPostTest(TestCase):
         self.assertTrue(User.objects.filter(
             email=self.email_auth.email,
             username=self.fake_username,
-            password=self.fake_password,
             first_name=self.fake_first_name,
             last_name=self.fake_last_name,
         ))

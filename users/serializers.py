@@ -4,8 +4,8 @@ from django.forms import ValidationError
 from rest_framework import serializers
 from .models import User, EmailAuthentication
 from users.models import User
-from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.hashers import make_password
 
 class UserEmailRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -106,6 +106,10 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         
         if len(users_with_matching_username):
             raise ValidationError("Username already taken.")
+        
+        raw_password = validated_data.get('password')
+        hashed_password = make_password(raw_password)
+        validated_data.update({'password': hashed_password})
 
         return User.objects.create(**validated_data)
     
