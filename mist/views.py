@@ -140,7 +140,7 @@ class VoteView(viewsets.ModelViewSet):
         post = self.request.query_params.get("post")
         # filters
         if voter and post:
-            matching_users = User.objects.filter(id=voter)
+            matching_users = User.objects.filter(pk=voter)
             if not matching_users: return Vote.objects.none()
             return Vote.objects.filter(voter=matching_users[0], post=post)
         else:
