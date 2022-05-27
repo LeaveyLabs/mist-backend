@@ -598,16 +598,16 @@ class VoteTest(TestCase):
         request = APIRequestFactory().get(
             '/api/votes/',
             {
-                'user': vote1.voter.pk,
+                'voter': vote1.voter.pk,
                 'post': vote1.post.pk,
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
         )
         response = VoteView.as_view({'get':'list'})(request)
-
         response_vote = response.data[0]
-        
+
+        self.assertEqual(len(response.data), 1)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(serialized_vote, response_vote)
         return
