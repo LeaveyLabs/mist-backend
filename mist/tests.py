@@ -578,8 +578,8 @@ class VoteTest(TestCase):
         request = APIRequestFactory().get(
             '/api/votes/',
             {
-                'username': self.user.username,
-                'post_id': self.post.pk,
+                'user': self.user.pk,
+                'post': self.post.pk,
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
@@ -626,7 +626,7 @@ class CommentTest(TestCase):
         request = APIRequestFactory().get(
             '/api/comments',
             {
-                'post_id':self.post.pk,
+                'post':self.post.pk,
             },
             format="json",
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
@@ -643,7 +643,7 @@ class CommentTest(TestCase):
         request = APIRequestFactory().get(
             '/api/comments',
             {
-                'post_id': self.unused_post_id,
+                'post': self.unused_post_id,
             },
             format="json",
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),

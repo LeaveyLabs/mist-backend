@@ -118,11 +118,11 @@ class CommentView(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Returns comments matching the post_id.
+        Returns comments matching the post.
         """
-        post_id = self.request.query_params.get('post_id')
-        if post_id != None:
-            return Comment.objects.filter(post_id=post_id)
+        post = self.request.query_params.get('post')
+        if post != None:
+            return Comment.objects.filter(post=post)
         else:
             return Comment.objects.all()
 
@@ -133,16 +133,16 @@ class VoteView(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         If parameters are missing, return all votes.
-        Otherwise, return with username and post_id.
+        Otherwise, return with user and post.
         """
         # parameters
-        username = self.request.query_params.get("username")
-        post_id = self.request.query_params.get("post_id")
+        voter = self.request.query_params.get("voter")
+        post = self.request.query_params.get("post")
         # filters
-        if username and post_id:
-            matching_users = User.objects.filter(username=username)
+        if voter and post:
+            matching_users = User.objects.filter(user=voter)
             if not matching_users: return Vote.objects.none()
-            return Vote.objects.filter(voter=matching_users[0], post_id=post_id)
+            return Vote.objects.filter(voter=matching_users[0], post=post)
         else:
             return Vote.objects.all()
 
