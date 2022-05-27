@@ -92,7 +92,7 @@ class RegisterUserEmailView(generics.CreateAPIView):
         registration_request = UserEmailRegistrationSerializer(data=request.data)
         registration_request.is_valid(raise_exception=True)
 
-        email = registration_request.data['email']
+        email = registration_request.data.get('email').lower()
         EmailAuthentication.objects.filter(email=email).delete()
         email_auth = EmailAuthentication.objects.create(email=email)
 
@@ -123,7 +123,7 @@ class ValidateUserEmailView(generics.CreateAPIView):
         validation_request.is_valid(raise_exception=True)
 
         registration = EmailAuthentication.objects.filter(
-            email=validation_request.data['email']
+            email=validation_request.data.get('email').lower()
             ).order_by('-code_time')[0]
         registration.validated = True
         registration.validation_time = datetime.now().timestamp()
