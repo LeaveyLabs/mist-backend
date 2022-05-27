@@ -9,7 +9,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
-from .views import RegisterUserEmailView, UserView, ValidateUserEmailView
+from .views import RegisterUserEmailView, UserView, ValidateUserEmailView, ValidateUsernameView
 from .models import User, EmailAuthentication
 
 # Create your tests here.
@@ -219,6 +219,52 @@ class ValidateUserEmailViewTest(TestCase):
             email='ValidateThisFakeEmail@usc.edu').validated)
         return
 
+class ValidateUsernameViewTest(TestCase):
+    def setUp(self):
+        self.valid_user = User.objects.create(
+            email="email@usc.edu",
+            username="takenUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        self.valid_user.set_password('randomPassword')
+        self.valid_user.save()
+        return
+    
+    def test_post_untaken_username(self):
+        untaken_username = 'untakenUsername'
+        self.assertFalse(User.objects.filter(username=untaken_username))
+
+        request = APIRequestFactory().post(
+            'api-validate-username/',
+            {
+                'username': untaken_username,
+            },
+            format='json',
+        )
+        response = ValidateUsernameView.as_view()(request)
+
+        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(User.objects.filter(username=untaken_username))
+        return
+    
+    def test_post_taken_username(self):
+        taken_username = 'takenUsername'
+
+        self.assertTrue(User.objects.filter(username=taken_username))
+
+        request = APIRequestFactory().post(
+            'api-validate-username/',
+            {
+                'username': taken_username,
+            },
+            format='json',
+        )
+        response = ValidateUsernameView.as_view()(request)
+
+        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(User.objects.filter(username=taken_username))
+        return
+
 class UserViewPostTest(TestCase):
     def setUp(self):
         cache.cache.clear()
@@ -266,6 +312,13 @@ class UserViewPostTest(TestCase):
         return
 
     def test_create_user_invalid_email(self):
+        self.assertFalse(User.objects.filter(
+            email='thisEmailDoesNotExist@usc.edu',
+            username=self.fake_username,
+            first_name=self.fake_first_name,
+            last_name=self.fake_last_name,
+        ))
+
         request = APIRequestFactory().post(
             'api/users/',
             {
@@ -277,9 +330,15 @@ class UserViewPostTest(TestCase):
             },
             format='json',
         )
-
-        with self.assertRaises(ValidationError):
-            UserView.as_view({'post':'create'})(request)
+        response = UserView.as_view({'post':'create'})(request)
+        
+        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(
+            email='thisEmailDoesNotExist@usc.edu',
+            username=self.fake_username,
+            first_name=self.fake_first_name,
+            last_name=self.fake_last_name,
+        ))
         return
 
     def test_obtain_token_valid_user(self):

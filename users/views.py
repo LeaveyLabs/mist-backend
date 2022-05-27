@@ -16,6 +16,7 @@ from .serializers import (
     UserEmailRegistrationSerializer,
     UserEmailValidationRequestSerializer,
     CompleteUserSerializer,
+    UsernameValidationRequestSerializer,
 )
 from .models import (
     User,
@@ -89,63 +90,66 @@ class RegisterUserEmailView(generics.CreateAPIView):
 
     def post(self, request):
         registration_request = UserEmailRegistrationSerializer(data=request.data)
-        if not registration_request.is_valid():
-            # return error
-            return Response(
-                {
-                    "status": "error", 
-                    "data": registration_request.errors
-                }, 
-                status=status.HTTP_400_BAD_REQUEST)
-        else:
-            email = registration_request.data['email']
-            EmailAuthentication.objects.filter(email=email).delete()
-            email_auth = EmailAuthentication.objects.create(email=email)
-            send_mail(
-                "Your code awaits!",
-                "Here's your validation code: {}".format(email_auth.code),
-                "getmist.app@gmail.com",
-                [email],
-                fail_silently=False,
-            )
-            return Response(
-                {
-                    "status": "success",
-                    "data": registration_request.data,
-                }, 
-                status=status.HTTP_201_CREATED)
+        registration_request.is_valid(raise_exception=True)
+
+        email = registration_request.data['email']
+        EmailAuthentication.objects.filter(email=email).delete()
+        email_auth = EmailAuthentication.objects.create(email=email)
+
+        send_mail(
+            "Your code awaits!",
+            "Here's your validation code: {}".format(email_auth.code),
+            "getmist.app@gmail.com",
+            [email],
+            fail_silently=False,
+        )
+        
+        return Response(
+            {
+                "status": "success",
+                "data": registration_request.data,
+            }, 
+            status=status.HTTP_201_CREATED)
 
 class ValidateUserEmailView(generics.CreateAPIView):
     """
-    View to validate users. 
+    View to validate users emails.
     """
     permission_classes = (AllowAny, )
     serializer_class = UserEmailValidationRequestSerializer
 
     def post(self, request):
-        # check validation request
         validation_request = UserEmailValidationRequestSerializer(data=request.data)
-        # if the data is not valid
-        if not validation_request.is_valid():
-            # return error
-            return Response(
-                {
-                    "status": "error", 
-                    "data": validation_request.errors
-                }, 
-                status=status.HTTP_400_BAD_REQUEST)
-        # if the data is valid
-        else:
-            # mark registration as validated
-            registration = EmailAuthentication.objects.filter(
-                email=validation_request.data['email']
-                ).order_by('-code_time')[0]
-            registration.validated = True
-            registration.validation_time = datetime.now().timestamp()
-            registration.save()
-            return Response(
-                {
-                    "status": "success",
-                    "data": validation_request.data,
-                },
-                status=status.HTTP_200_OK)
+        validation_request.is_valid(raise_exception=True)
+
+        registration = EmailAuthentication.objects.filter(
+            email=validation_request.data['email']
+            ).order_by('-code_time')[0]
+        registration.validated = True
+        registration.validation_time = datetime.now().timestamp()
+        registration.save()
+
+        return Response(
+            {
+                "status": "success",
+                "data": validation_request.data,
+            },
+            status=status.HTTP_200_OK)
+
+class ValidateUsernameView(generics.CreateAPIView):
+    """
+    View to validate usersnames
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = UsernameValidationRequestSerializer
+
+    def post(self, request):
+        validation_request = UsernameValidationRequestSerializer(data=request.data)
+        validation_request.is_valid(raise_exception=True)
+
+        return Response(
+            {
+                "status": "success",
+                "data": validation_request.data,
+            },
+            status=status.HTTP_200_OK)
