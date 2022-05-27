@@ -495,24 +495,32 @@ class PostTest(TestCase):
         
 class VoteTest(TestCase):
     def setUp(self):
-        self.user = User(
+        self.user1 = User(
             email='TestUser@usc.edu',
             username='TestUser',
         )
-        self.user.set_password("TestPassword@98374")
-        self.user.save()
-        self.auth_token = Token.objects.create(user=self.user)
+        self.user1.set_password("TestPassword@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUse2r',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
             text='FakeTextForFirstPost',
-            author=self.user,
+            author=self.user1,
         )
         return
     
     def test_post_vote(self):
         vote = Vote(
-            voter=self.user,
+            voter=self.user1,
             post=self.post,
             rating=10,
         )
@@ -528,7 +536,7 @@ class VoteTest(TestCase):
             '/api/votes',
             serialized_vote,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
         )
         response = VoteView.as_view({'post':'create'})(request)
 
@@ -547,13 +555,13 @@ class VoteTest(TestCase):
     
     def test_delete_vote(self):
         vote = Vote.objects.create(
-            voter=self.user,
+            voter=self.user1,
             post=self.post,
             rating=10,
         )
         self.assertTrue(Vote.objects.filter(pk=vote.pk))
 
-        request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
+        request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),)
         response = VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -561,28 +569,40 @@ class VoteTest(TestCase):
         return
     
     def test_get_vote(self):
-        vote = Vote.objects.create(
-            voter=self.user,
+        vote1 = Vote.objects.create(
+            voter=self.user1,
             post=self.post,
             timestamp=0,
             rating=10,
         )
-        serialized_vote = VoteSerializer(vote).data
+        vote2 = Vote.objects.create(
+            voter=self.user2,
+            post=self.post,
+            timestamp=0,
+            rating=10,
+        )
+        serialized_vote = VoteSerializer(vote1).data
         self.assertTrue(Vote.objects.filter(
-            voter=vote.voter,
-            post=vote.post,
-            timestamp=vote.timestamp,
-            rating=vote.rating,
+            voter=vote1.voter,
+            post=vote1.post,
+            timestamp=vote1.timestamp,
+            rating=vote1.rating,
+        ))
+        self.assertTrue(Vote.objects.filter(
+            voter=vote2.voter,
+            post=vote2.post,
+            timestamp=vote2.timestamp,
+            rating=vote2.rating,
         ))
 
         request = APIRequestFactory().get(
             '/api/votes/',
             {
-                'user': self.user.pk,
-                'post': self.post.pk,
+                'user': vote1.voter.pk,
+                'post': vote1.post.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
         )
         response = VoteView.as_view({'get':'list'})(request)
 
