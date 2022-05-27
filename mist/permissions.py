@@ -120,9 +120,9 @@ class MessagePermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "POST":
             requesting_user = get_user_from_request(request)
-            from_user_pk = int(request.data.get('from_user'))
+            sender_pk = int(request.data.get('sender'))
             if not requesting_user: return False
-            return requesting_user.pk == from_user_pk
+            return requesting_user.pk == sender_pk
         else:
             return True
 
@@ -131,7 +131,7 @@ class MessagePermission(permissions.BasePermission):
             return True
         requesting_user = get_user_from_request(request)
         if not requesting_user: return False
-        return requesting_user == obj.from_user
+        return requesting_user == obj.sender
 
 class FriendRequestPermission(permissions.BasePermission):
     def has_permission(self, request, view):

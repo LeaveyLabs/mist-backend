@@ -196,13 +196,13 @@ class MessageView(viewsets.ModelViewSet):
     serializer_class = MessageSerializer
 
     def get_queryset(self):
-        to_user = self.request.query_params.get("to_user")
-        from_user = self.request.query_params.get("from_user")
+        sender = self.request.query_params.get("sender")
+        receiver = self.request.query_params.get("receiver")
         queryset = Message.objects.all()
-        if to_user:
-            queryset = queryset.filter(to_user=to_user)
-        if from_user:
-            queryset = queryset.filter(from_user=from_user)
+        if receiver:
+            queryset = queryset.filter(receiver=receiver)
+        if sender:
+            queryset = queryset.filter(sender=sender)
         return queryset
 
 class FriendRequestView(viewsets.ModelViewSet):
