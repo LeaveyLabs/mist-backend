@@ -1,5 +1,4 @@
 from datetime import datetime
-from requests import request
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
