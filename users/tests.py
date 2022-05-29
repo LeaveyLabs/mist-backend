@@ -1,7 +1,9 @@
 from datetime import datetime
+from tempfile import TemporaryFile
 from django.core import mail, cache
-from django.forms import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from django.contrib.auth import authenticate
 from users.models import User
 from rest_framework import status
@@ -43,7 +45,7 @@ class ThrottleTest(TestCase):
         )
         response = RegisterUserEmailView.as_view()(request)
 
-        self.assertEquals(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         return
         
     def test_do_not_throttle_anonymous_user_at_or_below_50_calls(self):
@@ -62,7 +64,7 @@ class ThrottleTest(TestCase):
         )
         response = RegisterUserEmailView.as_view()(request)
 
-        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         return
 
     def test_throttle_authenticated_user_above_100_calls(self):
@@ -82,7 +84,7 @@ class ThrottleTest(TestCase):
         )
         response = RegisterUserEmailView.as_view()(request)
 
-        self.assertEquals(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         return
 
     def test_do_not_throttle_authenticated_user_at_or_below_100_calls(self):
@@ -102,7 +104,7 @@ class ThrottleTest(TestCase):
         )
         response = RegisterUserEmailView.as_view()(request)
 
-        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         return
     
     def run_fake_stranger_request(self, number_of_repeats):
@@ -150,10 +152,10 @@ class RegisterUserEmailViewTest(TestCase):
         email_auths = EmailAuthentication.objects.filter(
             email__iexact=fake_email)
 
-        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(email_auths)
         self.assertTrue(mail.outbox)
-        self.assertEquals(mail.outbox[0].to[0], fake_email.lower())
+        self.assertEqual(mail.outbox[0].to[0], fake_email.lower())
         self.assertTrue(mail.outbox[0].body.find(str(email_auths[0].code)))
         return
     
@@ -169,7 +171,7 @@ class RegisterUserEmailViewTest(TestCase):
         )
         response = RegisterUserEmailView.as_view()(request)
 
-        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(EmailAuthentication.objects.filter(
             email__iexact='ThisIsAnInvalidEmail'))
         self.assertFalse(mail.outbox)
@@ -195,7 +197,7 @@ class ValidateUserEmailViewTest(TestCase):
         )
         response = ValidateUserEmailView.as_view()(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(EmailAuthentication.objects.get(
             email__iexact=email_to_validate).validated)
         return
@@ -220,7 +222,7 @@ class ValidateUserEmailViewTest(TestCase):
         )
         response = ValidateUserEmailView.as_view()(request)
 
-        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(EmailAuthentication.objects.get(
             email__iexact=email_to_validate).validated)
         return
@@ -249,7 +251,7 @@ class ValidateUsernameViewTest(TestCase):
         )
         response = ValidateUsernameView.as_view()(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(User.objects.filter(username=untaken_username))
         return
     
@@ -267,7 +269,7 @@ class ValidateUsernameViewTest(TestCase):
         )
         response = ValidateUsernameView.as_view()(request)
 
-        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(User.objects.filter(username=taken_username))
         return
 
@@ -308,7 +310,7 @@ class UserViewPostTest(TestCase):
         )
         response = UserView.as_view({'post':'create'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(
             email=self.email_auth.email,
             username=self.fake_username,
@@ -338,7 +340,7 @@ class UserViewPostTest(TestCase):
         )
         response = UserView.as_view({'post':'create'})(request)
         
-        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(User.objects.filter(
             email='thisEmailDoesNotExist@usc.edu',
             username=self.fake_username,
@@ -365,7 +367,7 @@ class UserViewPostTest(TestCase):
         )
         response = obtain_auth_token(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
         return
     
@@ -387,7 +389,7 @@ class UserViewPostTest(TestCase):
         )
         response = obtain_auth_token(request)
 
-        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertNotIn('token', response.data)
         return
     
@@ -410,7 +412,7 @@ class UserViewPostTest(TestCase):
 
         response = obtain_auth_token(request)
         
-        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertNotIn('token', response.data)
         return
 
@@ -447,9 +449,9 @@ class UserViewGetTest(TestCase):
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
         response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
-        print(response.data, user_serializer.data)
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data, user_serializer.data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, user_serializer.data)
         return
     
     def test_return_full_user_with_matching_token(self):
@@ -461,8 +463,8 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
         response_user = response.data
         
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response_user, self.user_serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_user, self.user_serializer.data)
         return
 
     # Valid Queries
@@ -477,8 +479,8 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.user_serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
         return
 
     def test_get_user_by_full_username(self):
@@ -492,8 +494,8 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.user_serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
         return
     
     def test_get_user_by_prefix_username(self):
@@ -507,8 +509,8 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.user_serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
         return
 
     def test_get_user_by_full_first_name(self):
@@ -522,8 +524,8 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.user_serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
         return
     
     def test_get_user_by_prefix_first_name(self):
@@ -537,8 +539,8 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.user_serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
         return
 
     def test_get_user_by_full_last_name(self):
@@ -552,8 +554,8 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.user_serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
         return
         
     def test_get_user_by_prefix_last_name(self):
@@ -567,8 +569,8 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response.data[0], self.user_serializer.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
         return
 
     def test_get_user_by_valid_token(self):
@@ -585,8 +587,8 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
         response_users = response.data
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(response_users, serialized_users)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_users, serialized_users)
         return
 
     # Invalid User
@@ -601,7 +603,7 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)
         return
 
@@ -616,7 +618,7 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)
         return
     
@@ -631,7 +633,7 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)        
         return
 
@@ -646,7 +648,7 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)        
         return
     
@@ -661,7 +663,7 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)        
         return
 
@@ -676,7 +678,7 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)        
         return
 
@@ -691,7 +693,7 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'list'})(request)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)        
         return
     
@@ -708,7 +710,7 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
         response_users = response.data
         
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response_users)
         return
 
@@ -732,7 +734,7 @@ class UserViewDeleteTest(TestCase):
         request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.valid_user.pk)
 
-        self.assertEquals(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(User.objects.filter(pk=self.valid_user.pk))
         return
 
@@ -742,7 +744,7 @@ class UserViewDeleteTest(TestCase):
         request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.unused_pk)
 
-        self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
         return
 
@@ -767,12 +769,12 @@ class UserViewPatchTest(TestCase):
         request = APIRequestFactory().patch('api/users/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.unused_pk)
 
-        self.assertEquals(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertFalse(User.objects.filter(pk=self.unused_pk))
         return
         
     def test_patch_valid_username(self):
-        self.assertEquals(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
+        self.assertEqual(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
         fake_new_username = 'FakeNewUsername'
 
         request = APIRequestFactory().patch(
@@ -785,12 +787,12 @@ class UserViewPatchTest(TestCase):
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(fake_new_username, User.objects.get(pk=self.valid_user.pk).username)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(fake_new_username, User.objects.get(pk=self.valid_user.pk).username)
         return
     
     def test_patch_invalid_username(self):
-        self.assertEquals(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
+        self.assertEqual(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
 
         request = APIRequestFactory().patch(
             'api/users/',
@@ -802,8 +804,8 @@ class UserViewPatchTest(TestCase):
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
-        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEquals(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
         return
     
     def test_patch_valid_password(self):
@@ -826,7 +828,7 @@ class UserViewPatchTest(TestCase):
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNone(
             authenticate(username=self.valid_user.username, 
                         password=self.password))
@@ -855,7 +857,7 @@ class UserViewPatchTest(TestCase):
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
-        self.assertEquals(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIsNone(
             authenticate(username=self.valid_user.username, 
                         password=fake_new_password))
@@ -867,7 +869,7 @@ class UserViewPatchTest(TestCase):
     def test_patch_first_name(self):
         fake_first_name = 'heyMyRealFirstName'
 
-        self.assertEquals(self.valid_user.first_name, User.objects.get(pk=self.valid_user.pk).first_name)
+        self.assertEqual(self.valid_user.first_name, User.objects.get(pk=self.valid_user.pk).first_name)
 
         request = APIRequestFactory().patch(
             'api/users/',
@@ -879,14 +881,14 @@ class UserViewPatchTest(TestCase):
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(fake_first_name, User.objects.get(pk=self.valid_user.pk).first_name)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(fake_first_name, User.objects.get(pk=self.valid_user.pk).first_name)
         return
     
     def test_patch_last_name(self):
         fake_last_name = 'heyMyRealLastName'
 
-        self.assertEquals(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+        self.assertEqual(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
 
         request = APIRequestFactory().patch(
             'api/users/',
@@ -898,6 +900,48 @@ class UserViewPatchTest(TestCase):
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
-        self.assertEquals(response.status_code, status.HTTP_200_OK)
-        self.assertEquals(fake_last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(fake_last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+        return
+
+    def test_patch_valid_picture(self):
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        image_file = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
+        self.assertFalse(User.objects.get(pk=self.valid_user.pk).picture)
+
+        request = APIRequestFactory().patch(
+            'api/users/', 
+            encode_multipart(boundary=BOUNDARY, data={'picture': image_file}),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Token {self.auth_token}"
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(User.objects.get(pk=self.valid_user.pk).picture)
+        return
+    
+    def test_patch_invalid_picture(self):
+        ten_mb_limit = (1024 * 1024 * 10)
+        self.assertFalse(User.objects.get(pk=self.valid_user.pk).picture)
+
+        with TemporaryFile() as temp_file:
+            temp_file.seek(ten_mb_limit)
+            temp_file.write(b'0')
+
+            request = APIRequestFactory().patch(
+                'api/users/', 
+                encode_multipart(boundary=BOUNDARY, data={'picture': temp_file}),
+                content_type=MULTIPART_CONTENT,
+                HTTP_AUTHORIZATION=f"Token {self.auth_token}"
+            )
+            response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertFalse(User.objects.get(pk=self.valid_user.pk).picture)
+
         return

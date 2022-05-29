@@ -11,29 +11,33 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 'picture', )
+        read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', )
 
 class CompleteUserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=50, write_only=True, required=False)
 
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+    MEGABYTE_LIMIT = 10
 
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'password',
         'first_name', 'last_name', 'picture', )
-
-    def validate(self, data):
-        if 'email' in data:
-            # will see if you can register with this email without error
-            emailValidator = UserEmailRegistrationSerializer(data=data)
-            emailValidator.is_valid()
-
-        if 'password' in data:
-            # validates password strength
-            password = data.get('password')
-            validate_password(password)
-        
-        return data
+    
+    def validate_email(self, email):
+        emailValidator = UserEmailRegistrationSerializer(data={"email":email})
+        emailValidator.is_valid(raise_exception=True)
+        return email
+    
+    def validate_password(self, password):
+        validate_password(password)
+        return password
+    
+    def validate_picture(self, picture):
+        filesize = picture.size
+        if filesize > self.MEGABYTE_LIMIT * 1024 * 1024:
+            raise ValidationError({"picture": "Max file size is {}MB".format(self.MEGABYTE_LIMIT)})
+        return picture
 
     def create(self, validated_data):
         email = validated_data.get('email')
