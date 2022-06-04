@@ -139,12 +139,14 @@ class VoteView(viewsets.ModelViewSet):
         voter = self.request.query_params.get("voter")
         post = self.request.query_params.get("post")
         # filters
-        if voter and post:
+        queryset = Vote.objects.all()
+        if voter:
             matching_users = User.objects.filter(pk=voter)
             if not matching_users: return Vote.objects.none()
-            return Vote.objects.filter(voter=matching_users[0], post=post)
-        else:
-            return Vote.objects.all()
+            queryset = queryset.filter(voter=matching_users[0])
+        if post:
+            queryset = queryset.filter(post=post)
+        return queryset
 
 class FlagView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, FlagPermission)
