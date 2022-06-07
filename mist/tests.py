@@ -4,9 +4,9 @@ from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.serializers import BlockSerializer, CommentSerializer, FlagSerializer, FriendRequestSerializer, MessageSerializer, PostSerializer, TagSerializer, VoteSerializer
-from mist.views import BlockView, CommentView, FlagView, FriendRequestView, MessageView, PostView, TagView, VoteView, WordView
-from .models import Block, Flag, FriendRequest, Post, Comment, Message, Tag, Vote, Word
+from mist.serializers import BlockSerializer, CommentSerializer, FavoriteSerializer, FlagSerializer, FriendRequestSerializer, MessageSerializer, PostSerializer, TagSerializer, VoteSerializer
+from mist.views import BlockView, CommentView, FavoriteView, FlagView, FriendRequestView, MessageView, PostView, TagView, VoteView, WordView
+from .models import Block, Favorite, Flag, FriendRequest, Post, Comment, Message, Tag, Vote, Word
 
 class PostTest(TestCase):
     maxDiff = None
@@ -48,14 +48,14 @@ class PostTest(TestCase):
         )
         return
     
-    def test_post_calculate_averagerating(self):
+    def test_calculate_averagerating_should_return_average_rating(self):
         return self.assertEquals(self.post1.calculate_averagerating(), 
             self.vote.rating)
     
-    def test_post_calculate_averagerating(self):
+    def test_calculate_commentcount_should_return_number_of_comments(self):
         return self.assertEquals(self.post1.calculate_commentcount(), 1)
 
-    def test_post_create_words(self):
+    def test_post_should_create_words_in_post(self):
         Post.objects.create(
             title='TitleWord',
             text='StartingTextWord MiddleTextWord NumbersWord123',
@@ -68,7 +68,7 @@ class PostTest(TestCase):
         self.assertFalse(Word.objects.filter(text='ThisWordDoesNotExist'))
         self.assertFalse(Word.objects.filter(text='NeitherDoesThisOne'))
     
-    def test_post_new_post(self):
+    def test_post_should_create_post_given_valid_post(self):
         test_post = Post(
             title='SomeFakeTitle',
             text='ThisPostWillBeTestingCreatingANewPost',
@@ -114,7 +114,7 @@ class PostTest(TestCase):
         ))
         return
     
-    def test_post_new_words(self):
+    def test_post_should_create_words_in_post_given_valid_post(self):
         self.assertFalse(Word.objects.filter(text='ThisTextNowExists'))
         test_post = Post.objects.create(
             title='SomeFakeTitle',
@@ -141,7 +141,7 @@ class PostTest(TestCase):
         self.assertTrue(Word.objects.filter(text='ThisTextNowExists'))
         return
 
-    def test_get_all_posts(self):
+    def test_get_should_return_all_posts_given_no_parameters(self):
         serialized_posts = [
             PostSerializer(self.post1).data, 
             PostSerializer(self.post2).data,
@@ -160,7 +160,7 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts, response_posts)
         return
     
-    def test_get_posts_by_text(self):
+    def test_get_should_return_posts_with_matching_text_given_text(self):
         serialized_posts = [PostSerializer(self.post1).data]
         
         request = APIRequestFactory().get(
@@ -179,7 +179,7 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts, response_posts)
         return
     
-    def test_get_posts_by_partial_text(self):
+    def test_get_should_return_posts_with_partially_matching_text_given_partial_text(self):
         serialized_posts = [PostSerializer(self.post1).data]
 
         mid_point_of_text = len(self.post1.text)//2
@@ -201,7 +201,7 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts, response_posts)
         return
 
-    def test_get_posts_by_timestamp(self):
+    def test_get_should_return_posts_with_matching_timestamp_given_timestamp(self):
         serialized_posts = [PostSerializer(self.post1).data]
 
         request = APIRequestFactory().get(
@@ -220,7 +220,7 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts, response_posts)
         return
     
-    def test_get_posts_by_latitude_longitude(self):
+    def test_get_should_return_posts_within_latitude_longitude_range_given_latitude_longitude(self):
         post_from_usc = Post.objects.create(
             title='FakeTitleOfUSCPost',
             text='HereIsAPostFromUSC',
@@ -257,7 +257,7 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts_from_usc, response_posts)
         return
     
-    def test_get_posts_by_loc_description(self):
+    def test_get_should_return_posts_with_matching_loc_description_given_loc_description(self):
         post_from_north_pole = Post.objects.create(
             title='FakeTitleOfNorthPolePost',
             text='HereIsAPostFromTheNorthPole',
@@ -287,7 +287,7 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts_from_north_pole, response_posts)
         return
     
-    def test_get_posts_by_partial_loc_description(self):
+    def test_get_should_return_posts_with_partially_matching_loc_description_given_partial_loc_description(self):
         post_from_north_pole = Post.objects.create(
             title='FakeTitleOfNorthPolePost',
             text='HereIsAPostFromTheNorthPole',
@@ -317,7 +317,7 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts_from_north_pole, response_posts)
         return
     
-    def test_get_posts_by_current_user_as_author(self):
+    def test_get_should_return_posts_by_current_user_given_current_user_as_author(self):
         serialized_posts = [PostSerializer(self.post1).data, 
                             PostSerializer(self.post2).data]
 
@@ -337,7 +337,7 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts, response_posts)
         return
     
-    def test_get_posts_by_friend_as_author(self):
+    def test_get_should_return_posts_by_friend_given_friend_as_author(self):
         friend = User.objects.create(
             email='TestFriendEmail@usc.edu',
             username='TestFriend',
@@ -374,7 +374,7 @@ class PostTest(TestCase):
         self.assertEqual(response_posts, serialized_posts)
         return
     
-    def test_get_posts_by_stranger_as_author(self):
+    def test_get_should_return_not_posts_given_stranger_as_author(self):
         stranger = User.objects.create(
             email='TestStranger@usc.edu',
             username='TestStranger',
@@ -397,7 +397,7 @@ class PostTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         return
     
-    def test_put_post_title(self):
+    def test_put_should_update_title_given_serialized_post(self):
         fake_title =  "NewFakeTitleForFirstPost"
         self.post1.title = fake_title
         serialized_post = PostSerializer(self.post1).data
@@ -419,7 +419,7 @@ class PostTest(TestCase):
         self.assertTrue(Post.objects.filter(title=fake_title))
         return
     
-    def test_put_post_text(self):
+    def test_put_should_update_text_given_serialized_post(self):
         fake_text = "NewFakeTextForFirstPost"
         self.post1.text = fake_text
         serialized_post = PostSerializer(self.post1).data
@@ -441,7 +441,7 @@ class PostTest(TestCase):
         self.assertTrue(Post.objects.filter(text=fake_text))
         return
 
-    def test_patch_valid_post_title(self):
+    def test_patch_should_update_title_given_valid_post_title(self):
         fake_title = 'NewFakeTitleForFirstPost'
 
         self.assertFalse(Post.objects.filter(title=fake_title))
@@ -463,7 +463,7 @@ class PostTest(TestCase):
         self.assertTrue(Post.objects.filter(title=fake_title))
         return
 
-    def test_patch_post_text(self):
+    def test_patch_should_update_text_given_valid_post_text(self):
         fake_text = 'NewFakeTextForFirstPost'
 
         self.assertFalse(Post.objects.filter(text=fake_text))
@@ -483,7 +483,7 @@ class PostTest(TestCase):
         self.assertTrue(Post.objects.filter(text=fake_text))
         return
 
-    def test_delete_post(self):
+    def test_delete_should_delete_post(self):
         self.assertTrue(Post.objects.filter(pk=self.post1.pk))
 
         request = APIRequestFactory().delete('/api/posts/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
@@ -518,7 +518,7 @@ class VoteTest(TestCase):
         )
         return
     
-    def test_post_vote(self):
+    def test_post_should_create_vote_given_valid_vote(self):
         vote = Vote(
             voter=self.user1,
             post=self.post,
@@ -553,7 +553,7 @@ class VoteTest(TestCase):
         ))
         return
     
-    def test_delete_vote(self):
+    def test_delete_should_delete_vote(self):
         vote = Vote.objects.create(
             voter=self.user1,
             post=self.post,
@@ -568,7 +568,7 @@ class VoteTest(TestCase):
         self.assertFalse(Vote.objects.filter(pk=vote.pk))
         return
     
-    def test_get_vote(self):
+    def test_get_should_return_votes_by_voter_on_post_given_voter_and_post(self):
         vote1 = Vote.objects.create(
             voter=self.user1,
             post=self.post,
@@ -640,7 +640,7 @@ class CommentTest(TestCase):
         self.unused_post_id = 155
         return 
         
-    def test_get_valid_comment(self):
+    def test_get_should_return_comment_given_post_pk(self):
         serialized_comment = CommentSerializer(self.comment).data
 
         request = APIRequestFactory().get(
@@ -659,7 +659,7 @@ class CommentTest(TestCase):
         self.assertIn('author_username', response_comment)
         return
     
-    def test_get_invalid_comment(self):
+    def test_get_should_not_return_comment_given_invalid_post_pk(self):
         request = APIRequestFactory().get(
             '/api/comments',
             {
@@ -675,7 +675,7 @@ class CommentTest(TestCase):
         self.assertFalse(response_comment)
         return
 
-    def test_post_valid_comment(self):
+    def test_post_should_create_comment_given_valid_comment(self):
         test_comment = Comment(
             text='FakeTextForTestComment',
             post=self.post,
@@ -707,7 +707,7 @@ class CommentTest(TestCase):
             author=test_comment.author))
         return
 
-    def test_delete_comment(self):
+    def test_delete_should_delete_comment(self):
         self.assertTrue(Comment.objects.filter(pk=self.comment.pk))
 
         request = APIRequestFactory().delete('/api/comment/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token))
@@ -734,7 +734,7 @@ class FlagTest(TestCase):
         )
         return
 
-    def test_get_flag_by_valid_flagger(self):
+    def test_get_should_return_flag_given_valid_flagger(self):
         flag = Flag.objects.create(
             flagger=self.user,
             post=self.post,
@@ -757,7 +757,7 @@ class FlagTest(TestCase):
         self.assertEqual(response_flag, serialized_flag)
         return
     
-    def test_get_flag_by_invalid_flagger(self):
+    def test_get_should_not_return_flag_given_invalid_flagger(self):
         request = APIRequestFactory().get(
             '/api/flags',
             {
@@ -773,7 +773,7 @@ class FlagTest(TestCase):
         self.assertFalse(response_flags)
         return
     
-    def test_get_flag_by_valid_post(self):
+    def test_get_should_return_flag_given_valid_post(self):
         flag = Flag.objects.create(
             flagger=self.user,
             post=self.post,
@@ -796,7 +796,7 @@ class FlagTest(TestCase):
         self.assertEqual(response_flag, serialized_flag)
         return
     
-    def test_get_flag_by_invalid_post(self):
+    def test_get_should_not_return_flag_given_invalid_post(self):
         request = APIRequestFactory().get(
             '/api/flags',
             {
@@ -812,7 +812,7 @@ class FlagTest(TestCase):
         self.assertFalse(response_flags)
         return
     
-    def test_post_valid_flag(self):
+    def test_post_should_create_flag_given_valid_flag(self):
         flag = Flag(
             flagger=self.user,
             post=self.post,
@@ -845,7 +845,7 @@ class FlagTest(TestCase):
         ))
         return
     
-    def test_delete_flag(self):
+    def test_delete_should_delete_flag(self):
         flag = Flag.objects.create(
             flagger=self.user,
             post=self.post,
@@ -885,7 +885,7 @@ class TagTest(TestCase):
         self.unused_pk = 151
         return
     
-    def test_get_tag_by_valid_tagged_user(self):
+    def test_get_should_return_tag_given_valid_tagged_user(self):
         tag = Tag.objects.create(
             post=self.post,
             tagged_user=self.user1,
@@ -909,7 +909,7 @@ class TagTest(TestCase):
         self.assertEqual(response_tag, serialized_tag)
         return
     
-    def test_get_tag_by_invalid_tagged_user(self):
+    def test_get_should_not_return_tag_given_invalid_tagged_user(self):
         request = APIRequestFactory().get(
             '/api/tags',
             {
@@ -925,7 +925,7 @@ class TagTest(TestCase):
         self.assertFalse(response_tags)
         return
     
-    def test_get_tag_by_valid_tagging_user(self):
+    def test_get_should_return_tag_given_valid_tagging_user(self):
         tag = Tag.objects.create(
             post=self.post,
             tagged_user=self.user1,
@@ -949,7 +949,7 @@ class TagTest(TestCase):
         self.assertEqual(response_tag, serialized_tag)
         return
 
-    def test_get_tag_by_invalid_tagging_user(self):
+    def test_get_should_not_return_tag_given_invalid_tagging_user(self):
         request = APIRequestFactory().get(
             '/api/tags',
             {
@@ -965,7 +965,7 @@ class TagTest(TestCase):
         self.assertFalse(response_tags)
         return
 
-    def test_post_valid_tag(self):
+    def test_post_should_create_tag_given_valid_tag(self):
         tag = Tag(
             post=self.post,
             tagging_user=self.user1,
@@ -999,7 +999,7 @@ class TagTest(TestCase):
         ))
         return
     
-    def test_post_invalid_tag(self):
+    def test_post_should_not_create_tag_given_invalid_tag(self):
         tag = Tag(
             post=self.post,
             tagging_user=self.user1,
@@ -1026,7 +1026,7 @@ class TagTest(TestCase):
         ))
         return
     
-    def test_delete_tag(self):
+    def test_delete_should_delete_tag(self):
         tag = Tag.objects.create(
             post=self.post,
             tagged_user=self.user2,
@@ -1069,7 +1069,7 @@ class BlockTest(TestCase):
         self.unused_pk = 151
         return
     
-    def test_get_block_by_valid_blocked_user(self):
+    def test_get_should_return_block_given_valid_blocked_user(self):
         block = Block.objects.create(
             blocking_user=self.user1,
             blocked_user=self.user2,
@@ -1092,7 +1092,7 @@ class BlockTest(TestCase):
         self.assertEqual(response_block, serialized_block)
         return
     
-    def test_get_block_by_invalid_blocked_user(self):
+    def test_get_should_not_return_block_given_invalid_blocked_user(self):
         request = APIRequestFactory().get(
             '/api/blocks',
             {
@@ -1108,7 +1108,7 @@ class BlockTest(TestCase):
         self.assertFalse(response_blocks)
         return
     
-    def test_get_block_by_valid_blocking_user(self):
+    def test_get_should_return_block_given_valid_blocking_user(self):
         block = Block.objects.create(
             blocking_user=self.user1,
             blocked_user=self.user2,
@@ -1131,7 +1131,7 @@ class BlockTest(TestCase):
         self.assertEqual(response_block, serialized_block)
         return
     
-    def test_get_block_by_invalid_blocking_user(self):
+    def test_get_should_not_return_block_given_invalid_blocking_user(self):
         request = APIRequestFactory().get(
             '/api/blocks',
             {
@@ -1147,7 +1147,7 @@ class BlockTest(TestCase):
         self.assertFalse(response_blocks)
         return
 
-    def test_post_valid_block(self):
+    def test_post_should_create_block_given_valid_block(self):
         block = Block(
             blocking_user=self.user1,
             blocked_user=self.user2,
@@ -1178,7 +1178,7 @@ class BlockTest(TestCase):
         ))
         return
     
-    def test_post_invalid_block(self):
+    def test_post_should_not_create_block_given_invalid_block(self):
         block = Block(
             blocking_user=self.user1,
         )
@@ -1202,7 +1202,7 @@ class BlockTest(TestCase):
         ))
         return
     
-    def test_delete_block(self):
+    def test_delete_should_delete_block(self):
         block = Block.objects.create(
             blocking_user=self.user1,
             blocked_user=self.user2,
@@ -1245,7 +1245,7 @@ class MessageTest(TestCase):
         self.auth_token3 = Token.objects.create(user=self.user3)
         return
         
-    def test_get_message_by_valid_sender(self):
+    def test_get_should_return_message_given_valid_sender(self):
         message = Message.objects.create(
             sender=self.user1,
             receiver=self.user2,
@@ -1269,7 +1269,7 @@ class MessageTest(TestCase):
         self.assertEqual(response_message, serialized_message)
         return
     
-    def test_get_message_by_invalid_sender(self):
+    def test_get_should_not_return_message_given_invalid_sender(self):
         request = APIRequestFactory().get(
             '/api/messages/',
             {
@@ -1285,7 +1285,7 @@ class MessageTest(TestCase):
         self.assertFalse(response_messages)
         return
     
-    def test_get_message_by_valid_receiver(self):
+    def test_get_should_return_message_given_valid_receiver(self):
         message = Message.objects.create(
             sender=self.user1,
             receiver=self.user2,
@@ -1309,7 +1309,7 @@ class MessageTest(TestCase):
         self.assertEqual(response_message, serialized_message)
         return
 
-    def test_get_message_by_invalid_receiver(self):
+    def test_get_should_not_return_message_given_invalid_receiver(self):
         request = APIRequestFactory().get(
             '/api/messages/',
             {
@@ -1325,7 +1325,7 @@ class MessageTest(TestCase):
         self.assertFalse(response_messages)
         return
     
-    def test_get_messages_by_valid_sender(self):
+    def test_get_should_return_messages_given_valid_sender(self):
         message1 = Message.objects.create(
             sender=self.user1,
             receiver=self.user2,
@@ -1365,7 +1365,7 @@ class MessageTest(TestCase):
         self.assertCountEqual(serialized_messages, response_messages)
         return
 
-    def test_post_valid_message(self):
+    def test_post_should_create_message_given_valid_message(self):
         message = Message(
             sender=self.user1,
             receiver=self.user2,
@@ -1400,7 +1400,7 @@ class MessageTest(TestCase):
         ))
         return
     
-    def test_post_invalid_message(self):
+    def test_post_should_not_create_post_given_invalid_message(self):
         message = Message(
             sender=self.user1,
             receiver=self.user2,
@@ -1428,7 +1428,7 @@ class MessageTest(TestCase):
         ))
         return
     
-    def test_delete_message(self):
+    def test_delete_should_delete_message(self):
         message = Message.objects.create(
             sender=self.user1,
             receiver=self.user2,
@@ -1455,7 +1455,7 @@ class WordTest(TestCase):
         self.user.save()
         self.auth_token = Token.objects.create(user=self.user)
 
-    def test_get_partial_word(self):
+    def test_get_should_return_matching_words_given_partial_word(self):
         word_to_search = 'Fake'
         self.assertFalse(Word.objects.filter(text__contains=word_to_search))
         Post.objects.create(
@@ -1480,7 +1480,7 @@ class WordTest(TestCase):
         self.assertTrue(Word.objects.filter(text__contains=word_to_search))
         return
     
-    def test_get_full_word(self):
+    def test_get_should_return_matching_words_given_full_word(self):
         word_to_search = 'FakeTitleForFakePost'
         self.assertFalse(Word.objects.filter(text__contains=word_to_search))
         Post.objects.create(
@@ -1532,7 +1532,7 @@ class FriendRequestTest(TestCase):
         self.auth_token3 = Token.objects.create(user=self.user3)
         return
 
-    def test_get_friend_request_by_valid_friend_requesting_user(self):
+    def test_get_should_return_friend_request_given_valid_friend_requesting_user(self):
         friend_request1 = FriendRequest.objects.create(
             friend_requesting_user=self.user1,
             friend_requested_user=self.user2,
@@ -1561,7 +1561,7 @@ class FriendRequestTest(TestCase):
         self.assertEqual(response_friend_request, serialized_friend_request1)
         return
     
-    def test_get_friend_request_by_invalid_friend_requesting_user(self):
+    def test_get_should_not_return_friend_request_given_invalid_friend_requesting_user(self):
         request = APIRequestFactory().get(
             '/api/friend_request',
             {
@@ -1577,7 +1577,7 @@ class FriendRequestTest(TestCase):
         self.assertFalse(response_friend_requests)
         return
     
-    def test_get_friend_request_by_valid_friend_requested_user(self):
+    def test_get_should_return_friend_request_given_valid_friend_requested_user(self):
         friend_request1 = FriendRequest.objects.create(
             friend_requesting_user=self.user1,
             friend_requested_user=self.user2,
@@ -1606,7 +1606,7 @@ class FriendRequestTest(TestCase):
         self.assertEqual(response_friend_request, serialized_friend_request1)
         return
     
-    def test_get_friend_request_by_invalid_friend_requested_user(self):
+    def test_get_should_not_return_friend_request_given_invalid_friend_requested_user(self):
         request = APIRequestFactory().get(
             '/api/friend_request',
             {
@@ -1622,7 +1622,7 @@ class FriendRequestTest(TestCase):
         self.assertFalse(response_friend_requests)
         return
     
-    def test_post_valid_friend_request(self):
+    def test_post_should_create_friend_request_given_valid_friend_request(self):
         friend_request = FriendRequest(
             friend_requesting_user=self.user1,
             friend_requested_user=self.user2,
@@ -1655,7 +1655,7 @@ class FriendRequestTest(TestCase):
         ))
         return
     
-    def test_post_invalid_friend_request(self):
+    def test_post_should_not_create_friend_request_given_invalid_friend_request(self):
         friend_request = FriendRequest(
             friend_requesting_user=self.user1,
         )
@@ -1679,7 +1679,7 @@ class FriendRequestTest(TestCase):
         ))
         return
     
-    def test_delete_friend_request(self):
+    def test_delete_should_delete_friend_request(self):
         friend_request = FriendRequest.objects.create(
             friend_requesting_user=self.user1,
             friend_requested_user=self.user2,
@@ -1693,4 +1693,137 @@ class FriendRequestTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(FriendRequest.objects.filter(pk=friend_request.pk))
+        return
+
+class FavoriteTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user1,
+        )
+        return
+
+    def test_get_should_return_favorites_given_favoriting_user(self):
+        favorite = Favorite.objects.create(
+            timestamp=0,
+            post=self.post,
+            favoriting_user=self.user1,
+        )
+        serialized_favorite = FavoriteSerializer(favorite).data
+
+        request = APIRequestFactory().get(
+            '/api/favorite/',
+            {
+              'favoriting_user': self.user1.pk,  
+            },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+        )
+        response = FavoriteView.as_view({'get':'list'})(request)
+        response_favorite = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_favorite, serialized_favorite)
+        return
+
+    def test_get_should_not_return_favorites_given_nonexistent_favoriting_user(self):
+        request = APIRequestFactory().get(
+            '/api/favorite/',
+            {
+              'favoriting_user': self.user1.pk,
+            },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+        )
+        response = FavoriteView.as_view({'get':'list'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)
+        return
+    
+    def test_post_should_create_favorite_given_valid_favorite(self):
+        favorite = Favorite(
+            timestamp=0,
+            post=self.post,
+            favoriting_user=self.user1
+        )
+        serialized_favorite = FavoriteSerializer(favorite).data
+
+        self.assertFalse(Favorite.objects.filter(
+            timestamp=favorite.timestamp,
+            post=favorite.post,
+            favoriting_user=favorite.favoriting_user,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/favorite/',
+            serialized_favorite,
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+        )
+        response = FavoriteView.as_view({'post':'create'})(request)
+        response_favorite = response.data
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_favorite.get('timestamp'), 
+                        serialized_favorite.get('timestamp'))
+        self.assertEqual(response_favorite.get('post'),
+                        serialized_favorite.get('post'))
+        self.assertEqual(response_favorite.get('favoriting_user'),
+                        serialized_favorite.get('favoriting_user'))
+        self.assertTrue(Favorite.objects.filter(
+            timestamp=favorite.timestamp,
+            post=favorite.post,
+            favoriting_user=favorite.favoriting_user,
+        ))
+        return
+    
+    def test_post_should_not_create_favorite_given_invalid_favorite(self):
+        favorite = Favorite(
+            timestamp=0,
+            favoriting_user=self.user1
+        )
+        serialized_favorite = FavoriteSerializer(favorite).data
+
+        request = APIRequestFactory().post(
+            '/api/favorite/',
+            serialized_favorite,
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+        )
+        response = FavoriteView.as_view({'post':'create'})(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        return
+    
+    def test_delete_should_delete_favorite(self):
+        favorite = Favorite.objects.create(
+            timestamp=0,
+            post=self.post,
+            favoriting_user=self.user1,
+        )
+        self.assertTrue(Favorite.objects.filter(pk=favorite.pk))
+
+        request = APIRequestFactory().delete('/api/favorite/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1))
+        response = FavoriteView.as_view({'delete':'destroy'})(request, pk=favorite.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Favorite.objects.filter(pk=favorite.pk))
         return

@@ -149,3 +149,20 @@ class FriendRequestPermission(permissions.BasePermission):
         requesting_user = get_user_from_request(request)
         if not requesting_user: return False
         return requesting_user == obj.friend_requesting_user
+    
+class FavoritePermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method == "POST":
+            favoriting_user = get_user_from_request(request)
+            favoriting_user_pk = int(request.data.get('favoriting_user'))
+            if not favoriting_user: return False
+            return favoriting_user.pk == favoriting_user_pk
+        else:
+            return True
+            
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        requesting_user = get_user_from_request(request)
+        if not requesting_user: return False
+        return requesting_user == obj.favoriting_user

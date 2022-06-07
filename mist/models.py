@@ -141,4 +141,7 @@ class Message(models.Model):
     def _str_(self):
         return self.text
 
-    
+class Favorite(models.Model):
+    timestamp = models.FloatField(default=get_current_time)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    favoriting_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

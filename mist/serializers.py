@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Block, Flag, FriendRequest, Post, Comment, Message, Tag, Vote, Word
+from .models import Block, Favorite, Flag, FriendRequest, Post, Comment, Message, Tag, Vote, Word
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.ReadOnlyField(source='calculate_occurrences')
@@ -61,3 +61,8 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = ('id', 'text', 'timestamp', 'sender', 'receiver')
+    
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ('id', 'timestamp', 'post', 'favoriting_user')

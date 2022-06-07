@@ -2,13 +2,14 @@ from decimal import Decimal
 from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
-from mist.permissions import BlockPermission, CommentPermission, FlagPermission, FriendRequestPermission, MessagePermission, PostPermission, TagPermission, VotePermission
+from mist.permissions import BlockPermission, CommentPermission, FavoritePermission, FlagPermission, FriendRequestPermission, MessagePermission, PostPermission, TagPermission, VotePermission
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
 
 from .serializers import (
     BlockSerializer,
+    FavoriteSerializer,
     FlagSerializer,
     FriendRequestSerializer,
     PostSerializer, 
@@ -20,6 +21,7 @@ from .serializers import (
 )
 from .models import (
     Block,
+    Favorite,
     Flag,
     FriendRequest,
     Post, 
@@ -219,4 +221,15 @@ class FriendRequestView(viewsets.ModelViewSet):
             queryset = queryset.filter(friend_requesting_user=friend_requesting_user)
         if friend_requested_user:
             queryset = queryset.filter(friend_requested_user=friend_requested_user)
+        return queryset
+    
+class FavoriteView(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated, FavoritePermission)
+    serializer_class = FavoriteSerializer
+    
+    def get_queryset(self):
+        favoriting_user = self.request.query_params.get("favoriting_user")
+        queryset = Favorite.objects.all()
+        if favoriting_user:
+            queryset = queryset.filter(favoriting_user=favoriting_user)
         return queryset
