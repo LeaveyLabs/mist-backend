@@ -78,6 +78,7 @@ class PostView(viewsets.ModelViewSet):
         Sort the result by vote ratings. 
         """
         # parameters
+        ids = self.request.query_params.getlist('ids')
         latitude = self.request.query_params.get('latitude')
         longitude = self.request.query_params.get('longitude')
         text = self.request.query_params.get('text')
@@ -86,20 +87,22 @@ class PostView(viewsets.ModelViewSet):
         author = self.request.query_params.get('author')
         # filter
         queryset = Post.objects.all()
-        if latitude != None and longitude != None:
+        if latitude and longitude:
             queryset = self.get_locations_nearby_coords(
                 latitude, longitude, max_distance=self.MAX_DISTANCE)
-        if text != None:
+        if ids:
+            queryset = queryset.filter(pk__in=ids)
+        if text:
             text_set = queryset.filter(text__contains=text)
             title_set = queryset.filter(title__contains=text)
             queryset = (text_set | title_set).distinct()
-        if timestamp != None:
+        if timestamp:
             queryset = queryset.filter(timestamp=timestamp)
-        if location_description != None:
+        if location_description:
             loc_set = queryset.filter(location_description__isnull=False)
             queryset = loc_set.filter(
                 location_description__contains=location_description)
-        if author != None:
+        if author:
             queryset = queryset.filter(author=author)
         # order
         return queryset.annotate(

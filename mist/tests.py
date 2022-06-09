@@ -39,6 +39,12 @@ class PostTest(TestCase):
             timestamp=1,
             author=self.user,
         )
+        self.post3 = Post.objects.create(
+            title='FakeTitleForThirdPost',
+            text='FakeTextForThirdPost',
+            timestamp=2,
+            author=self.user,
+        )
 
         self.vote = Vote.objects.create(
             voter=self.user,
@@ -96,7 +102,7 @@ class PostTest(TestCase):
             '/api/posts',
             serialized_post,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = PostView.as_view({'post':'create'})(request)
         response_post = response.data
@@ -135,7 +141,7 @@ class PostTest(TestCase):
                 'text': test_post.text,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = WordView.as_view()(request)
 
@@ -149,12 +155,53 @@ class PostTest(TestCase):
         serialized_posts = [
             PostSerializer(self.post1).data, 
             PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
         ]
 
         request = APIRequestFactory().get(
             '/api/posts',
             format="json",
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts, response_posts)
+        return
+    
+    def test_get_should_return_post_with_matching_id_given_id(self):
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+        ]
+
+        request = APIRequestFactory().get(
+            '/api/posts',
+            {
+                'ids': self.post1.id,
+            },
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts, response_posts)
+        return
+    
+    def test_get_should_return_post_with_matching_ids_given_ids(self):
+        serialized_posts = [
+            PostSerializer(self.post1).data, 
+            PostSerializer(self.post2).data,
+        ]
+
+        request = APIRequestFactory().get(
+            f'/api/posts?ids={self.post1.id}&ids={self.post2.id}',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -168,12 +215,9 @@ class PostTest(TestCase):
         serialized_posts = [PostSerializer(self.post1).data]
         
         request = APIRequestFactory().get(
-            '/api/posts',
-            {
-                'text': self.post1.text,
-            },
+            f'/api/posts?text={self.post1.text}',
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -190,12 +234,9 @@ class PostTest(TestCase):
         half_of_post_text = self.post1.text[mid_point_of_text:]
 
         request = APIRequestFactory().get(
-            '/api/posts',
-            {
-                'text': half_of_post_text,
-            },
+            f'/api/posts?text={half_of_post_text}',
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
  
         response = PostView.as_view({'get':'list'})(request)
@@ -209,12 +250,9 @@ class PostTest(TestCase):
         serialized_posts = [PostSerializer(self.post1).data]
 
         request = APIRequestFactory().get(
-            '/api/posts',
-            {
-                'timestamp': self.post1.timestamp,
-            },
+            f'/api/posts?timestamp={self.post1.timestamp}',
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -251,7 +289,7 @@ class PostTest(TestCase):
                 'longitude': self.USC_LONGITUDE,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -281,7 +319,7 @@ class PostTest(TestCase):
                 'location_description': 'North Pole'
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -311,7 +349,7 @@ class PostTest(TestCase):
                 'location_description': 'North'
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -322,8 +360,11 @@ class PostTest(TestCase):
         return
     
     def test_get_should_return_posts_by_current_user_given_current_user_as_author(self):
-        serialized_posts = [PostSerializer(self.post1).data, 
-                            PostSerializer(self.post2).data]
+        serialized_posts = [
+            PostSerializer(self.post1).data, 
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
 
         request = APIRequestFactory().get(
             '/api/posts',
@@ -331,7 +372,7 @@ class PostTest(TestCase):
                 'author': self.user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -359,8 +400,11 @@ class PostTest(TestCase):
             friend_requested_user=self.user,
             timestamp=0,
         )
-        serialized_posts = [PostSerializer(self.post1).data, 
-                            PostSerializer(self.post2).data]
+        serialized_posts = [
+            PostSerializer(self.post1).data, 
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
 
         request = APIRequestFactory().get(
             '/api/posts',
@@ -368,7 +412,7 @@ class PostTest(TestCase):
                 'author': self.user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -393,7 +437,7 @@ class PostTest(TestCase):
                 'author': self.user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(stranger_auth_token),
+            HTTP_AUTHORIZATION=f'Token {stranger_auth_token}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -412,7 +456,7 @@ class PostTest(TestCase):
             '/api/posts/',
             serialized_post,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'put':'update'})(request, pk=self.post1.pk)
@@ -434,7 +478,7 @@ class PostTest(TestCase):
             '/api/posts/',
             serialized_post,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'put':'update'})(request, pk=self.post1.pk)
@@ -456,7 +500,7 @@ class PostTest(TestCase):
                 'title': fake_title,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
 
         response = PostView.as_view({'patch':'partial_update'})(request, pk=self.post1.pk)
@@ -478,7 +522,7 @@ class PostTest(TestCase):
                 'text': fake_text,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = PostView.as_view({'patch':'partial_update'})(request, pk=self.post1.pk)
         
@@ -490,7 +534,7 @@ class PostTest(TestCase):
     def test_delete_should_delete_post(self):
         self.assertTrue(Post.objects.filter(pk=self.post1.pk))
 
-        request = APIRequestFactory().delete('/api/posts/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
+        request = APIRequestFactory().delete('/api/posts/', HTTP_AUTHORIZATION=f'Token {self.auth_token}',)
         response = PostView.as_view({'delete':'destroy'})(request, pk=self.post1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -540,7 +584,7 @@ class VoteTest(TestCase):
             '/api/votes',
             serialized_vote,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = VoteView.as_view({'post':'create'})(request)
 
@@ -565,7 +609,7 @@ class VoteTest(TestCase):
         )
         self.assertTrue(Vote.objects.filter(pk=vote.pk))
 
-        request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),)
+        request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
         response = VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -606,7 +650,7 @@ class VoteTest(TestCase):
                 'post': vote1.post.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = VoteView.as_view({'get':'list'})(request)
         response_vote = response.data[0]
@@ -653,7 +697,7 @@ class CommentTest(TestCase):
                 'post':self.post.pk,
             },
             format="json",
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = CommentView.as_view({'get':'list'})(request)
         response_comment = response.data[0]
@@ -670,7 +714,7 @@ class CommentTest(TestCase):
                 'post': self.unused_post_id,
             },
             format="json",
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = CommentView.as_view({'get':'list'})(request)
         response_comment = response.data
@@ -696,7 +740,7 @@ class CommentTest(TestCase):
             '/api/comments/',
             serialized_comment,
             format="json",
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = CommentView.as_view({'post':'create'})(request)
         response_comment = response.data
@@ -714,7 +758,7 @@ class CommentTest(TestCase):
     def test_delete_should_delete_comment(self):
         self.assertTrue(Comment.objects.filter(pk=self.comment.pk))
 
-        request = APIRequestFactory().delete('/api/comment/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token))
+        request = APIRequestFactory().delete('/api/comment/', HTTP_AUTHORIZATION=f'Token {self.auth_token}')
         response = CommentView.as_view({'delete':'destroy'})(request, pk=self.comment.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -752,7 +796,7 @@ class FlagTest(TestCase):
                 'flagger': flag.flagger.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = FlagView.as_view({'get':'list'})(request)
         response_flag = response.data[0]
@@ -768,7 +812,7 @@ class FlagTest(TestCase):
                 'flagger': self.user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = FlagView.as_view({'get':'list'})(request)
         response_flags = response.data
@@ -791,7 +835,7 @@ class FlagTest(TestCase):
                 'post': flag.post.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = FlagView.as_view({'get':'list'})(request)
         response_flag = response.data[0]
@@ -807,7 +851,7 @@ class FlagTest(TestCase):
                 'post': self.post.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = FlagView.as_view({'get':'list'})(request)
         response_flags = response.data
@@ -834,7 +878,7 @@ class FlagTest(TestCase):
             '/api/flags/',
             serialized_flag,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = FlagView.as_view({'post':'create'})(request)
         response_flag = response.data
@@ -855,7 +899,7 @@ class FlagTest(TestCase):
             post=self.post,
         )
         self.assertTrue(Flag.objects.filter(pk=flag.pk))
-        request = APIRequestFactory().delete('/api/flags/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
+        request = APIRequestFactory().delete('/api/flags/', HTTP_AUTHORIZATION=f'Token {self.auth_token}')
         response = FlagView.as_view({'delete':'destroy'})(request, pk=flag.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -904,7 +948,7 @@ class TagTest(TestCase):
                 'tagged_user': tag.tagged_user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = TagView.as_view({'get':'list'})(request)
         response_tag = response.data[0]
@@ -920,7 +964,7 @@ class TagTest(TestCase):
                 'tagged_user': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = TagView.as_view({'get':'list'})(request)
         response_tags = response.data
@@ -944,7 +988,7 @@ class TagTest(TestCase):
                 'tagging_user': tag.tagging_user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = TagView.as_view({'get':'list'})(request)
         response_tag = response.data[0]
@@ -960,7 +1004,7 @@ class TagTest(TestCase):
                 'tagging_user': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = TagView.as_view({'get':'list'})(request)
         response_tags = response.data
@@ -987,7 +1031,7 @@ class TagTest(TestCase):
             '/api/tags',
             serialized_tag,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = TagView.as_view({'post':'create'})(request)
         response_tag = response.data
@@ -1019,7 +1063,7 @@ class TagTest(TestCase):
             '/api/tags',
             serialized_tag,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = TagView.as_view({'post':'create'})(request)
 
@@ -1039,7 +1083,7 @@ class TagTest(TestCase):
 
         self.assertTrue(Tag.objects.filter(pk=tag.pk))
 
-        request = APIRequestFactory().delete('/api/tags/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1))
+        request = APIRequestFactory().delete('/api/tags/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
         response = TagView.as_view({'delete':'destroy'})(request, pk=tag.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -1087,7 +1131,7 @@ class BlockTest(TestCase):
                 'blocked_user': block.blocked_user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = BlockView.as_view({'get':'list'})(request)
         response_block = response.data[0]
@@ -1103,7 +1147,7 @@ class BlockTest(TestCase):
                 'blocked_user': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = BlockView.as_view({'get':'list'})(request)
         response_blocks = response.data
@@ -1126,7 +1170,7 @@ class BlockTest(TestCase):
                 'blocking_user': block.blocking_user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = BlockView.as_view({'get':'list'})(request)
         response_block = response.data[0]
@@ -1142,7 +1186,7 @@ class BlockTest(TestCase):
                 'blocking_user': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = BlockView.as_view({'get':'list'})(request)
         response_blocks = response.data
@@ -1168,7 +1212,7 @@ class BlockTest(TestCase):
             '/api/blocks',
             serialized_block,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = BlockView.as_view({'post':'create'})(request)
         response_block = response.data
@@ -1196,7 +1240,7 @@ class BlockTest(TestCase):
             '/api/blocks',
             serialized_block,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = BlockView.as_view({'post':'create'})(request)
 
@@ -1215,7 +1259,7 @@ class BlockTest(TestCase):
 
         self.assertTrue(Block.objects.filter(pk=block.pk))
 
-        request = APIRequestFactory().delete('/api/blocks/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1))
+        request = APIRequestFactory().delete('/api/blocks/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
         response = BlockView.as_view({'delete':'destroy'})(request, pk=block.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -1264,7 +1308,7 @@ class MessageTest(TestCase):
                 'sender': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = MessageView.as_view({'get':'list'})(request)
         response_message = response.data[0]
@@ -1280,7 +1324,7 @@ class MessageTest(TestCase):
                 'sender': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = MessageView.as_view({'get':'list'})(request)
         response_messages = response.data
@@ -1304,7 +1348,7 @@ class MessageTest(TestCase):
                 'receiver': self.user2.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token2),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
         )
         response = MessageView.as_view({'get':'list'})(request)
         response_message = response.data[0]
@@ -1320,7 +1364,7 @@ class MessageTest(TestCase):
                 'receiver': self.user2.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token2),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
         )
         response = MessageView.as_view({'get':'list'})(request)
         response_messages = response.data
@@ -1359,7 +1403,7 @@ class MessageTest(TestCase):
                 'sender': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = MessageView.as_view({'get':'list'})(request)
         response_messages = response.data
@@ -1388,7 +1432,7 @@ class MessageTest(TestCase):
             '/api/messages/',
             serialized_message,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = MessageView.as_view({'post':'create'})(request)
         response_message = response.data
@@ -1421,7 +1465,7 @@ class MessageTest(TestCase):
             '/api/messages/',
             serialized_message,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.user1.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = MessageView.as_view({'post':'create'})(request)
 
@@ -1442,7 +1486,7 @@ class MessageTest(TestCase):
 
         self.assertTrue(Message.objects.filter(pk=message.pk))
 
-        request = APIRequestFactory().delete('/api/messages/', HTTP_AUTHORIZATION='Token {}'.format(self.user1.auth_token))
+        request = APIRequestFactory().delete('/api/messages/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
         response = MessageView.as_view({'delete':'destroy'})(request, pk=message.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -1474,7 +1518,7 @@ class WordTest(TestCase):
                 'text': word_to_search,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token)
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = WordView.as_view()(request)
 
@@ -1499,7 +1543,7 @@ class WordTest(TestCase):
                 'text': word_to_search,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token)
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = WordView.as_view()(request)
 
@@ -1556,7 +1600,7 @@ class FriendRequestTest(TestCase):
                 'friend_requesting_user': friend_request1.friend_requesting_user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = FriendRequestView.as_view({'get':'list'})(request)
         response_friend_request = response.data[0]
@@ -1572,7 +1616,7 @@ class FriendRequestTest(TestCase):
                 'friend_requesting_user': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = FriendRequestView.as_view({'get':'list'})(request)
         response_friend_requests = response.data
@@ -1601,7 +1645,7 @@ class FriendRequestTest(TestCase):
                 'friend_requested_user': friend_request1.friend_requested_user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token2),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
         )
         response = FriendRequestView.as_view({'get':'list'})(request)
         response_friend_request = response.data[0]
@@ -1617,7 +1661,7 @@ class FriendRequestTest(TestCase):
                 'friend_requested_user': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = FriendRequestView.as_view({'get':'list'})(request)
         response_friend_requests = response.data
@@ -1643,7 +1687,7 @@ class FriendRequestTest(TestCase):
             '/api/friend_request/',
             serialized_friend_request,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = FriendRequestView.as_view({'post':'create'})(request)
         response_friend_request = response.data
@@ -1673,7 +1717,7 @@ class FriendRequestTest(TestCase):
             '/api/friend_request/',
             serialized_friend_request,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = FriendRequestView.as_view({'post':'create'})(request)
 
@@ -1692,7 +1736,7 @@ class FriendRequestTest(TestCase):
 
         self.assertTrue(FriendRequest.objects.filter(pk=friend_request.pk))
 
-        request = APIRequestFactory().delete('/api/friend_request/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1))
+        request = APIRequestFactory().delete('/api/friend_request/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
         response = FriendRequestView.as_view({'delete':'destroy'})(request, pk=friend_request.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -1738,7 +1782,7 @@ class FavoriteTest(TestCase):
               'favoriting_user': self.user1.pk,  
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = FavoriteView.as_view({'get':'list'})(request)
         response_favorite = response.data[0]
@@ -1754,7 +1798,7 @@ class FavoriteTest(TestCase):
               'favoriting_user': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = FavoriteView.as_view({'get':'list'})(request)
 
@@ -1780,7 +1824,7 @@ class FavoriteTest(TestCase):
             '/api/favorites/',
             serialized_favorite,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = FavoriteView.as_view({'post':'create'})(request)
         response_favorite = response.data
@@ -1808,7 +1852,7 @@ class FavoriteTest(TestCase):
             '/api/favorites/',
             serialized_favorite,
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = FavoriteView.as_view({'post':'create'})(request)
         
@@ -1823,7 +1867,7 @@ class FavoriteTest(TestCase):
         )
         self.assertTrue(Favorite.objects.filter(pk=favorite.pk))
 
-        request = APIRequestFactory().delete('/api/favorite/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1))
+        request = APIRequestFactory().delete('/api/favorite/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
         response = FavoriteView.as_view({'delete':'destroy'})(request, pk=favorite.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
