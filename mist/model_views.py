@@ -237,9 +237,12 @@ class MatchRequestView(viewsets.ModelViewSet):
 
     def get_queryset(self):
         match_requesting_user = self.request.query_params.get("match_requesting_user")
+        match_requested_user = self.request.query_params.get("match_requested_user")
         queryset = MatchRequest.objects.all()
         if match_requesting_user:
             queryset = queryset.filter(match_requesting_user=match_requesting_user)
+        if match_requested_user:
+            queryset = queryset.filter(match_requested_user=match_requested_user)
         return queryset
     
 class FavoriteView(viewsets.ModelViewSet):

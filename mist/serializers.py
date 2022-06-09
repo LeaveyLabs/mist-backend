@@ -42,6 +42,11 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         model = FriendRequest
         fields = ('id', 'friend_requesting_user', 'friend_requested_user', 'timestamp')
 
+class MatchRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MatchRequest
+        fields = ('id', 'match_requesting_user', 'match_requested_user', 'post', 'timestamp')
+
 class CommentSerializer(serializers.ModelSerializer):
     author_picture = serializers.ReadOnlyField(source='author.picture')
     author_username = serializers.ReadOnlyField(source='author.username')
@@ -71,8 +76,3 @@ class FeatureSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feature
         fields = ('id', 'timestamp', 'post')
-
-class MatchRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MatchRequest
-        fields = ('id', 'match_requesting_user', 'match_requested_user', 'post', 'timestamp')
