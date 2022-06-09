@@ -2120,6 +2120,7 @@ class MatchViewTest(TestCase):
             title='FakeTitleForFirstPost',
             text='FakeTextForFirstPost',
             author=self.user1,
+            timestamp=0,
         )
 
         MatchRequest.objects.create(
@@ -2196,6 +2197,7 @@ class FriendshipViewTest(TestCase):
             title='FakeTitleForFirstPost',
             text='FakeTextForFirstPost',
             author=self.user1,
+            timestamp=0,
         )
 
         FriendRequest.objects.create(
@@ -2271,6 +2273,7 @@ class MatchedPostsViewTest(TestCase):
             title='FakeTitleForFirstPost',
             text='FakeTextForFirstPost',
             author=self.user1,
+            timestamp=0,
         )
 
         MatchRequest.objects.create(
@@ -2333,6 +2336,7 @@ class FeaturedPostsViewTest(TestCase):
             title='FakeTitleForFirstPost',
             text='FakeTextForFirstPost',
             author=self.user1,
+            timestamp=0,
         )
 
         Feature.objects.create(
@@ -2388,6 +2392,7 @@ class FavoritedPostsViewTest(TestCase):
             title='FakeTitleForFirstPost',
             text='FakeTextForFirstPost',
             author=self.user1,
+            timestamp=0,
         )
 
         Favorite.objects.create(
@@ -2444,6 +2449,7 @@ class SubmittedPostsViewTest(TestCase):
             title='FakeTitleForFirstPost',
             text='FakeTextForFirstPost',
             author=self.user1,
+            timestamp=0,
         )
         return
     
