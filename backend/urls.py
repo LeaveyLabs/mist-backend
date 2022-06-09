@@ -23,6 +23,7 @@ from mist.accessory_views import FavoritedPostsView, FeaturedPostsView, Friendsh
 from mist.model_views import BlockView, FavoriteView, FeatureView, FlagView, FriendRequestView, MatchRequestView, PostView, CommentView, MessageView, TagView, VoteView, WordView
 from users.views import RegisterUserEmailView, ValidateUserEmailView, UserView, ValidateUsernameView
 
+# Models
 router = routers.DefaultRouter()
 router.register(r'users', UserView, 'user')
 router.register(r'posts', PostView, 'post')
@@ -32,12 +33,18 @@ router.register(r'votes', VoteView, 'vote')
 router.register(r'flags', FlagView, 'flag')
 router.register(r'tags', TagView, 'tag')
 router.register(r'blocks', BlockView, 'block')
-router.register(r'friend-requests', FriendRequestView, 'friend_request')
 router.register(r'favorites', FavoriteView, 'favorite')
 router.register(r'match-requests', MatchRequestView, 'match_request')
+router.register(r'friend-requests', FriendRequestView, 'friend_request')
 
 urlpatterns = [
+    # Authentication
     path('admin/', admin.site.urls),
+    path('api-register-email/', RegisterUserEmailView.as_view()),
+    path('api-validate-email/', ValidateUserEmailView.as_view()),
+    path('api-validate-username/', ValidateUsernameView.as_view()),
+    path('api-token/', obtain_auth_token),
+    # Database
     path('api/', include(router.urls)),
     path('api/words/', WordView.as_view()),
     path('api/features/', FeatureView.as_view()),
@@ -47,15 +54,6 @@ urlpatterns = [
     path('api/featured-posts/', FeaturedPostsView.as_view()),
     path('api/favorited-posts/', FavoritedPostsView.as_view()),
     path('api/submitted-posts/', SubmittedPostsView.as_view()),
-    path('api-register-email/', RegisterUserEmailView.as_view()),
-    path('api-validate-email/', ValidateUserEmailView.as_view()),
-    path('api-validate-username/', ValidateUsernameView.as_view()),
-    path('api-token/', obtain_auth_token),
-    # TODO: implement OAuth 2.0 login
-    # path('accounts/', include('allauth.urls')),
-    # path('dj-rest-auth/', include('dj_rest_auth.urls')),
-    # path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
-    # path('dj-rest-auth/account-confirm-email/', VerifyEmailView.as_view(), name='account_email_verification_sent'),
 ]
 
 if settings.DEBUG: 
