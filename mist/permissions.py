@@ -17,7 +17,7 @@ def requested_user_is_the_queried_user(request, user_property):
     posted_user_pk = int(posted_user)
     return requesting_user.pk == posted_user_pk
 
-
+# ModelViews
 class PostPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method == "GET":

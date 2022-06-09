@@ -1,12 +1,16 @@
 from decimal import Decimal
 from django.test import TestCase
+from mist.accessory_views import FavoritedPostsView, FeaturedPostsView, FriendshipView, MatchView, MatchedPostsView, SubmittedPostsView
 from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from mist.serializers import BlockSerializer, CommentSerializer, FavoriteSerializer, FeatureSerializer, FlagSerializer, FriendRequestSerializer, MatchRequestSerializer, MessageSerializer, PostSerializer, TagSerializer, VoteSerializer
-from mist.views import BlockView, CommentView, FavoriteView, FeatureView, FlagView, FriendRequestView, MatchRequestView, MessageView, PostView, TagView, VoteView, WordView
+from mist.model_views import BlockView, CommentView, FavoriteView, FeatureView, FlagView, FriendRequestView, MatchRequestView, MessageView, PostView, TagView, VoteView, WordView
+from users.serializers import ReadOnlyUserSerializer
 from .models import Block, Favorite, Feature, Flag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, Vote, Word
+
+# MODEL VIEWS
 
 class PostTest(TestCase):
     maxDiff = None
@@ -1977,6 +1981,7 @@ class MatchRequestTest(TestCase):
         match_request = MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
+            post=self.post,
         )
         serialized_match_request = MatchRequestSerializer(match_request).data
 
@@ -1999,6 +2004,7 @@ class MatchRequestTest(TestCase):
         match_request = MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
+            post=self.post,
         )
         serialized_match_request = MatchRequestSerializer(match_request).data
 
@@ -2019,12 +2025,14 @@ class MatchRequestTest(TestCase):
         match_request = MatchRequest(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
+            post=self.post,
         )
         serialized_match_request = MatchRequestSerializer(match_request).data
 
         self.assertFalse(MatchRequest.objects.filter(
             match_requesting_user=match_request.match_requesting_user,
             match_requested_user=match_request.match_requested_user,
+            post=self.post,
         ))
 
         request = APIRequestFactory().post(
@@ -2039,6 +2047,7 @@ class MatchRequestTest(TestCase):
         self.assertTrue(MatchRequest.objects.filter(
             match_requesting_user=match_request.match_requesting_user,
             match_requested_user=match_request.match_requested_user,
+            post=self.post,
         ))
         return
     
@@ -2070,6 +2079,7 @@ class MatchRequestTest(TestCase):
         match_request = MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
+            post=self.post,
         )
         self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
 
@@ -2082,4 +2092,382 @@ class MatchRequestTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(MatchRequest.objects.filter(pk=match_request.pk))
+        return
+
+
+# ACCESSORY VIEWS
+
+# Custom Relationship View Tests
+class MatchViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user1,
+        )
+
+        MatchRequest.objects.create(
+            match_requesting_user=self.user2,
+            match_requested_user=self.user1,
+            post=self.post,
+        )
+
+        MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+        )
+        return
+
+    def test_get_should_return_user1_given_user2(self):
+        serialized_user1 = ReadOnlyUserSerializer(self.user1).data
+
+        request = APIRequestFactory().get(
+            '/api/matches',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = MatchView.as_view()(request)
+        response_user1 = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_user1, serialized_user1)
+        return
+
+    def test_get_should_return_user2_given_user1(self):
+        serialized_user2 = ReadOnlyUserSerializer(self.user2).data
+
+        request = APIRequestFactory().get(
+            '/api/matches',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchView.as_view()(request)
+        response_user2 = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_user2, serialized_user2)
+        return
+    
+    def test_get_should_not_return_anything_given_stranger(self):
+        request = APIRequestFactory().get(
+            '/api/matches',
+            format='json',
+        )
+        response = MatchView.as_view()(request)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+class FriendshipViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user1,
+        )
+
+        FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+        )
+
+        FriendRequest.objects.create(
+            friend_requesting_user=self.user2,
+            friend_requested_user=self.user1,
+        )
+        return
+
+    def test_get_should_return_user1_given_user2(self):
+        serialized_user1 = ReadOnlyUserSerializer(self.user1).data
+
+        request = APIRequestFactory().get(
+            '/api/matches',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = FriendshipView.as_view()(request)
+        response_user1 = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_user1, serialized_user1)
+        return
+
+    def test_get_should_return_user2_given_user1(self):
+        serialized_user2 = ReadOnlyUserSerializer(self.user2).data
+
+        request = APIRequestFactory().get(
+            '/api/matches',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = FriendshipView.as_view()(request)
+        response_user2 = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_user2, serialized_user2)
+        return
+    
+    def test_get_should_not_return_anything_given_stranger(self):
+        request = APIRequestFactory().get(
+            '/api/matches',
+            format='json',
+        )
+        response = FriendshipView.as_view()(request)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+# Custom Post View Tests
+class MatchedPostsViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user1,
+        )
+
+        MatchRequest.objects.create(
+            match_requesting_user=self.user2,
+            match_requested_user=self.user1,
+            post=self.post,
+        )
+
+        MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+        )
+        return
+
+    def test_get_should_return_all_matched_posts_given_no_parameters(self):
+        serialized_post = PostSerializer(self.post).data
+
+        request = APIRequestFactory().get(
+            '/api/matched-posts/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchedPostsView.as_view()(request)
+        response_post = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_post, serialized_post)
+        return
+    
+    def test_get_should_not_return_anything_given_stranger(self):
+        request = APIRequestFactory().get(
+            '/api/matched-posts/',
+            format='json',
+        )
+        response = MatchedPostsView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+class FeaturedPostsViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user1,
+        )
+
+        Feature.objects.create(
+            post=self.post,
+            timestamp=0,
+        )
+        return
+
+    def test_get_should_return_all_featured_posts_given_no_parameters(self):
+        serialized_post = PostSerializer(self.post).data
+
+        request = APIRequestFactory().get(
+            '/api/featured-posts/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = FeaturedPostsView.as_view()(request)
+        response_post = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_post, serialized_post)
+        return
+    
+    def test_get_should_not_return_anything_given_stranger(self):
+        request = APIRequestFactory().get(
+            '/api/featured-posts/',
+            format='json',
+        )
+        response = FeaturedPostsView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+class FavoritedPostsViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user1,
+        )
+
+        Favorite.objects.create(
+            favoriting_user=self.user1,
+            post=self.post,
+            timestamp=0,
+        )
+        return
+
+    def test_get_should_return_all_favorited_posts_given_no_parameters(self):
+        serialized_post = PostSerializer(self.post).data
+
+        request = APIRequestFactory().get(
+            '/api/favorited-posts/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = FavoritedPostsView.as_view()(request)
+        response_post = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_post, serialized_post)
+        return
+    
+    def test_get_should_not_return_anything_given_stranger(self):
+        request = APIRequestFactory().get(
+            '/api/favorited-posts/',
+            format='json',
+        )
+        response = FavoritedPostsView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+class SubmittedPostsViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user1,
+        )
+        return
+    
+    def test_get_should_return_all_submitted_posts_given_no_parameters(self):
+        serialized_post = PostSerializer(self.post).data
+        
+        request = APIRequestFactory().get(
+            '/api/submitted-posts/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = SubmittedPostsView.as_view()(request)
+        response_post = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_post, serialized_post)
+        return
+
+    def test_get_should_not_return_anything_given_stranger(self):
+        request = APIRequestFactory().get(
+            '/api/submitted-posts/',
+            format='json',
+        )
+        response = SubmittedPostsView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return

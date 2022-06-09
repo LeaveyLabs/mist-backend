@@ -227,6 +227,17 @@ class FriendRequestView(viewsets.ModelViewSet):
         if friend_requested_user:
             queryset = queryset.filter(friend_requested_user=friend_requested_user)
         return queryset
+
+class MatchRequestView(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated, MatchRequestPermission)
+    serializer_class = MatchRequestSerializer
+
+    def get_queryset(self):
+        match_requesting_user = self.request.query_params.get("match_requesting_user")
+        queryset = MatchRequest.objects.all()
+        if match_requesting_user:
+            queryset = queryset.filter(match_requesting_user=match_requesting_user)
+        return queryset
     
 class FavoriteView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, FavoritePermission)
@@ -253,13 +264,3 @@ class FeatureView(generics.ListAPIView):
             queryset = queryset.filter(timestamp=timestamp)
         return queryset
 
-class MatchRequestView(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated, MatchRequestPermission)
-    serializer_class = MatchRequestSerializer
-
-    def get_queryset(self):
-        match_requesting_user = self.request.query_params.get("match_requesting_user")
-        queryset = MatchRequest.objects.all()
-        if match_requesting_user:
-            queryset = queryset.filter(match_requesting_user=match_requesting_user)
-        return queryset

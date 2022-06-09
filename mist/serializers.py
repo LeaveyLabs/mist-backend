@@ -75,4 +75,4 @@ class FeatureSerializer(serializers.ModelSerializer):
 class MatchRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = MatchRequest
-        fields = ('id', 'match_requesting_user', 'match_requested_user', 'timestamp')
+        fields = ('id', 'match_requesting_user', 'match_requested_user', 'post', 'timestamp')

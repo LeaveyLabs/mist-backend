@@ -8,6 +8,7 @@ import string
 def get_current_time():
     return datetime.now().timestamp()
 
+# Post Interactions
 class Post(models.Model):
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)
@@ -106,6 +107,26 @@ class Tag(models.Model):
     class Meta:
         unique_together = ('tagged_user', 'tagging_user',)
 
+class Comment(models.Model):
+    uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
+    text = models.CharField(max_length=500)
+    timestamp = models.FloatField(default=get_current_time)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def _str_(self):
+        return self.text
+
+class Favorite(models.Model):
+    timestamp = models.FloatField(default=get_current_time)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    favoriting_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+class Feature(models.Model):
+    timestamp = models.FloatField(default=get_current_time)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+
+# User Interactions
 class Block(models.Model):
     blocking_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocking_user', on_delete=models.CASCADE)
     blocked_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocked_user', on_delete=models.CASCADE)
@@ -122,15 +143,14 @@ class FriendRequest(models.Model):
     class Meta:
         unique_together = ('friend_requesting_user', 'friend_requested_user',)
 
-class Comment(models.Model):
-    uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
-    text = models.CharField(max_length=500)
-    timestamp = models.FloatField(default=get_current_time)
+class MatchRequest(models.Model):
+    match_requesting_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='match_requesting_user', on_delete=models.CASCADE)
+    match_requested_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='match_requested_user', on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-
-    def _str_(self):
-        return self.text
+    timestamp = models.FloatField(default=get_current_time, null=True)
+        
+    class Meta:
+        unique_together = ('match_requesting_user', 'match_requested_user', 'post')
 
 class Message(models.Model):
     text = models.CharField(max_length=1000)
@@ -140,20 +160,3 @@ class Message(models.Model):
 
     def _str_(self):
         return self.text
-
-class Favorite(models.Model):
-    timestamp = models.FloatField(default=get_current_time)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    favoriting_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-
-class Feature(models.Model):
-    timestamp = models.FloatField(default=get_current_time)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
-
-class MatchRequest(models.Model):
-    match_requesting_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='match_requesting_user', on_delete=models.CASCADE)
-    match_requested_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='match_requested_user', on_delete=models.CASCADE)
-    timestamp = models.FloatField(default=get_current_time, null=True)
-
-    class Meta:
-        unique_together = ('match_requesting_user', 'match_requested_user',)
