@@ -1982,6 +1982,7 @@ class MatchRequestTest(TestCase):
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
             post=self.post,
+            timestamp=0,
         )
         serialized_match_request = MatchRequestSerializer(match_request).data
 
@@ -2005,6 +2006,7 @@ class MatchRequestTest(TestCase):
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
             post=self.post,
+            timestamp=0,
         )
         serialized_match_request = MatchRequestSerializer(match_request).data
 
@@ -2080,6 +2082,7 @@ class MatchRequestTest(TestCase):
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
             post=self.post,
+            timestamp=0,
         )
         self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
 
@@ -2127,12 +2130,14 @@ class MatchViewTest(TestCase):
             match_requesting_user=self.user2,
             match_requested_user=self.user1,
             post=self.post,
+            timestamp=0,
         )
 
         MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
             post=self.post,
+            timestamp=0,
         )
         return
 
@@ -2203,11 +2208,13 @@ class FriendshipViewTest(TestCase):
         FriendRequest.objects.create(
             friend_requesting_user=self.user1,
             friend_requested_user=self.user2,
+            timestamp=0,
         )
 
         FriendRequest.objects.create(
             friend_requesting_user=self.user2,
             friend_requested_user=self.user1,
+            timestamp=0,
         )
         return
 
@@ -2280,12 +2287,14 @@ class MatchedPostsViewTest(TestCase):
             match_requesting_user=self.user2,
             match_requested_user=self.user1,
             post=self.post,
+            timestamp=0,
         )
 
         MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
             post=self.post,
+            timestamp=0,
         )
         return
 
