@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
-from mist.views import BlockView, FlagView, FriendRequestView, PostView, CommentView, MessageView, TagView, VoteView, WordView
+from mist.views import BlockView, FavoriteView, FeatureView, FlagView, FriendRequestView, MatchRequestView, PostView, CommentView, MessageView, TagView, VoteView, WordView
 from users.views import RegisterUserEmailView, ValidateUserEmailView, UserView, ValidateUsernameView
 
 router = routers.DefaultRouter()
@@ -31,7 +31,10 @@ router.register(r'votes', VoteView, 'vote')
 router.register(r'flags', FlagView, 'flag')
 router.register(r'tags', TagView, 'tag')
 router.register(r'blocks', BlockView, 'block')
-router.register(r'friend_request', FriendRequestView, 'friend_request')
+router.register(r'friend_requests', FriendRequestView, 'friend_request')
+router.register(r'favorites', FavoriteView, 'favorite')
+router.register(r'features', FeatureView, 'feature')
+router.register(r'match_requests', MatchRequestView, 'match_request')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

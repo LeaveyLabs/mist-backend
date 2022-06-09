@@ -1,8 +1,9 @@
 from decimal import Decimal
+from re import match
 from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
-from mist.permissions import BlockPermission, CommentPermission, FavoritePermission, FlagPermission, FriendRequestPermission, MessagePermission, PostPermission, TagPermission, VotePermission
+from mist.permissions import BlockPermission, CommentPermission, FavoritePermission, FlagPermission, FriendRequestPermission, MatchRequestPermission, MessagePermission, PostPermission, TagPermission, VotePermission
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
@@ -10,8 +11,10 @@ from users.models import User
 from .serializers import (
     BlockSerializer,
     FavoriteSerializer,
+    FeatureSerializer,
     FlagSerializer,
     FriendRequestSerializer,
+    MatchRequestSerializer,
     PostSerializer, 
     CommentSerializer,
     MessageSerializer,
@@ -22,8 +25,10 @@ from .serializers import (
 from .models import (
     Block,
     Favorite,
+    Feature,
     Flag,
     FriendRequest,
+    MatchRequest,
     Post, 
     Comment,
     Message,
@@ -232,4 +237,29 @@ class FavoriteView(viewsets.ModelViewSet):
         queryset = Favorite.objects.all()
         if favoriting_user:
             queryset = queryset.filter(favoriting_user=favoriting_user)
+        return queryset
+
+class FeatureView(generics.ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = FeatureSerializer
+
+    def get_queryset(self):
+        post = self.request.query_params.get("post")
+        timestamp = self.request.query_params.get("timestamp")
+        queryset = Feature.objects.all()
+        if post:
+            queryset = queryset.filter(post=post)
+        if timestamp:
+            queryset = queryset.filter(timestamp=timestamp)
+        return queryset
+
+class MatchRequestView(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated, MatchRequestPermission)
+    serializer_class = MatchRequestSerializer
+
+    def get_queryset(self):
+        match_requesting_user = self.request.query_params.get("match_requesting_user")
+        queryset = MatchRequest.objects.all()
+        if match_requesting_user:
+            queryset = queryset.filter(match_requesting_user=match_requesting_user)
         return queryset

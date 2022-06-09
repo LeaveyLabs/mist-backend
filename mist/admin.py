@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Block, Flag, Post, Comment, Message, Tag, Vote, Word
+from .models import Block, Feature, Flag, Post, Comment, Message, Tag, Vote, Word
 
 # Register your models here.
 admin.site.register(Post)
@@ -10,3 +10,4 @@ admin.site.register(Flag)
 admin.site.register(Tag)
 admin.site.register(Block)
 admin.site.register(Word)
+admin.site.register(Feature)

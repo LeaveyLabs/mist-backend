@@ -4,9 +4,9 @@ from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.serializers import BlockSerializer, CommentSerializer, FavoriteSerializer, FlagSerializer, FriendRequestSerializer, MessageSerializer, PostSerializer, TagSerializer, VoteSerializer
-from mist.views import BlockView, CommentView, FavoriteView, FlagView, FriendRequestView, MessageView, PostView, TagView, VoteView, WordView
-from .models import Block, Favorite, Flag, FriendRequest, Post, Comment, Message, Tag, Vote, Word
+from mist.serializers import BlockSerializer, CommentSerializer, FavoriteSerializer, FeatureSerializer, FlagSerializer, FriendRequestSerializer, MatchRequestSerializer, MessageSerializer, PostSerializer, TagSerializer, VoteSerializer
+from mist.views import BlockView, CommentView, FavoriteView, FeatureView, FlagView, FriendRequestView, MatchRequestView, MessageView, PostView, TagView, VoteView, WordView
+from .models import Block, Favorite, Feature, Flag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, Vote, Word
 
 class PostTest(TestCase):
     maxDiff = None
@@ -1300,7 +1300,7 @@ class MessageTest(TestCase):
                 'receiver': self.user2.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token2),
         )
         response = MessageView.as_view({'get':'list'})(request)
         response_message = response.data[0]
@@ -1316,7 +1316,7 @@ class MessageTest(TestCase):
                 'receiver': self.user2.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token2),
         )
         response = MessageView.as_view({'get':'list'})(request)
         response_messages = response.data
@@ -1597,7 +1597,7 @@ class FriendRequestTest(TestCase):
                 'friend_requested_user': friend_request1.friend_requested_user.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token2),
         )
         response = FriendRequestView.as_view({'get':'list'})(request)
         response_friend_request = response.data[0]
@@ -1729,7 +1729,7 @@ class FavoriteTest(TestCase):
         serialized_favorite = FavoriteSerializer(favorite).data
 
         request = APIRequestFactory().get(
-            '/api/favorite/',
+            '/api/favorites/',
             {
               'favoriting_user': self.user1.pk,  
             },
@@ -1745,7 +1745,7 @@ class FavoriteTest(TestCase):
 
     def test_get_should_not_return_favorites_given_nonexistent_favoriting_user(self):
         request = APIRequestFactory().get(
-            '/api/favorite/',
+            '/api/favorites/',
             {
               'favoriting_user': self.user1.pk,
             },
@@ -1773,7 +1773,7 @@ class FavoriteTest(TestCase):
         ))
 
         request = APIRequestFactory().post(
-            '/api/favorite/',
+            '/api/favorites/',
             serialized_favorite,
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
@@ -1782,8 +1782,6 @@ class FavoriteTest(TestCase):
         response_favorite = response.data
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response_favorite.get('timestamp'), 
-                        serialized_favorite.get('timestamp'))
         self.assertEqual(response_favorite.get('post'),
                         serialized_favorite.get('post'))
         self.assertEqual(response_favorite.get('favoriting_user'),
@@ -1803,7 +1801,7 @@ class FavoriteTest(TestCase):
         serialized_favorite = FavoriteSerializer(favorite).data
 
         request = APIRequestFactory().post(
-            '/api/favorite/',
+            '/api/favorites/',
             serialized_favorite,
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token1),
@@ -1826,4 +1824,262 @@ class FavoriteTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Favorite.objects.filter(pk=favorite.pk))
+        return
+    
+class FeatureTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user1,
+        )
+        return
+    
+    def test_get_should_return_all_features_given_no_parameters(self):
+        feature = Feature.objects.create(
+            timestamp=0,
+            post=self.post,
+        )
+        serialized_feature = FeatureSerializer(feature).data
+        
+        request = APIRequestFactory().get(
+            '/api/features', 
+            format='json', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = FeatureView.as_view()(request)
+        response_feature = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_feature, serialized_feature)
+        return
+
+    def test_get_should_return_features_with_timestamp_given_valid_timestamp(self):
+        feature = Feature.objects.create(
+            timestamp=1,
+            post=self.post,
+        )
+        serialized_feature = FeatureSerializer(feature).data
+        
+        request = APIRequestFactory().get(
+            '/api/features', 
+            {
+                'timestamp': feature.timestamp,
+            },
+            format='json', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = FeatureView.as_view()(request)
+        response_feature = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_feature, serialized_feature)
+        return
+    
+    def test_get_should_not_return_features_with_timestamp_given_invalid_timestamp(self):
+        feature = Feature.objects.create(
+            timestamp=1,
+            post=self.post,
+        )
+        serialized_feature = FeatureSerializer(feature).data
+        
+        request = APIRequestFactory().get(
+            '/api/features', 
+            {
+                'timestamp': feature.timestamp-1,
+            },
+            format='json', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = FeatureView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)
+        return
+    
+    def test_get_should_return_features_with_post_given_valid_post(self):
+        feature = Feature.objects.create(
+            timestamp=1,
+            post=self.post,
+        )
+        serialized_feature = FeatureSerializer(feature).data
+        
+        request = APIRequestFactory().get(
+            '/api/features', 
+            {
+                'post': feature.post.pk,
+            },
+            format='json', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = FeatureView.as_view()(request)
+        response_feature = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_feature, serialized_feature)
+        return
+    
+    def test_get_should_not_return_features_with_timestamp_given_invalid_post(self):
+        feature = Feature.objects.create(
+            timestamp=1,
+            post=self.post,
+        )
+        serialized_feature = FeatureSerializer(feature).data
+        
+        request = APIRequestFactory().get(
+            '/api/features', 
+            {
+                'post': feature.post.pk-1,
+            },
+            format='json', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = FeatureView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)
+        return
+
+class MatchRequestTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.post = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            author=self.user1,
+        )
+        return
+    
+    def test_get_should_return_match_requests_given_valid_requesting_user(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+        )
+        serialized_match_request = MatchRequestSerializer(match_request).data
+
+        request = APIRequestFactory().get(
+            '/api/match_requests',
+            {
+                'match_requesting_user': self.user1.pk,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'get':'list'})(request)
+        response_match_request = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_match_request, serialized_match_request)
+        return
+    
+    def test_get_should_not_return_match_requests_given_invalid_requesting_user(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+        )
+        serialized_match_request = MatchRequestSerializer(match_request).data
+
+        request = APIRequestFactory().get(
+            '/api/match_requests',
+            {
+                'match_requesting_user': self.user2.pk,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'get':'list'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        return
+    
+    def test_post_should_create_match_request_given_valid_match_request(self):
+        match_request = MatchRequest(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+        )
+        serialized_match_request = MatchRequestSerializer(match_request).data
+
+        self.assertFalse(MatchRequest.objects.filter(
+            match_requesting_user=match_request.match_requesting_user,
+            match_requested_user=match_request.match_requested_user,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/match_requests',
+            serialized_match_request,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(MatchRequest.objects.filter(
+            match_requesting_user=match_request.match_requesting_user,
+            match_requested_user=match_request.match_requested_user,
+        ))
+        return
+    
+    def test_post_should_not_create_match_request_given_invalid_match_request(self):
+        match_request = MatchRequest(
+            match_requesting_user=self.user1,
+        )
+        serialized_match_request = MatchRequestSerializer(match_request).data
+
+        self.assertFalse(MatchRequest.objects.filter(
+            match_requesting_user=match_request.match_requesting_user,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/match_requests',
+            serialized_match_request,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(MatchRequest.objects.filter(
+            match_requesting_user=match_request.match_requesting_user,
+        ))
+        return
+    
+    def test_delete_should_delete_match_request(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+        )
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
+
+        request = APIRequestFactory().delete(
+            '/api/match_requests',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request, pk=match_request.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(MatchRequest.objects.filter(pk=match_request.pk))
         return
