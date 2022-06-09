@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
-from mist.accessory_views import FavoritedPostsView, FeaturedPostsView, FriendshipView, MatchView, MatchedPostsView, SubmittedPostsView
+from mist.accessory_views import FavoritedPostsView, FeaturedPostsView, FriendPostsView, FriendshipView, MatchView, MatchedPostsView, SubmittedPostsView
 from mist.model_views import BlockView, FavoriteView, FeatureView, FlagView, FriendRequestView, MatchRequestView, PostView, CommentView, MessageView, TagView, VoteView, WordView
 from users.views import RegisterUserEmailView, ValidateUserEmailView, UserView, ValidateUsernameView
 
@@ -52,6 +52,7 @@ urlpatterns = [
     path('api/friendships/', FriendshipView.as_view()),
     path('api/matched-posts/', MatchedPostsView.as_view()),
     path('api/featured-posts/', FeaturedPostsView.as_view()),
+    path('api/friend-posts/', FriendPostsView.as_view()),
     path('api/favorited-posts/', FavoritedPostsView.as_view()),
     path('api/submitted-posts/', SubmittedPostsView.as_view()),
 ]
