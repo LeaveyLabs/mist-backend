@@ -3,7 +3,7 @@ from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from users.generics import get_user_from_request
 from users.permissions import UserPermissions
 from users.models import User
@@ -40,7 +40,7 @@ class UserView(viewsets.ModelViewSet):
 
         # default is to return all users
         queryset = User.objects.all()
-        
+
         # filter by text...
         if text != None:
             username_set = User.objects.filter(username__contains=text)
@@ -62,16 +62,16 @@ class UserView(viewsets.ModelViewSet):
         # or token
         elif token:
             matching_tokens = Token.objects.filter(key=token)
-            if not matching_tokens: 
+            if not matching_tokens:
                 queryset = User.objects.none()
             else:
                 matching_token = matching_tokens[0]
                 queryset = User.objects.filter(id=matching_token.user.id)
 
-        # set serializers based on requesting user
-        if not requesting_user: 
-            self.serializer_class = ReadOnlyUserSerializer
-
+        # set serializers based on requesting user + method
+        object_level_methods = ["DELETE", "PUT", "PATCH",]
+        if self.request.method in object_level_methods:
+            return queryset
         else:
             non_matching_users = ~Q(id=requesting_user.id)
             readonly_users = queryset.filter(non_matching_users)
