@@ -50,11 +50,15 @@ class MatchedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         match_requests = MatchRequest.objects.all()
-        requested_user_pks = match_requests.values_list('match_requested_user_id')
-        matched_match_requests = MatchRequest.objects.filter(
-            match_requesting_user__in=requested_user_pks,
-        )
-        matched_post_pks = matched_match_requests.values_list('post')
+        sent_request_pks = match_requests.values_list('match_requested_user_id', 
+                                                    'match_requesting_user_id')
+        matched_requests = MatchRequest.objects.none()
+        for requested_user_pk, requesting_user_pk in sent_request_pks:
+            received_requests = MatchRequest.objects.filter(
+                                match_requesting_user=requested_user_pk,
+                                match_requested_user=requesting_user_pk)
+            matched_requests = matched_requests | received_requests
+        matched_post_pks = matched_requests.values_list('post')
         matched_posts = Post.objects.filter(pk__in=matched_post_pks)
         return matched_posts
 

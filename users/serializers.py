@@ -85,6 +85,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.picture = validated_data.get('picture', instance.picture)
         instance.save()
         return instance
+    
+    def partial_update(self, instance, validated_data):
+        return self.update(self, instance, validated_data)
 
 class UserEmailRegistrationSerializer(serializers.ModelSerializer):
     class Meta:

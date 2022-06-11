@@ -2367,6 +2367,12 @@ class MatchedPostsViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
 
+    def test_get_should_not_return_matches_from_different_posts_given_no_parameters(self):
+        return
+    
+    def test_get_should_return_only_bidirectional_matched_posts_given_no_paramters(self):
+        return
+
 class FeaturedPostsViewTest(TestCase):
     def setUp(self):
         self.user1 = User(
