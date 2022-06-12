@@ -122,6 +122,9 @@ class Favorite(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     favoriting_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ('post', 'favoriting_user',)
+
 class Feature(models.Model):
     timestamp = models.FloatField(default=get_current_time)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
