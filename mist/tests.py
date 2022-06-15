@@ -250,7 +250,25 @@ class PostTest(TestCase):
         serialized_posts = [PostSerializer(self.post1).data]
 
         request = APIRequestFactory().get(
-            f'/api/posts?timestamp={self.post1.timestamp}',
+            f'/api/posts?start_timestamp={self.post1.timestamp}&end_timestamp={self.post1.timestamp}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertCountEqual(serialized_posts, response_posts)
+        return
+    
+    def test_get_should_return_posts_within_inclusive_timestamp_range_given_timestamp_range(self):
+        serialized_posts = [
+            PostSerializer(self.post1).data, 
+            PostSerializer(self.post2).data]
+
+        request = APIRequestFactory().get(
+            f'/api/posts?start_timestamp={self.post1.timestamp}&end_timestamp={self.post2.timestamp}',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )

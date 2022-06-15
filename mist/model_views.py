@@ -82,7 +82,8 @@ class PostView(viewsets.ModelViewSet):
         latitude = self.request.query_params.get('latitude')
         longitude = self.request.query_params.get('longitude')
         text = self.request.query_params.get('text')
-        timestamp = self.request.query_params.get('timestamp')
+        start_timestamp = self.request.query_params.get('start_timestamp')
+        end_timestamp = self.request.query_params.get('end_timestamp')
         location_description = self.request.query_params.get('location_description')
         author = self.request.query_params.get('author')
         # filter
@@ -96,8 +97,10 @@ class PostView(viewsets.ModelViewSet):
             text_set = queryset.filter(text__contains=text)
             title_set = queryset.filter(title__contains=text)
             queryset = (text_set | title_set).distinct()
-        if timestamp:
-            queryset = queryset.filter(timestamp=timestamp)
+        if start_timestamp and end_timestamp:
+            queryset = queryset.filter(
+                timestamp__gte=start_timestamp, 
+                timestamp__lte=end_timestamp)
         if location_description:
             loc_set = queryset.filter(location_description__isnull=False)
             queryset = loc_set.filter(
