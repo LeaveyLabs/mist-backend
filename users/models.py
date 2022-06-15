@@ -1,11 +1,17 @@
 from datetime import datetime 
-import random
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+import os
 from phonenumber_field.modelfields import PhoneNumberField
+import random
 
 class User(AbstractUser):
-    picture = models.ImageField(upload_to='profiles', null=True)
+    def profile_picture_filepath(instance, filename):
+        ext = filename.split('.')[-1]
+        new_filename = f'{instance.id}.{ext}'
+        return os.path.join('profiles', new_filename)
+    
+    picture = models.ImageField(upload_to=profile_picture_filepath, null=True)
     phone_number = PhoneNumberField(null=True)
 
     class Meta:
