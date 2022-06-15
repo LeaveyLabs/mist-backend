@@ -166,9 +166,9 @@ class PostTest(TestCase):
 
         response = PostView.as_view({'get':'list'})(request)
         response_posts = [post_data for post_data in response.data]
-
+        
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        self.assertCountEqual(serialized_posts, response_posts)
         return
     
     def test_get_should_return_post_with_matching_id_given_id(self):
@@ -189,7 +189,7 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        self.assertCountEqual(serialized_posts, response_posts)
         return
     
     def test_get_should_return_post_with_matching_ids_given_ids(self):
@@ -208,7 +208,7 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        self.assertCountEqual(serialized_posts, response_posts)
         return
     
     def test_get_should_return_posts_with_matching_text_given_text(self):
@@ -224,7 +224,7 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        self.assertCountEqual(serialized_posts, response_posts)
         return
     
     def test_get_should_return_posts_with_partially_matching_text_given_partial_text(self):
@@ -243,7 +243,7 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        self.assertCountEqual(serialized_posts, response_posts)
         return
 
     def test_get_should_return_posts_with_matching_timestamp_given_timestamp(self):
@@ -259,7 +259,7 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        self.assertCountEqual(serialized_posts, response_posts)
         return
     
     def test_get_should_return_posts_within_latitude_longitude_range_given_latitude_longitude(self):
@@ -379,7 +379,7 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(serialized_posts, response_posts)
+        self.assertCountEqual(serialized_posts, response_posts)
         return
     
     def test_get_should_return_posts_by_friend_given_friend_as_author(self):
@@ -419,7 +419,7 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response_posts, serialized_posts)
+        self.assertCountEqual(response_posts, serialized_posts)
         return
     
     def test_get_should_return_not_posts_given_stranger_as_author(self):
@@ -1291,6 +1291,13 @@ class MessageTest(TestCase):
         self.user3.set_password("TestPassword3@98374")
         self.user3.save()
         self.auth_token3 = Token.objects.create(user=self.user3)
+
+        self.post1 = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            text='FakeTextForFirstPost',
+            timestamp=0,
+            author=self.user1,
+        )
         return
         
     def test_get_should_return_message_given_valid_sender(self):
@@ -1448,7 +1455,7 @@ class MessageTest(TestCase):
         ))
         return
     
-    def test_post_should_not_create_post_given_invalid_message(self):
+    def test_post_should_not_create_message_given_invalid_message(self):
         message = Message(
             sender=self.user1,
             receiver=self.user2,
@@ -1473,6 +1480,44 @@ class MessageTest(TestCase):
         self.assertFalse(Message.objects.filter(
             sender=self.user1,
             receiver=self.user2,
+        ))
+        return
+    
+    def test_post_should_create_message_given_valid_message_with_embedded_post(self):
+        message = Message(
+            sender=self.user1,
+            receiver=self.user2,
+            text="TestMessageOne",
+            timestamp=0,
+            post=self.post1,
+        )
+        serialized_message = MessageSerializer(message).data
+
+        self.assertFalse(Message.objects.filter(
+            sender=message.sender,
+            receiver=message.receiver,
+            text=message.text,
+            post=self.post1,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/messages/',
+            serialized_message,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MessageView.as_view({'post':'create'})(request)
+        response_message = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_message.get('receiver'), response_message.get('receiver'))
+        self.assertEqual(response_message.get('sender'), response_message.get('sender'))
+        self.assertEqual(response_message.get('text'), response_message.get('text'))
+        self.assertTrue(Message.objects.filter(
+            sender=self.user1,
+            receiver=self.user2,
+            text=message.text,
+            post=self.post1,
         ))
         return
     
