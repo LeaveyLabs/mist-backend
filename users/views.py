@@ -3,14 +3,16 @@ from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from users.generics import get_user_from_request
 from users.permissions import UserPermissions
-from users.models import User
 from django.core.mail import send_mail
 from django.db.models import Q
 
 from .serializers import (
+    PasswordResetFinalizationSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetValidationSerializer,
     ReadOnlyUserSerializer,
     UserEmailRegistrationSerializer,
     UserEmailValidationRequestSerializer,
@@ -18,6 +20,7 @@ from .serializers import (
     UsernameValidationRequestSerializer,
 )
 from .models import (
+    PasswordReset,
     User,
     EmailAuthentication,
 )
@@ -122,7 +125,8 @@ class ValidateUserEmailView(generics.CreateAPIView):
         validation_request.is_valid(raise_exception=True)
 
         registration = EmailAuthentication.objects.filter(
-            email__iexact=validation_request.data.get('email').lower()
+            email__iexact=validation_request.data.get('email').lower(),
+            code=validation_request.data.get('code'),
             ).order_by('-code_time')[0]
         registration.validated = True
         registration.validation_time = datetime.now().timestamp()
@@ -151,4 +155,86 @@ class ValidateUsernameView(generics.CreateAPIView):
                 "status": "success",
                 "data": validation_request.data,
             },
+            status=status.HTTP_200_OK)
+
+class RequestPasswordResetView(generics.CreateAPIView):
+    """
+    View to request password resets
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = PasswordResetRequestSerializer
+
+    def post(self, request):
+        password_reset_request = PasswordResetRequestSerializer(data=request.data)
+        password_reset_request.is_valid(raise_exception=True)
+
+        email = password_reset_request.data.get('email').lower()
+        PasswordReset.objects.filter(email__iexact=email).delete()
+        password_reset = PasswordReset.objects.create(email=email)
+
+        send_mail(
+            "Reset your password!",
+            "Here's your code: {}".format(password_reset.code),
+            "getmist.app@gmail.com",
+            [email],
+            fail_silently=False,
+        )
+        
+        return Response(
+            {
+                "status": "success",
+                "data": password_reset_request.data,
+            }, 
+            status=status.HTTP_201_CREATED)
+
+class ValidatePasswordResetView(generics.CreateAPIView):
+    """
+    View to validate password resets
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = PasswordResetValidationSerializer
+    
+    def post(self, request):
+        password_reset_validation = PasswordResetValidationSerializer(data=request.data)
+        password_reset_validation.is_valid(raise_exception=True)
+
+        email = password_reset_validation.data.get('email')
+        code = password_reset_validation.data.get('code')
+        password_reset = PasswordReset.objects.filter(
+            email__iexact=email.lower(),
+            code=code,
+            ).order_by('-code_time')[0]
+        password_reset.validated = True
+        password_reset.validation_time = datetime.now().timestamp()
+        password_reset.save()
+
+        return Response(
+            {
+                "status": "success",
+                "data": password_reset_validation.data,
+            }, 
+            status=status.HTTP_200_OK)
+
+class FinalizePasswordResetView(generics.CreateAPIView):
+    """
+    View to finalize password resets
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = PasswordResetFinalizationSerializer
+    
+    def post(self, request):
+        password_reset_finalization = PasswordResetFinalizationSerializer(data=request.data)
+        password_reset_finalization.is_valid(raise_exception=True)
+
+        email = password_reset_finalization.data.get('email')
+        password = password_reset_finalization.data.get('password')
+
+        requesting_user = User.objects.get(email=email)
+        requesting_user.set_password(password)
+        requesting_user.save()
+
+        return Response(
+            {
+                "status": "success",
+            }, 
             status=status.HTTP_200_OK)

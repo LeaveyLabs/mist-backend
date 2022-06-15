@@ -11,8 +11,8 @@ from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
-from .views import RegisterUserEmailView, UserView, ValidateUserEmailView, ValidateUsernameView
-from .models import User, EmailAuthentication
+from .views import FinalizePasswordResetView, RegisterUserEmailView, RequestPasswordResetView, UserView, ValidatePasswordResetView, ValidateUserEmailView, ValidateUsernameView
+from .models import PasswordReset, User, EmailAuthentication
 
 # Create your tests here.
 class ThrottleTest(TestCase):
@@ -959,5 +959,215 @@ class UserViewPatchTest(TestCase):
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
             self.assertFalse(User.objects.get(pk=self.valid_user.pk).picture)
+        return
 
+class RequestPasswordResetViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        self.user1.set_password('randomPassword')
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+    def test_post_should_not_create_request_given_invalid_email(self):
+        fake_email = 'nonexistentEmail@doesNotExist.com'
+
+        request = APIRequestFactory().post(
+            'api/request-reset-password/',
+            {
+                'email': fake_email
+            },
+        )
+        response = RequestPasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(PasswordReset.objects.filter(email=fake_email))
+        self.assertFalse(mail.outbox)
+        return
+
+    def test_post_should_create_request_given_valid_email(self):
+        valid_email = self.user1.email
+
+        request = APIRequestFactory().post(
+            'api/request-reset-password/',
+            {
+                'email': valid_email
+            },
+        )
+        response = RequestPasswordResetView.as_view()(request)
+        password_reset_requests = PasswordReset.objects.filter(email=valid_email)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(password_reset_requests)
+        self.assertTrue(mail.outbox)
+        self.assertEqual(mail.outbox[0].to[0], valid_email.lower())
+        self.assertTrue(mail.outbox[0].body.find(str(password_reset_requests[0].code)))
+        return
+
+class ValidatePasswordResetViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        self.user1.set_password('randomPassword')
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+        self.unvalidated_reset_request = PasswordReset.objects.create(email=self.user1.email)
+    
+    def test_post_should_not_validate_given_invalid_email(self):
+        invalid_email = "thisWillNeverEverBeAValidEmail@invalidEmail.net"
+
+        request = APIRequestFactory().post(
+            'api/validate-reset-password/',
+            {
+                'email': invalid_email,
+                'code': self.unvalidated_reset_request.code,
+            },
+        )
+        response = ValidatePasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(PasswordReset.objects.get(email=self.user1.email).validated)
+        return
+
+    def test_post_should_not_validate_given_invalid_code(self):
+        invalid_code = "thisWillNeverEverBeAValidCode"
+
+        request = APIRequestFactory().post(
+            'api/validate-reset-password/',
+            {
+                'email': self.unvalidated_reset_request.email,
+                'code': invalid_code,
+            },
+        )
+        response = ValidatePasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(PasswordReset.objects.get(email=self.user1.email).validated)
+        return
+    
+    def test_post_should_validate_given_valid_code_and_valid_email(self):
+        request = APIRequestFactory().post(
+            'api/validate-reset-password/',
+            {
+                'email': self.unvalidated_reset_request.email,
+                'code': self.unvalidated_reset_request.code,
+            },
+        )
+        response = ValidatePasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(PasswordReset.objects.get(email=self.user1.email).validated)
+        return
+
+class FinalizePasswordResetViewTest(TestCase):
+    def setUp(self):
+        self.old_password = 'randomPassword'
+        self.new_strong_password = 'newPassword@3312$5'
+        self.new_weak_password = '123'
+
+        self.user1 = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName")
+        self.user1.set_password(self.old_password)
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.unvalidated_reset_request = PasswordReset.objects.create(email=self.user1.email)
+        
+    def test_post_should_not_finalize_given_nonexistent_email_and_strong_password(self):
+        request = APIRequestFactory().post(
+            'api/finalize-reset-password/',
+            {
+                'email': 'thisEmailDoesNotExist@invalidEmail.net',
+                'password': self.new_strong_password,
+            },
+        )
+        response = FinalizePasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(self.user1.check_password(self.new_strong_password))
+        self.assertTrue(self.user1.check_password(self.old_password))
+        return
+    
+    def test_post_should_not_finalize_given_unvalidated_email_and_strong_password(self):
+        request = APIRequestFactory().post(
+            'api/finalize-reset-password/',
+            {
+                'email': self.unvalidated_reset_request.email,
+                'password': self.new_strong_password,
+            },
+        )
+        response = FinalizePasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(self.user1.check_password(self.new_strong_password))
+        self.assertTrue(self.user1.check_password(self.old_password))
+        return
+    
+    def test_post_should_not_finalize_given_valid_email_and_empty_password(self):
+        reset_request = self.unvalidated_reset_request
+        reset_request.validated = True
+        reset_request.validation_time = datetime.now().timestamp()
+        reset_request.save()
+
+        request = APIRequestFactory().post(
+            'api/finalize-reset-password/',
+            {
+                'email': reset_request.email,
+                'password': '',
+            },
+        )
+        response = FinalizePasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(self.user1.check_password(self.old_password))
+        return
+    
+    def test_post_should_not_finalize_given_valid_email_and_weak_password(self):
+        reset_request = self.unvalidated_reset_request
+        reset_request.validated = True
+        reset_request.validation_time = datetime.now().timestamp()
+        reset_request.save()
+
+        request = APIRequestFactory().post(
+            'api/finalize-reset-password/',
+            {
+                'email': reset_request.email,
+                'password': self.new_weak_password,
+            },
+        )
+        response = FinalizePasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(self.user1.check_password(self.new_weak_password))
+        self.assertTrue(self.user1.check_password(self.old_password))
+        return
+    
+    def test_post_should_finalize_given_valid_email_and_strong_password(self):
+        reset_request = self.unvalidated_reset_request
+        reset_request.validated = True
+        reset_request.validation_time = datetime.now().timestamp()
+        reset_request.save()
+
+        request = APIRequestFactory().post(
+            'api/finalize-reset-password/',
+            {
+                'email': reset_request.email,
+                'password': self.new_strong_password,
+            },
+        )
+        response = FinalizePasswordResetView.as_view()(request)
+        requesting_user = User.objects.get(email=reset_request.email)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(requesting_user.check_password(self.new_strong_password))
+        self.assertFalse(requesting_user.check_password(self.old_password))
         return

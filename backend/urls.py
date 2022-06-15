@@ -21,7 +21,7 @@ from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 from mist.accessory_views import FavoritedPostsView, FeaturedPostsView, FriendPostsView, FriendshipView, MatchView, MatchedPostsView, SubmittedPostsView
 from mist.model_views import BlockView, FavoriteView, FeatureView, FlagView, FriendRequestView, MatchRequestView, PostView, CommentView, MessageView, TagView, VoteView, WordView
-from users.views import RegisterUserEmailView, ValidateUserEmailView, UserView, ValidateUsernameView
+from users.views import FinalizePasswordResetView, RegisterUserEmailView, RequestPasswordResetView, ValidatePasswordResetView, ValidateUserEmailView, UserView, ValidateUsernameView
 
 # Models
 router = routers.DefaultRouter()
@@ -44,6 +44,9 @@ urlpatterns = [
     path('api-validate-email/', ValidateUserEmailView.as_view()),
     path('api-validate-username/', ValidateUsernameView.as_view()),
     path('api-token/', obtain_auth_token),
+    path('api-request-reset-password/', RequestPasswordResetView.as_view()),
+    path('api-validate-reset-password/', ValidatePasswordResetView.as_view()),
+    path('api-finalize-reset-password/', FinalizePasswordResetView.as_view()),
     # Database
     path('api/', include(router.urls)),
     path('api/words/', WordView.as_view()),

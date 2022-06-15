@@ -2,8 +2,7 @@ import random
 from datetime import datetime, timedelta
 from django.forms import ValidationError
 from rest_framework import serializers
-from .models import User, EmailAuthentication
-from users.models import User
+from .models import PasswordReset, User, EmailAuthentication
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
 
@@ -24,7 +23,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'password',
         'first_name', 'last_name', 'picture', )
     
-    def email_matches_name (email, first_name, last_name):
+    def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
         last_name_in_email = email.find(last_name) != -1
         return first_name_in_email or last_name_in_email
@@ -154,3 +153,68 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
             raise ValidationError({"username": "Username is not unique."})
 
         return data
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, email):
+        if not User.objects.filter(email=email):
+            raise ValidationError({"email": "Email does not exist."})
+        return email
+
+class PasswordResetValidationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField()
+
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
+    def validate_email(self, email):
+        matching_password_reset_requests = PasswordReset.objects.filter(email=email)
+        if not matching_password_reset_requests:
+            raise ValidationError({"email": "Email did not request a password reset."})
+
+        password_reset_request = matching_password_reset_requests[0]
+
+        current_time = datetime.now().timestamp()
+        time_since_reset_request = current_time - password_reset_request.code_time
+        request_expired = time_since_reset_request > self.EXPIRATION_TIME
+
+        if request_expired:
+            raise ValidationError({"code": "Code expired."})
+        
+        return email
+
+    def validate(self, data):
+        email = data.get('email')
+        code = data.get('code')
+        password_reset_request = PasswordReset.objects.get(email=email)
+        if password_reset_request.code != code:
+            raise ValidationError({"code": "Code does not match."})
+        return data
+
+class PasswordResetFinalizationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
+    def validate_email(self, email):
+        matching_password_reset_requests = PasswordReset.objects.filter(email=email)
+        if not matching_password_reset_requests:
+            raise ValidationError({"email": "Email did not request a password reset."})
+        
+        password_reset_request = matching_password_reset_requests[0]
+        if not password_reset_request.validated:
+            raise ValidationError({"email": "Reset request has not been validated."})
+        
+        current_time = datetime.now().timestamp()
+        time_since_reset_request = current_time - password_reset_request.validation_time
+        request_expired = time_since_reset_request > self.EXPIRATION_TIME
+        if request_expired:
+            raise ValidationError({"email": "Request validation has expired."})
+        
+        return email
+
+    def validate_password(self, password):
+        validate_password(password)
+        return password
