@@ -160,6 +160,7 @@ class Message(models.Model):
     timestamp = models.FloatField(default=get_current_time)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sender', on_delete=models.CASCADE)
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='receiver', on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True)
 
     def _str_(self):
         return self.text
