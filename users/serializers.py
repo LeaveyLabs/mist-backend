@@ -80,8 +80,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.email = validated_data.get('email', instance.email)
         instance.username = validated_data.get('username', instance.username)
         instance.set_password(validated_data.get('password', instance.password))
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.picture = validated_data.get('picture', instance.picture)
         instance.save()
         return instance

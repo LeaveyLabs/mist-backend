@@ -882,7 +882,7 @@ class UserViewPatchTest(TestCase):
                         password=self.password))
         return
 
-    def test_patch_should_update_first_name_given_first_name(self):
+    def test_patch_should_not_update_first_name_given_first_name(self):
         fake_first_name = 'heyMyRealFirstName'
 
         self.assertEqual(self.valid_user.first_name, User.objects.get(pk=self.valid_user.pk).first_name)
@@ -898,7 +898,7 @@ class UserViewPatchTest(TestCase):
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(fake_first_name, User.objects.get(pk=self.valid_user.pk).first_name)
+        self.assertEqual(self.valid_user.first_name, User.objects.get(pk=self.valid_user.pk).first_name)
         return
     
     def test_patch_should_update_last_name_given_last_name(self):
@@ -917,7 +917,7 @@ class UserViewPatchTest(TestCase):
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(fake_last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+        self.assertEqual(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
         return
 
     def test_patch_should_update_picture_given_valid_picture(self):
