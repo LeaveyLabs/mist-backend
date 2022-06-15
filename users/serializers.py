@@ -24,6 +24,11 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'password',
         'first_name', 'last_name', 'picture', )
     
+    def email_matches_name (email, first_name, last_name):
+        first_name_in_email = email.find(first_name) != -1
+        last_name_in_email = email.find(last_name) != -1
+        return first_name_in_email or last_name_in_email
+    
     def validate_email(self, email):
         emailValidator = UserEmailRegistrationSerializer(data={"email":email})
         emailValidator.is_valid(raise_exception=True)
