@@ -65,7 +65,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = ('id', 'text', 'timestamp', 'sender', 'receiver')
+        fields = ('id', 'text', 'timestamp', 'sender', 'receiver', 'post')
     
 class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
