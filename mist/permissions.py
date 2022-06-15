@@ -1,5 +1,6 @@
+from requests import RequestException
 from rest_framework import permissions
-from mist.models import FriendRequest
+from mist.models import Block, FriendRequest
 from users.generics import get_user_from_request
 
 def requested_user_is_the_posted_user(request, user_property):
@@ -117,7 +118,13 @@ class MessagePermission(permissions.BasePermission):
             user_is_receiver = requested_user_is_the_queried_user(request, 'receiver')
             return user_is_sender or user_is_receiver
         elif request.method == "POST":
-            return requested_user_is_the_posted_user(request, 'sender')
+            user_is_sender = requested_user_is_the_posted_user(request, 'sender')
+            if not user_is_sender: return False
+            sender = request.data.get('sender')
+            receiver = request.data.get('receiver')
+            sender_blocked_receiver = Block.objects.filter(blocking_user=sender, blocked_user=receiver)
+            receiver_blocked_sender = Block.objects.filter(blocking_user=receiver, blocked_user=sender)
+            return not sender_blocked_receiver and not receiver_blocked_sender
         else:
             return True
 

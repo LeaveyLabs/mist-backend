@@ -1521,6 +1521,76 @@ class MessageTest(TestCase):
         ))
         return
     
+    def test_post_should_not_message_given_sender_blocked_receiver(self):
+        message = Message(
+            sender=self.user1,
+            receiver=self.user2,
+            text="TestMessageOne",
+            timestamp=0,
+        )
+        serialized_message = MessageSerializer(message).data
+        Block.objects.create(
+            blocking_user=message.sender,
+            blocked_user=message.receiver,
+        )
+
+        self.assertFalse(Message.objects.filter(
+            sender=message.sender,
+            receiver=message.receiver,
+            text=message.text,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/messages/',
+            serialized_message,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MessageView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Message.objects.filter(
+            sender=self.user1,
+            receiver=self.user2,
+            text=message.text,
+        ))
+        return
+    
+    def test_post_should_not_message_given_receiver_blocked_sender(self):
+        message = Message(
+            sender=self.user1,
+            receiver=self.user2,
+            text="TestMessageOne",
+            timestamp=0,
+        )
+        serialized_message = MessageSerializer(message).data
+        Block.objects.create(
+            blocking_user=message.receiver,
+            blocked_user=message.sender,
+        )
+
+        self.assertFalse(Message.objects.filter(
+            sender=message.sender,
+            receiver=message.receiver,
+            text=message.text,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/messages/',
+            serialized_message,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MessageView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(Message.objects.filter(
+            sender=self.user1,
+            receiver=self.user2,
+            text=message.text,
+        ))
+        return
+    
     def test_delete_should_delete_message(self):
         message = Message.objects.create(
             sender=self.user1,
