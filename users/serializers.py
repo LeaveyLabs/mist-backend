@@ -96,7 +96,7 @@ class UserEmailRegistrationSerializer(serializers.ModelSerializer):
         model = EmailAuthentication
         fields = ('email',)
 
-    ACCEPTABLE_DOMAINS = ('usc.edu', 'gmail.com')
+    # ACCEPTABLE_DOMAINS = ('usc.edu', 'gmail.com', 'protonmail.com', 'yahoo.com', 'icloud.com')
     
     def validate(self, data):
         email = data.get('email').lower()
@@ -105,9 +105,9 @@ class UserEmailRegistrationSerializer(serializers.ModelSerializer):
         if users_with_matching_email:
             raise ValidationError({"email": "Email has already been registered."})
 
-        domain = email.split('@')[1]
-        if domain not in self.ACCEPTABLE_DOMAINS:
-            raise ValidationError({"email": "Email has an invalid domain."})
+        # domain = email.split('@')[1]
+        # if domain not in self.ACCEPTABLE_DOMAINS:
+        #     raise ValidationError({"email": "Email has an invalid domain."})
 
         return data
 
