@@ -11,6 +11,7 @@ class User(AbstractUser):
         new_filename = f'{instance.id}.{ext}'
         return os.path.join('profiles', new_filename)
 
+    date_of_birth = models.DateField()
     picture = models.ImageField(upload_to=profile_picture_filepath, null=True)
     phone_number = PhoneNumberField(null=True)
 

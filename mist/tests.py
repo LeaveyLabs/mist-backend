@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from django.test import TestCase
 from mist.accessory_views import FavoritedPostsView, FeaturedPostsView, FriendshipView, MatchView, MatchedPostsView, SubmittedPostsView
@@ -22,6 +23,7 @@ class PostTest(TestCase):
         self.user = User(
             email='TestUser@usc.edu',
             username='TestUser',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user.set_password("TestPassword@98374")
         self.user.save()
@@ -404,6 +406,7 @@ class PostTest(TestCase):
         friend = User.objects.create(
             email='TestFriendEmail@usc.edu',
             username='TestFriend',
+            date_of_birth=date(2000, 1, 1),
         )
         friend.set_password("TestFriend@98374")
         friend.save()
@@ -444,6 +447,7 @@ class PostTest(TestCase):
         stranger = User.objects.create(
             email='TestStranger@usc.edu',
             username='TestStranger',
+            date_of_birth=date(2000, 1, 1),
         )
         stranger.set_password("TestStranger@98374")
         stranger.save()
@@ -564,6 +568,7 @@ class VoteTest(TestCase):
         self.user1 = User(
             email='TestUser@usc.edu',
             username='TestUser',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword@98374")
         self.user1.save()
@@ -571,7 +576,8 @@ class VoteTest(TestCase):
 
         self.user2 = User(
             email='TestUser2@usc.edu',
-            username='TestUse2r',
+            username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -685,6 +691,7 @@ class CommentTest(TestCase):
         self.user = User(
             email='TestUser@usc.edu',
             username='TestUser',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user.set_password("TestPassword@98374")
         self.user.save()
@@ -788,6 +795,7 @@ class FlagTest(TestCase):
         self.user = User(
             email='TestUser@usc.edu',
             username='TestUser',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user.set_password("TestPassword@98374")
         self.user.save()
@@ -929,6 +937,7 @@ class TagTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -937,6 +946,7 @@ class TagTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -1113,6 +1123,7 @@ class BlockTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -1121,6 +1132,7 @@ class BlockTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -1289,6 +1301,7 @@ class MessageTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -1297,6 +1310,7 @@ class MessageTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -1305,6 +1319,7 @@ class MessageTest(TestCase):
         self.user3 = User(
             email='TestUser3@usc.edu',
             username='TestUser3',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user3.set_password("TestPassword3@98374")
         self.user3.save()
@@ -1631,6 +1646,7 @@ class WordTest(TestCase):
         self.user = User(
             email='TestUser@usc.edu',
             username='TestUser',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user.set_password("TestPassword@98374")
         self.user.save()
@@ -1691,6 +1707,7 @@ class FriendRequestTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -1699,6 +1716,7 @@ class FriendRequestTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -1707,6 +1725,7 @@ class FriendRequestTest(TestCase):
         self.user3 = User(
             email='TestUser3@usc.edu',
             username='TestUser3',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user3.set_password("TestPassword3@98374")
         self.user3.save()
@@ -1881,6 +1900,7 @@ class FavoriteTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -1889,6 +1909,7 @@ class FavoriteTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -2012,6 +2033,7 @@ class FeatureTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -2134,6 +2156,7 @@ class MatchRequestTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -2142,6 +2165,7 @@ class MatchRequestTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -2283,6 +2307,7 @@ class MatchViewTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -2291,6 +2316,7 @@ class MatchViewTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -2362,6 +2388,7 @@ class FriendshipViewTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -2370,6 +2397,7 @@ class FriendshipViewTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -2440,6 +2468,7 @@ class MatchedPostsViewTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -2448,6 +2477,7 @@ class MatchedPostsViewTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -2511,6 +2541,7 @@ class FeaturedPostsViewTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -2519,6 +2550,7 @@ class FeaturedPostsViewTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -2567,6 +2599,7 @@ class FavoritedPostsViewTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -2575,6 +2608,7 @@ class FavoritedPostsViewTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
@@ -2624,6 +2658,7 @@ class SubmittedPostsViewTest(TestCase):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -2632,6 +2667,7 @@ class SubmittedPostsViewTest(TestCase):
         self.user2 = User(
             email='TestUser2@usc.edu',
             username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
         )
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()

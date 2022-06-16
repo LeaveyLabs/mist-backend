@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from tempfile import TemporaryFile
 from django.core import mail, cache
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -23,7 +23,8 @@ class ThrottleTest(TestCase):
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1))
         self.valid_user.set_password('randomPassword')
         self.valid_user.save()
         self.auth_token = Token.objects.create(user=self.valid_user)
@@ -233,7 +234,8 @@ class ValidateUsernameViewTest(TestCase):
             email="email@usc.edu",
             username="takenUsername",
             first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1))
         self.valid_user.set_password('randomPassword')
         self.valid_user.save()
         return
@@ -288,6 +290,7 @@ class UserViewPostTest(TestCase):
         self.fake_password = 'FakeTestingPassword@3124587'
         self.fake_first_name = 'FirstNameOfFakeUser'
         self.fake_last_name = 'LastNameOfFakeUser'
+        self.fake_date_of_birth = date(2000, 1, 1)
 
     def test_post_should_create_user_given_validated_email(self):
         self.assertFalse(User.objects.filter(
@@ -295,6 +298,7 @@ class UserViewPostTest(TestCase):
             username=self.fake_username,
             first_name=self.fake_first_name,
             last_name=self.fake_last_name,
+            date_of_birth=self.fake_date_of_birth,
         ))
 
         request = APIRequestFactory().post(
@@ -305,6 +309,7 @@ class UserViewPostTest(TestCase):
                 'password': self.fake_password,
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
+                'date_of_birth': self.fake_date_of_birth,
             },
             format='json',
         )
@@ -316,10 +321,44 @@ class UserViewPostTest(TestCase):
             username=self.fake_username,
             first_name=self.fake_first_name,
             last_name=self.fake_last_name,
+            date_of_birth=self.fake_date_of_birth,
         ))
         return
 
     def test_post_should_not_create_user_given_unvalidated_email(self):
+        self.assertFalse(User.objects.filter(
+            email='thisEmailDoesNotExist@usc.edu',
+            username=self.fake_username,
+            first_name=self.fake_first_name,
+            last_name=self.fake_last_name,
+            date_of_birth=self.fake_date_of_birth,
+        ))
+
+        request = APIRequestFactory().post(
+            'api/users/',
+            {
+                'email': 'thisEmailDoesNotExist@usc.edu',
+                'username': self.fake_username,
+                'password': self.fake_password,
+                'first_name': self.fake_first_name,
+                'last_name': self.fake_last_name,
+                'date_of_birth': self.fake_date_of_birth,
+            },
+            format='json',
+        )
+        response = UserView.as_view({'post':'create'})(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(
+            email='thisEmailDoesNotExist@usc.edu',
+            username=self.fake_username,
+            first_name=self.fake_first_name,
+            last_name=self.fake_last_name,
+            date_of_birth=self.fake_date_of_birth,
+        ))
+        return
+    
+    def test_post_should_not_create_user_given_user_under_age_13(self):
         self.assertFalse(User.objects.filter(
             email='thisEmailDoesNotExist@usc.edu',
             username=self.fake_username,
@@ -335,6 +374,7 @@ class UserViewPostTest(TestCase):
                 'password': self.fake_password,
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
+                'date_of_birth': date.today(),
             },
             format='json',
         )
@@ -369,6 +409,7 @@ class APITokenViewPostTest(TestCase):
         user = User(
             email=self.email_auth.email,
             username=self.fake_username,
+            date_of_birth=date(2000, 1, 1),
         )
         user.set_password(self.fake_password)
         user.save()
@@ -391,6 +432,7 @@ class APITokenViewPostTest(TestCase):
         user = User(
             email=self.email_auth.email,
             username=self.fake_username,
+            date_of_birth=date(2000, 1, 1),
         )
         user.set_password(self.fake_password)
         user.save()
@@ -413,6 +455,7 @@ class APITokenViewPostTest(TestCase):
         user = User(
             email= self.email_auth.email,
             username= self.fake_username,
+            date_of_birth=date(2000, 1, 1),
         )
         user.set_password(self.fake_password)
         user.save()
@@ -440,7 +483,8 @@ class UserViewGetTest(TestCase):
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1))
         self.valid_user.set_password('randomPassword')
         self.valid_user.save()
         self.auth_token = Token.objects.create(user=self.valid_user)
@@ -452,7 +496,8 @@ class UserViewGetTest(TestCase):
             email="nonMatchingEmail@usc.edu",
             username="nonMatchingUsername",
             first_name="thisFirstNameHasNotBeenTaken",
-            last_name="thisLastNameHasNotBeenTaken")
+            last_name="thisLastNameHasNotBeenTaken",
+            date_of_birth=date(2000, 1, 1))
         non_matching_user.set_password('nonMatchingPassword')
         non_matching_user.save()
         auth_token = Token.objects.create(user=non_matching_user)
@@ -738,7 +783,8 @@ class UserViewDeleteTest(TestCase):
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1))
         self.valid_user.set_password('randomPassword')
         self.valid_user.save()
         self.auth_token = Token.objects.create(user=self.valid_user)
@@ -772,7 +818,8 @@ class UserViewPatchTest(TestCase):
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1))
         self.password = "strongPassword@1354689$"
         self.valid_user.set_password(self.password)
         self.valid_user.save()
@@ -967,7 +1014,8 @@ class RequestPasswordResetViewTest(TestCase):
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1))
         self.user1.set_password('randomPassword')
         self.user1.save()
         self.auth_token1 = Token.objects.create(user=self.user1)
@@ -1013,7 +1061,8 @@ class ValidatePasswordResetViewTest(TestCase):
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1))
         self.user1.set_password('randomPassword')
         self.user1.save()
         self.auth_token1 = Token.objects.create(user=self.user1)
@@ -1075,7 +1124,8 @@ class FinalizePasswordResetViewTest(TestCase):
             email="email@usc.edu",
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName")
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1))
         self.user1.set_password(self.old_password)
         self.user1.save()
         self.auth_token1 = Token.objects.create(user=self.user1)

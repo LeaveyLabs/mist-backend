@@ -1,5 +1,4 @@
-import random
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from django.forms import ValidationError
 from rest_framework import serializers
 from .models import PasswordReset, User, EmailAuthentication
@@ -21,12 +20,19 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'password',
-        'first_name', 'last_name', 'picture', )
+        'first_name', 'last_name', 'picture', 'date_of_birth', )
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
         last_name_in_email = email.find(last_name) != -1
         return first_name_in_email or last_name_in_email
+    
+    def validate_date_of_birth(self, date_of_birth):
+        today = date.today()
+        age = today.year - date_of_birth.year - ((today.month, today.day) < (date_of_birth.month, date_of_birth.day))
+        if age < 13:
+            raise ValidationError({"date_of_birth": "Users must be over 13 years old."})
+        return date_of_birth
     
     def validate_email(self, email):
         emailValidator = UserEmailRegistrationSerializer(data={"email":email})
