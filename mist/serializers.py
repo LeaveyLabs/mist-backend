@@ -14,7 +14,7 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'title', 'text', 'latitude', 'longitude', 'location_description',
+        fields = ('id', 'title', 'body', 'latitude', 'longitude', 'location_description',
         'timestamp', 'author', 'averagerating', 'commentcount', )
 
 class VoteSerializer(serializers.ModelSerializer):
@@ -53,7 +53,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'timestamp', 'post', 'author', 
+        fields = ('id', 'body', 'timestamp', 'post', 'author', 
         'author_picture', 'author_username')
 
     def to_representation(self, instance):
@@ -65,7 +65,7 @@ class CommentSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
-        fields = ('id', 'text', 'timestamp', 'sender', 'receiver', 'post')
+        fields = ('id', 'body', 'timestamp', 'sender', 'receiver', 'post')
     
 class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:

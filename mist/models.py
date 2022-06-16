@@ -15,7 +15,7 @@ class Post(models.Model):
 
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     title = models.CharField(max_length=40)
-    text = models.CharField(max_length=1000)
+    body = models.CharField(max_length=1000)
     location_description = models.CharField(max_length=40, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
@@ -41,7 +41,7 @@ class Post(models.Model):
         # generate word
         if is_new:
             # gather all words in the post
-            words_in_text = self.text.translate(
+            words_in_text = self.body.translate(
                 str.maketrans('', '', string.punctuation)
                 ).split()
             words_in_title = self.title.translate(
@@ -109,7 +109,7 @@ class Tag(models.Model):
 
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
-    text = models.CharField(max_length=500)
+    body = models.CharField(max_length=500)
     timestamp = models.FloatField(default=get_current_time)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -156,7 +156,7 @@ class MatchRequest(models.Model):
         unique_together = ('match_requesting_user', 'match_requested_user', 'post')
 
 class Message(models.Model):
-    text = models.CharField(max_length=1000)
+    body = models.CharField(max_length=1000)
     timestamp = models.FloatField(default=get_current_time)
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sender', on_delete=models.CASCADE)
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='receiver', on_delete=models.CASCADE)

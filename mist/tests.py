@@ -31,19 +31,19 @@ class PostTest(TestCase):
 
         self.post1 = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             timestamp=0,
             author=self.user,
         )
         self.post2 = Post.objects.create(
             title='FakeTitleForSecondPost',
-            text='FakeTextForSecondPost',
+            body='FakeTextForSecondPost',
             timestamp=1,
             author=self.user,
         )
         self.post3 = Post.objects.create(
             title='FakeTitleForThirdPost',
-            text='FakeTextForThirdPost',
+            body='FakeTextForThirdPost',
             timestamp=2,
             author=self.user,
         )
@@ -54,7 +54,7 @@ class PostTest(TestCase):
         )
 
         self.comment = Comment.objects.create(
-            text='FakeTextForComment',
+            body='FakeTextForComment',
             post=self.post1,
             author=self.user,
         )
@@ -70,7 +70,7 @@ class PostTest(TestCase):
     def test_post_should_create_words_in_post(self):
         Post.objects.create(
             title='TitleWord',
-            text='StartingTextWord MiddleTextWord NumbersWord123',
+            body='StartingTextWord MiddleTextWord NumbersWord123',
             author=self.user,
         )
         self.assertTrue(Word.objects.filter(text='TitleWord'))
@@ -83,7 +83,7 @@ class PostTest(TestCase):
     def test_post_should_create_post_given_valid_post(self):
         test_post = Post(
             title='SomeFakeTitle',
-            text='ThisPostWillBeTestingCreatingANewPost',
+            body='ThisPostWillBeTestingCreatingANewPost',
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
             timestamp=0,
@@ -93,7 +93,7 @@ class PostTest(TestCase):
 
         self.assertFalse(Post.objects.filter(
             title=test_post.title,
-            text=test_post.text,
+            body=test_post.body,
             latitude=test_post.latitude,
             longitude=test_post.longitude,
             timestamp=test_post.timestamp,
@@ -111,14 +111,14 @@ class PostTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response_post.get('title'), serialized_post.get('title'))
-        self.assertEqual(response_post.get('text'), serialized_post.get('text'))
+        self.assertEqual(response_post.get('body'), serialized_post.get('body'))
         self.assertEqual(response_post.get('timestamp'), serialized_post.get('timestamp'))
         self.assertEqual(response_post.get('latitude'), serialized_post.get('latitude'))
         self.assertEqual(response_post.get('longitude'), serialized_post.get('longitude'))
         self.assertEqual(response_post.get('author'), serialized_post.get('author'))
         self.assertTrue(Post.objects.filter(
             title=test_post.title,
-            text=test_post.text,
+            body=test_post.body,
             latitude=test_post.latitude,
             longitude=test_post.longitude,
             timestamp=test_post.timestamp,
@@ -130,7 +130,7 @@ class PostTest(TestCase):
         self.assertFalse(Word.objects.filter(text='ThisTextNowExists'))
         test_post = Post.objects.create(
             title='SomeFakeTitle',
-            text='ThisTextNowExists',
+            body='ThisTextNowExists',
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
             timestamp=0,
@@ -140,7 +140,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             '/api/words',
             {
-                'text': test_post.text,
+                'text': test_post.body,
             },
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
@@ -217,7 +217,7 @@ class PostTest(TestCase):
         serialized_posts = [PostSerializer(self.post1).data]
         
         request = APIRequestFactory().get(
-            f'/api/posts?text={self.post1.text}',
+            f'/api/posts?text={self.post1.body}',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
@@ -232,8 +232,8 @@ class PostTest(TestCase):
     def test_get_should_return_posts_with_partially_matching_text_given_partial_text(self):
         serialized_posts = [PostSerializer(self.post1).data]
 
-        mid_point_of_text = len(self.post1.text)//2
-        half_of_post_text = self.post1.text[mid_point_of_text:]
+        mid_point_of_text = len(self.post1.body)//2
+        half_of_post_text = self.post1.body[mid_point_of_text:]
 
         request = APIRequestFactory().get(
             f'/api/posts?text={half_of_post_text}',
@@ -285,7 +285,7 @@ class PostTest(TestCase):
     def test_get_should_return_posts_within_latitude_longitude_range_given_latitude_longitude(self):
         post_from_usc = Post.objects.create(
             title='FakeTitleOfUSCPost',
-            text='HereIsAPostFromUSC',
+            body='HereIsAPostFromUSC',
             timestamp=0,
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
@@ -293,7 +293,7 @@ class PostTest(TestCase):
         )
         post_from_north_pole = Post.objects.create(
             title='FakeTitleOfNorthPolePost',
-            text='HereIsAPostFromTheNorthPole',
+            body='HereIsAPostFromTheNorthPole',
             timestamp=0,
             latitude=Decimal(0),
             longitude=Decimal(0),
@@ -322,7 +322,7 @@ class PostTest(TestCase):
     def test_get_should_return_posts_with_matching_loc_description_given_loc_description(self):
         post_from_north_pole = Post.objects.create(
             title='FakeTitleOfNorthPolePost',
-            text='HereIsAPostFromTheNorthPole',
+            body='HereIsAPostFromTheNorthPole',
             location_description='North Pole',
             timestamp=0,
             latitude=Decimal(0),
@@ -352,7 +352,7 @@ class PostTest(TestCase):
     def test_get_should_return_posts_with_partially_matching_loc_description_given_partial_loc_description(self):
         post_from_north_pole = Post.objects.create(
             title='FakeTitleOfNorthPolePost',
-            text='HereIsAPostFromTheNorthPole',
+            body='HereIsAPostFromTheNorthPole',
             location_description='North Pole',
             timestamp=0,
             latitude=Decimal(0),
@@ -491,10 +491,10 @@ class PostTest(TestCase):
     
     def test_put_should_update_text_given_serialized_post(self):
         fake_text = "NewFakeTextForFirstPost"
-        self.post1.text = fake_text
+        self.post1.body = fake_text
         serialized_post = PostSerializer(self.post1).data
 
-        self.assertFalse(Post.objects.filter(text=fake_text))
+        self.assertFalse(Post.objects.filter(body=fake_text))
 
         request = APIRequestFactory().put(
             '/api/posts/',
@@ -508,7 +508,7 @@ class PostTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(serialized_post, response_post)
-        self.assertTrue(Post.objects.filter(text=fake_text))
+        self.assertTrue(Post.objects.filter(body=fake_text))
         return
 
     def test_patch_should_update_title_given_valid_post_title(self):
@@ -536,12 +536,12 @@ class PostTest(TestCase):
     def test_patch_should_update_text_given_valid_post_text(self):
         fake_text = 'NewFakeTextForFirstPost'
 
-        self.assertFalse(Post.objects.filter(text=fake_text))
+        self.assertFalse(Post.objects.filter(body=fake_text))
 
         request = APIRequestFactory().patch(
             '/api/posts/',
             {
-                'text': fake_text,
+                'body': fake_text,
             },
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
@@ -549,8 +549,8 @@ class PostTest(TestCase):
         response = PostView.as_view({'patch':'partial_update'})(request, pk=self.post1.pk)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data.get('text'), fake_text)
-        self.assertTrue(Post.objects.filter(text=fake_text))
+        self.assertEqual(response.data.get('body'), fake_text)
+        self.assertTrue(Post.objects.filter(body=fake_text))
         return
 
     def test_delete_should_delete_post(self):
@@ -585,7 +585,7 @@ class VoteTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
         )
         return
@@ -699,12 +699,12 @@ class CommentTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user,
         )
 
         self.comment = Comment.objects.create(
-            text='FakeTextForComment',
+            body='FakeTextForComment',
             post=self.post,
             author=self.user,
             timestamp=0,
@@ -750,14 +750,14 @@ class CommentTest(TestCase):
 
     def test_post_should_create_comment_given_valid_comment(self):
         test_comment = Comment(
-            text='FakeTextForTestComment',
+            body='FakeTextForTestComment',
             post=self.post,
             author=self.user
         )
         serialized_comment = CommentSerializer(test_comment).data
 
         self.assertFalse(Comment.objects.filter(
-            text=test_comment.text,
+            body=test_comment.body,
             post=test_comment.post,
             author=test_comment.author))
 
@@ -771,11 +771,11 @@ class CommentTest(TestCase):
         response_comment = response.data
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response_comment.get('text'), serialized_comment.get('text'))
+        self.assertEqual(response_comment.get('body'), serialized_comment.get('body'))
         self.assertEqual(response_comment.get('post'), serialized_comment.get('post'))
         self.assertEqual(response_comment.get('author'), serialized_comment.get('author'))
         self.assertTrue(Comment.objects.filter(
-            text=test_comment.text,
+            body=test_comment.body,
             post=test_comment.post,
             author=test_comment.author))
         return
@@ -803,7 +803,7 @@ class FlagTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user,
         )
         return
@@ -954,7 +954,7 @@ class TagTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
         )
 
@@ -1140,7 +1140,7 @@ class BlockTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
         )
 
@@ -1327,7 +1327,7 @@ class MessageTest(TestCase):
 
         self.post1 = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             timestamp=0,
             author=self.user1,
         )
@@ -1337,7 +1337,7 @@ class MessageTest(TestCase):
         message = Message.objects.create(
             sender=self.user1,
             receiver=self.user2,
-            text="TestMessageOne",
+            body="TestMessageOne",
             timestamp=0,
         )
         serialized_message = MessageSerializer(message).data
@@ -1377,7 +1377,7 @@ class MessageTest(TestCase):
         message = Message.objects.create(
             sender=self.user1,
             receiver=self.user2,
-            text="TestMessageOne",
+            body="TestMessageOne",
             timestamp=0,
         )
         serialized_message = MessageSerializer(message).data
@@ -1417,19 +1417,19 @@ class MessageTest(TestCase):
         message1 = Message.objects.create(
             sender=self.user1,
             receiver=self.user2,
-            text="TestMessageOne",
+            body="TestMessageOne",
             timestamp=0,
         )
         message2 = Message.objects.create(
             sender=self.user2,
             receiver=self.user1,
-            text="TestMessageTwo",
+            body="TestMessageTwo",
             timestamp=0,
         )
         message3 = Message.objects.create(
             sender=self.user1,
             receiver=self.user3,
-            text="TestMessageThree",
+            body="TestMessageThree",
             timestamp=0,
         )
         serialized_message1 = MessageSerializer(message1).data
@@ -1457,7 +1457,7 @@ class MessageTest(TestCase):
         message = Message(
             sender=self.user1,
             receiver=self.user2,
-            text="TestMessageOne",
+            body="TestMessageOne",
             timestamp=0,
         )
         serialized_message = MessageSerializer(message).data
@@ -1465,7 +1465,7 @@ class MessageTest(TestCase):
         self.assertFalse(Message.objects.filter(
             sender=message.sender,
             receiver=message.receiver,
-            text=message.text,
+            body=message.body,
         ))
 
         request = APIRequestFactory().post(
@@ -1480,11 +1480,11 @@ class MessageTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response_message.get('receiver'), response_message.get('receiver'))
         self.assertEqual(response_message.get('sender'), response_message.get('sender'))
-        self.assertEqual(response_message.get('text'), response_message.get('text'))
+        self.assertEqual(response_message.get('body'), response_message.get('body'))
         self.assertTrue(Message.objects.filter(
             sender=self.user1,
             receiver=self.user2,
-            text=message.text,
+            body=message.body,
         ))
         return
     
@@ -1520,7 +1520,7 @@ class MessageTest(TestCase):
         message = Message(
             sender=self.user1,
             receiver=self.user2,
-            text="TestMessageOne",
+            body="TestMessageOne",
             timestamp=0,
             post=self.post1,
         )
@@ -1529,7 +1529,7 @@ class MessageTest(TestCase):
         self.assertFalse(Message.objects.filter(
             sender=message.sender,
             receiver=message.receiver,
-            text=message.text,
+            body=message.body,
             post=self.post1,
         ))
 
@@ -1545,11 +1545,11 @@ class MessageTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response_message.get('receiver'), response_message.get('receiver'))
         self.assertEqual(response_message.get('sender'), response_message.get('sender'))
-        self.assertEqual(response_message.get('text'), response_message.get('text'))
+        self.assertEqual(response_message.get('body'), response_message.get('body'))
         self.assertTrue(Message.objects.filter(
             sender=self.user1,
             receiver=self.user2,
-            text=message.text,
+            body=message.body,
             post=self.post1,
         ))
         return
@@ -1558,7 +1558,7 @@ class MessageTest(TestCase):
         message = Message(
             sender=self.user1,
             receiver=self.user2,
-            text="TestMessageOne",
+            body="TestMessageOne",
             timestamp=0,
         )
         serialized_message = MessageSerializer(message).data
@@ -1570,7 +1570,7 @@ class MessageTest(TestCase):
         self.assertFalse(Message.objects.filter(
             sender=message.sender,
             receiver=message.receiver,
-            text=message.text,
+            body=message.body,
         ))
 
         request = APIRequestFactory().post(
@@ -1585,7 +1585,7 @@ class MessageTest(TestCase):
         self.assertFalse(Message.objects.filter(
             sender=self.user1,
             receiver=self.user2,
-            text=message.text,
+            body=message.body,
         ))
         return
     
@@ -1593,7 +1593,7 @@ class MessageTest(TestCase):
         message = Message(
             sender=self.user1,
             receiver=self.user2,
-            text="TestMessageOne",
+            body="TestMessageOne",
             timestamp=0,
         )
         serialized_message = MessageSerializer(message).data
@@ -1605,7 +1605,7 @@ class MessageTest(TestCase):
         self.assertFalse(Message.objects.filter(
             sender=message.sender,
             receiver=message.receiver,
-            text=message.text,
+            body=message.body,
         ))
 
         request = APIRequestFactory().post(
@@ -1620,7 +1620,7 @@ class MessageTest(TestCase):
         self.assertFalse(Message.objects.filter(
             sender=self.user1,
             receiver=self.user2,
-            text=message.text,
+            body=message.body,
         ))
         return
     
@@ -1628,7 +1628,7 @@ class MessageTest(TestCase):
         message = Message.objects.create(
             sender=self.user1,
             receiver=self.user2,
-            text="TestMessageOne",
+            body="TestMessageOne",
             timestamp=0,  
         )
 
@@ -1657,7 +1657,7 @@ class WordTest(TestCase):
         self.assertFalse(Word.objects.filter(text__contains=word_to_search))
         Post.objects.create(
             title='FakeTitleForFakePost',
-            text='FakeTextForFakePost',
+            body='FakeTextForFakePost',
             author=self.user,
         )
 
@@ -1682,7 +1682,7 @@ class WordTest(TestCase):
         self.assertFalse(Word.objects.filter(text__contains=word_to_search))
         Post.objects.create(
             title='FakeTitleForFakePost',
-            text='FakeTextForFakePost',
+            body='FakeTextForFakePost',
             author=self.user,
         )
 
@@ -1917,7 +1917,7 @@ class FavoriteTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
         )
         return
@@ -2041,7 +2041,7 @@ class FeatureTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
         )
         return
@@ -2173,7 +2173,7 @@ class MatchRequestTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
         )
         return
@@ -2324,7 +2324,7 @@ class MatchViewTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
             timestamp=0,
         )
@@ -2405,7 +2405,7 @@ class FriendshipViewTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
             timestamp=0,
         )
@@ -2485,7 +2485,7 @@ class MatchedPostsViewTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
             timestamp=0,
         )
@@ -2558,7 +2558,7 @@ class FeaturedPostsViewTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
             timestamp=0,
         )
@@ -2616,7 +2616,7 @@ class FavoritedPostsViewTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
             timestamp=0,
         )
@@ -2675,7 +2675,7 @@ class SubmittedPostsViewTest(TestCase):
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
-            text='FakeTextForFirstPost',
+            body='FakeTextForFirstPost',
             author=self.user1,
             timestamp=0,
         )

@@ -94,12 +94,12 @@ class PostView(viewsets.ModelViewSet):
         if ids:
             queryset = queryset.filter(pk__in=ids)
         if text:
-            text_set = queryset.filter(text__contains=text)
+            text_set = queryset.filter(body__contains=text)
             title_set = queryset.filter(title__contains=text)
             queryset = (text_set | title_set).distinct()
         if start_timestamp and end_timestamp:
             queryset = queryset.filter(
-                timestamp__gte=start_timestamp, 
+                timestamp__gte=start_timestamp,
                 timestamp__lte=end_timestamp)
         if location_description:
             loc_set = queryset.filter(location_description__isnull=False)
