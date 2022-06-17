@@ -41,8 +41,8 @@ class PostView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, PostPermission,)
     serializer_class = PostSerializer
 
-    # Max distance around post is 1 kilometer
-    MAX_DISTANCE = Decimal(1)
+    # Max distance around post is 5 kilometer
+    MAX_DISTANCE = Decimal(5)
 
     def get_locations_nearby_coords(self, latitude, longitude, max_distance=None):
         """
