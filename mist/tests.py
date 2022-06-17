@@ -73,12 +73,12 @@ class PostTest(TestCase):
             body='StartingTextWord MiddleTextWord NumbersWord123',
             author=self.user,
         )
-        self.assertTrue(Word.objects.filter(text='TitleWord'))
-        self.assertTrue(Word.objects.filter(text='StartingTextWord'))
-        self.assertTrue(Word.objects.filter(text='MiddleTextWord'))
-        self.assertTrue(Word.objects.filter(text='NumbersWord123'))
-        self.assertFalse(Word.objects.filter(text='ThisWordDoesNotExist'))
-        self.assertFalse(Word.objects.filter(text='NeitherDoesThisOne'))
+        self.assertTrue(Word.objects.filter(text__iexact='TitleWord'))
+        self.assertTrue(Word.objects.filter(text__iexact='StartingTextWord'))
+        self.assertTrue(Word.objects.filter(text__iexact='MiddleTextWord'))
+        self.assertTrue(Word.objects.filter(text__iexact='NumbersWord123'))
+        self.assertFalse(Word.objects.filter(text__iexact='ThisWordDoesNotExist'))
+        self.assertFalse(Word.objects.filter(text__iexact='NeitherDoesThisOne'))
     
     def test_post_should_create_post_given_valid_post(self):
         test_post = Post(
@@ -127,7 +127,7 @@ class PostTest(TestCase):
         return
     
     def test_post_should_create_words_in_post_given_valid_post(self):
-        self.assertFalse(Word.objects.filter(text='ThisTextNowExists'))
+        self.assertFalse(Word.objects.filter(text='ThisTextNowExists'.lower()))
         test_post = Post.objects.create(
             title='SomeFakeTitle',
             body='ThisTextNowExists',
@@ -149,8 +149,8 @@ class PostTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data)
-        self.assertEqual(response.data[0].get('text'), 'ThisTextNowExists')
-        self.assertTrue(Word.objects.filter(text='ThisTextNowExists'))
+        self.assertEqual(response.data[0].get('text'), 'ThisTextNowExists'.lower())
+        self.assertTrue(Word.objects.filter(text__iexact='ThisTextNowExists'))
         return
 
     def test_get_should_return_all_posts_given_no_parameters(self):
@@ -1654,7 +1654,7 @@ class WordTest(TestCase):
 
     def test_get_should_return_matching_words_given_partial_word(self):
         word_to_search = 'Fake'
-        self.assertFalse(Word.objects.filter(text__contains=word_to_search))
+        self.assertFalse(Word.objects.filter(text__icontains=word_to_search))
         Post.objects.create(
             title='FakeTitleForFakePost',
             body='FakeTextForFakePost',
@@ -1673,13 +1673,13 @@ class WordTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for word in response.data:
-            self.assertFalse(word.get('text').find(word_to_search), -1)
-        self.assertTrue(Word.objects.filter(text__contains=word_to_search))
+            self.assertFalse(word.get('text').find(word_to_search.lower()), -1)
+        self.assertTrue(Word.objects.filter(text__icontains=word_to_search))
         return
     
     def test_get_should_return_matching_words_given_full_word(self):
         word_to_search = 'FakeTitleForFakePost'
-        self.assertFalse(Word.objects.filter(text__contains=word_to_search))
+        self.assertFalse(Word.objects.filter(text__icontains=word_to_search))
         Post.objects.create(
             title='FakeTitleForFakePost',
             body='FakeTextForFakePost',
@@ -1698,8 +1698,8 @@ class WordTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for word in response.data:
-            self.assertFalse(word.get('text').find(word_to_search), -1)
-        self.assertTrue(Word.objects.filter(text__contains=word_to_search))
+            self.assertFalse(word.get('text').find(word_to_search.lower()), -1)
+        self.assertTrue(Word.objects.filter(text__icontains=word_to_search))
         return
 
 class FriendRequestTest(TestCase):

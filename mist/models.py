@@ -51,9 +51,9 @@ class Post(models.Model):
             # for each word ...
             for word in words_in_post:
                 # ... if it doesn't exist create one
-                matching_words = Word.objects.filter(text=word)
+                matching_words = Word.objects.filter(text__iexact=word.lower())
                 if len(matching_words) == 0:
-                    word_obj = Word.objects.create(text=word)
+                    word_obj = Word.objects.create(text=word.lower())
                     word_obj.posts.add(self)
                 # ... increment occurrences
                 else:

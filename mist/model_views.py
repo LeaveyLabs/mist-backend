@@ -94,8 +94,8 @@ class PostView(viewsets.ModelViewSet):
         if ids:
             queryset = queryset.filter(pk__in=ids)
         if text:
-            text_set = queryset.filter(body__contains=text)
-            title_set = queryset.filter(title__contains=text)
+            text_set = queryset.filter(body__icontains=text)
+            title_set = queryset.filter(title__icontains=text)
             queryset = (text_set | title_set).distinct()
         if start_timestamp and end_timestamp:
             queryset = queryset.filter(
@@ -104,7 +104,7 @@ class PostView(viewsets.ModelViewSet):
         if location_description:
             loc_set = queryset.filter(location_description__isnull=False)
             queryset = loc_set.filter(
-                location_description__contains=location_description)
+                location_description__icontains=location_description)
         if author:
             queryset = queryset.filter(author=author)
         # order
@@ -121,7 +121,7 @@ class WordView(generics.ListAPIView):
         text = self.request.query_params.get('text')
         # filter
         if text == None: return []
-        return Word.objects.filter(text__contains=text
+        return Word.objects.filter(text__icontains=text
         ).annotate(post_count=Count('posts')
         ).filter(post_count__gt=0)
 
