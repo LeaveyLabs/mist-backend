@@ -502,15 +502,15 @@ class UserViewGetTest(TestCase):
         non_matching_user.save()
         auth_token = Token.objects.create(user=non_matching_user)
 
-        user_serializer = ReadOnlyUserSerializer(self.valid_user)
+        user_serializer = ReadOnlyUserSerializer(non_matching_user)
 
         request = APIRequestFactory().get(
             'api/users/',
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
-        response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
-
+        response = UserView.as_view({'get':'retrieve'})(request, pk=non_matching_user.id)
+        
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, user_serializer.data)
         return
@@ -523,7 +523,7 @@ class UserViewGetTest(TestCase):
         )
         response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
         response_user = response.data
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response_user, self.user_serializer.data)
         return

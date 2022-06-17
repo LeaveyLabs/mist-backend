@@ -29,6 +29,13 @@ class UserView(viewsets.ModelViewSet):
     permission_classes = (UserPermissions, )
     serializer_class = CompleteUserSerializer
 
+    def get_object(self):
+        requested_user = super().get_object()
+        requesting_user = get_user_from_request(self.request)
+        if requesting_user == requested_user:
+            self.serializer_class = CompleteUserSerializer
+        return requested_user
+
     def get_queryset(self):
         """
         Returns users matching the username, first_name, last_name
