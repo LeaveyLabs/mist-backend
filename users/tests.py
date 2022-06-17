@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from tempfile import TemporaryFile
 from django.core import mail, cache
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -227,6 +227,34 @@ class ValidateUserEmailViewTest(TestCase):
         self.assertFalse(EmailAuthentication.objects.get(
             email__iexact=email_to_validate).validated)
         return
+    
+    def test_post_should_not_accept_expired_code(self):
+        email_to_validate = 'ValidateThisFakeEmail@usc.edu'
+        now = datetime.now().timestamp()
+        ten_minutes = timedelta(minutes=10).total_seconds()
+        registration = EmailAuthentication(
+            email=email_to_validate,
+            code_time=now-ten_minutes,
+        )
+        registration.save()
+
+        self.assertFalse(EmailAuthentication.objects.get(
+            email=email_to_validate).validated)
+
+        request = APIRequestFactory().post(
+            'api-validate/',
+            {
+                'email': email_to_validate,
+                'code': int(registration.code),
+            },
+            format='json',
+        )
+        response = ValidateUserEmailView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(EmailAuthentication.objects.get(
+            email__iexact=email_to_validate).validated)
+        return
 
 class ValidateUsernameViewTest(TestCase):
     def setUp(self):
@@ -333,6 +361,44 @@ class UserViewPostTest(TestCase):
             last_name=self.fake_last_name,
             date_of_birth=self.fake_date_of_birth,
         ))
+
+        request = APIRequestFactory().post(
+            'api/users/',
+            {
+                'email': 'thisEmailDoesNotExist@usc.edu',
+                'username': self.fake_username,
+                'password': self.fake_password,
+                'first_name': self.fake_first_name,
+                'last_name': self.fake_last_name,
+                'date_of_birth': self.fake_date_of_birth,
+            },
+            format='json',
+        )
+        response = UserView.as_view({'post':'create'})(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(
+            email='thisEmailDoesNotExist@usc.edu',
+            username=self.fake_username,
+            first_name=self.fake_first_name,
+            last_name=self.fake_last_name,
+            date_of_birth=self.fake_date_of_birth,
+        ))
+        return
+    
+    def test_post_should_not_create_user_given_expired_validation(self):
+        self.assertFalse(User.objects.filter(
+            email='thisEmailDoesNotExist@usc.edu',
+            username=self.fake_username,
+            first_name=self.fake_first_name,
+            last_name=self.fake_last_name,
+            date_of_birth=self.fake_date_of_birth,
+        ))
+
+        ten_minutes = timedelta(minutes=10).total_seconds()
+
+        self.email_auth.validation_time -= ten_minutes
+        self.email_auth.save()
 
         request = APIRequestFactory().post(
             'api/users/',
@@ -1085,6 +1151,24 @@ class ValidatePasswordResetViewTest(TestCase):
         return
 
     def test_post_should_not_validate_given_invalid_code(self):
+        ten_minutes = datetime.now().timestamp()
+        self.unvalidated_reset_request.code_time -= ten_minutes
+        self.unvalidated_reset_request.save()
+
+        request = APIRequestFactory().post(
+            'api/validate-reset-password/',
+            {
+                'email': self.unvalidated_reset_request.email,
+                'code': self.unvalidated_reset_request.code,
+            },
+        )
+        response = ValidatePasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(PasswordReset.objects.get(email=self.user1.email).validated)
+        return
+    
+    def test_post_should_not_validate_given_expired_code(self):
         invalid_code = "thisWillNeverEverBeAValidCode"
 
         request = APIRequestFactory().post(
@@ -1198,6 +1282,28 @@ class FinalizePasswordResetViewTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(self.user1.check_password(self.new_weak_password))
+        self.assertTrue(self.user1.check_password(self.old_password))
+        return
+
+    def test_post_should_not_finalize_given_expired_validation_and_strong_password(self):
+        ten_minutes = datetime.now().timestamp()
+
+        reset_request = self.unvalidated_reset_request
+        reset_request.validated = True
+        reset_request.validation_time = datetime.now().timestamp() - ten_minutes
+        reset_request.save()
+
+        request = APIRequestFactory().post(
+            'api/finalize-reset-password/',
+            {
+                'email': reset_request.email,
+                'password': self.new_strong_password,
+            },
+        )
+        response = FinalizePasswordResetView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(self.user1.check_password(self.new_strong_password))
         self.assertTrue(self.user1.check_password(self.old_password))
         return
     
