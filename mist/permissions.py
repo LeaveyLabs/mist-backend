@@ -7,16 +7,22 @@ def requested_user_is_the_posted_user(request, user_property):
     requesting_user = get_user_from_request(request)
     posted_user = request.data.get(user_property)
     if not requesting_user or not posted_user: return False 
-    posted_user_pk = int(posted_user)
-    return requesting_user.pk == posted_user_pk
+    try:
+        posted_user_pk = int(posted_user)
+        return requesting_user.pk == posted_user_pk
+    except ValueError as e:
+        return False
 
 
 def requested_user_is_the_queried_user(request, user_property):
     requesting_user = get_user_from_request(request)
     posted_user = request.query_params.get(user_property)
     if not requesting_user or not posted_user: return False 
-    posted_user_pk = int(posted_user)
-    return requesting_user.pk == posted_user_pk
+    try:
+        posted_user_pk = int(posted_user)
+        return requesting_user.pk == posted_user_pk
+    except ValueError as e:
+        return False
 
 # ModelViews
 class PostPermission(permissions.BasePermission):
