@@ -319,6 +319,46 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts_from_usc, response_posts)
         return
     
+    def test_get_should_return_posts_on_exact_coordinates_given_latitude_longitude_radius_zero(self):
+        super_small_radius = 0.00000000001
+
+        post_from_usc_exact = Post.objects.create(
+            title='FakeTitleOfUSCPost',
+            body='HereIsAPostFromUSC',
+            timestamp=0,
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
+            author=self.user,
+        )
+        post_from_usc_inexact = Post.objects.create(
+            title='FakeTitleOfUSCPost',
+            body='HereIsAPostFromUSC',
+            timestamp=0,
+            latitude=self.USC_LATITUDE+Decimal(.001),
+            longitude=self.USC_LONGITUDE+Decimal(.001),
+            author=self.user,
+        )
+        
+        serialized_posts_from_usc = [PostSerializer(post_from_usc_exact).data]
+
+        request = APIRequestFactory().get(
+            '/api/posts',
+            {
+                'latitude': self.USC_LATITUDE,
+                'longitude': self.USC_LONGITUDE,
+                'radius': super_small_radius,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts_from_usc, response_posts)
+        return
+    
     def test_get_should_return_posts_with_matching_loc_description_given_loc_description(self):
         post_from_north_pole = Post.objects.create(
             title='FakeTitleOfNorthPolePost',

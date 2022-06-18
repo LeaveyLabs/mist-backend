@@ -44,7 +44,7 @@ class PostView(viewsets.ModelViewSet):
     # Max distance around post is 5 kilometer
     MAX_DISTANCE = Decimal(5)
 
-    def get_locations_nearby_coords(self, latitude, longitude, max_distance=None):
+    def get_locations_nearby_coords(self, latitude, longitude, max_distance=MAX_DISTANCE):
         """
         Return objects sorted by distance to specified coordinates
         which distance is less than max_distance given in kilometers
@@ -66,9 +66,8 @@ class PostView(viewsets.ModelViewSet):
         .filter(longitude__isnull=False)\
         .annotate(distance=distance_raw_sql)\
         .order_by('distance')
-        if max_distance is not None:
-            # distance must be less than max distance
-            qs = qs.filter(distance__lt=max_distance)
+        # distance must be less than max distance
+        qs = qs.filter(distance__lt=max_distance)
         return qs
 
     def get_queryset(self):
@@ -81,6 +80,7 @@ class PostView(viewsets.ModelViewSet):
         ids = self.request.query_params.getlist('ids')
         latitude = self.request.query_params.get('latitude')
         longitude = self.request.query_params.get('longitude')
+        radius = self.request.query_params.get('radius')
         text = self.request.query_params.get('text')
         start_timestamp = self.request.query_params.get('start_timestamp')
         end_timestamp = self.request.query_params.get('end_timestamp')
@@ -90,7 +90,7 @@ class PostView(viewsets.ModelViewSet):
         queryset = Post.objects.all()
         if latitude and longitude:
             queryset = self.get_locations_nearby_coords(
-                latitude, longitude, max_distance=self.MAX_DISTANCE)
+                latitude, longitude, radius or self.MAX_DISTANCE)
         if ids:
             queryset = queryset.filter(pk__in=ids)
         if text:
