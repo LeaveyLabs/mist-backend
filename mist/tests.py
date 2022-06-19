@@ -60,6 +60,9 @@ class PostTest(TestCase):
         )
         return
     
+    def test_calculate_votecount_should_return_votecount(self):
+        return self.assertEquals(self.post1.calculate_votecount(), 1)
+
     def test_calculate_averagerating_should_return_average_rating(self):
         return self.assertEquals(self.post1.calculate_averagerating(), 
             self.vote.rating)
@@ -188,6 +191,23 @@ class PostTest(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertCountEqual(serialized_posts, response_posts)
+        return
+    
+    def test_get_should_return_all_computed_properties(self):
+        request = APIRequestFactory().get(
+            '/api/posts',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for response_post in response_posts:
+            self.assertTrue('votecount' in response_post)
+            self.assertTrue('commentcount' in response_post)
+            self.assertTrue('averagerating' in response_post)
         return
     
     def test_get_should_return_post_with_matching_id_given_id(self):

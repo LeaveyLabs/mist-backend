@@ -25,6 +25,9 @@ class Post(models.Model):
     def _str_(self):
         return self.title
     
+    def calculate_votecount(self):
+        return Vote.objects.filter(post_id=self.pk).count()
+    
     def calculate_averagerating(self):
         votes = Vote.objects.filter(post_id=self.pk)
         if len(votes) == 0: return 0

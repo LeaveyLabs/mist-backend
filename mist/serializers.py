@@ -16,13 +16,14 @@ class WordSerializer(serializers.ModelSerializer):
         return obj.calculate_occurrences()
 
 class PostSerializer(serializers.ModelSerializer):
+    votecount = serializers.ReadOnlyField(source='calculate_votecount')
     averagerating = serializers.ReadOnlyField(source='calculate_averagerating')
     commentcount = serializers.ReadOnlyField(source='calculate_commentcount')
 
     class Meta:
         model = Post
         fields = ('id', 'title', 'body', 'latitude', 'longitude', 'location_description',
-        'timestamp', 'author', 'averagerating', 'commentcount', )
+        'timestamp', 'author', 'averagerating', 'commentcount', 'votecount')
 
 class VoteSerializer(serializers.ModelSerializer):
     class Meta:
