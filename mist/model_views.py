@@ -1,6 +1,4 @@
 from decimal import Decimal
-from re import match
-from django.db.models import Avg, Count
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
 from mist.permissions import BlockPermission, CommentPermission, FavoritePermission, FlagPermission, FriendRequestPermission, MatchRequestPermission, MessagePermission, PostPermission, TagPermission, VotePermission

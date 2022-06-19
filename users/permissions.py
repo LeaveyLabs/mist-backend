@@ -1,5 +1,4 @@
 from rest_framework import permissions
-from rest_framework.authtoken.models import Token
 
 from users.generics import get_user_from_request
 
