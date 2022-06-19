@@ -80,6 +80,26 @@ class PostTest(TestCase):
         self.assertFalse(Word.objects.filter(text__iexact='ThisWordDoesNotExist'))
         self.assertFalse(Word.objects.filter(text__iexact='NeitherDoesThisOne'))
     
+    def test_post_should_increment_subwords_in_post(self):
+        Post.objects.create(
+            title='w',
+            body='wo',
+            author=self.user,
+        )
+        Post.objects.create(
+            title='wor',
+            body='word',
+            author=self.user,
+        )
+        word1 = Word.objects.get(text__iexact='w')
+        word2 = Word.objects.get(text__iexact='wo')
+        word3 = Word.objects.get(text__iexact='wor')
+        word4 = Word.objects.get(text__iexact='word')
+        self.assertEqual(word1.calculate_occurrences(), 2)
+        self.assertEqual(word2.calculate_occurrences(), 2)
+        self.assertEqual(word3.calculate_occurrences(), 1)
+        self.assertEqual(word4.calculate_occurrences(), 1)
+    
     def test_post_should_create_post_given_valid_post(self):
         test_post = Post(
             title='SomeFakeTitle',
@@ -138,10 +158,7 @@ class PostTest(TestCase):
         )
 
         request = APIRequestFactory().get(
-            '/api/words',
-            {
-                'text': test_post.body,
-            },
+            f'/api/words?search_word={test_post.body}',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
@@ -213,11 +230,12 @@ class PostTest(TestCase):
         self.assertCountEqual(serialized_posts, response_posts)
         return
     
-    def test_get_should_return_posts_with_matching_text_given_text(self):
+    def test_get_should_return_posts_with_matching_word_given_word(self):
         serialized_posts = [PostSerializer(self.post1).data]
+        word = self.post1.body.split(' ')[0]
         
         request = APIRequestFactory().get(
-            f'/api/posts?text={self.post1.body}',
+            f'/api/posts?words={word}',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
@@ -229,14 +247,37 @@ class PostTest(TestCase):
         self.assertCountEqual(serialized_posts, response_posts)
         return
     
-    def test_get_should_return_posts_with_partially_matching_text_given_partial_text(self):
-        serialized_posts = [PostSerializer(self.post1).data]
-
-        mid_point_of_text = len(self.post1.body)//2
-        half_of_post_text = self.post1.body[mid_point_of_text:]
+    def test_get_should_return_posts_with_matching_words_given_full_words(self):
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+        ]
+        word1 = self.post1.body.split(' ')[0]
+        word2 = self.post1.title.split(' ')[0]
 
         request = APIRequestFactory().get(
-            f'/api/posts?text={half_of_post_text}',
+            f'/api/posts?words={word1}&words={word2}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+ 
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertCountEqual(serialized_posts, response_posts)
+        return
+    
+    def test_get_should_return_posts_with_matching_words_given_partial_words(self):
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
+        word1 = "Fake"
+        word2 = "Text"
+
+        request = APIRequestFactory().get(
+            f'/api/posts?words={word1}&words={word2}',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
@@ -1694,7 +1735,6 @@ class WordTest(TestCase):
 
     def test_get_should_return_matching_words_given_partial_word(self):
         word_to_search = 'Fake'
-        self.assertFalse(Word.objects.filter(text__icontains=word_to_search))
         Post.objects.create(
             title='FakeTitleForFakePost',
             body='FakeTextForFakePost',
@@ -1702,10 +1742,7 @@ class WordTest(TestCase):
         )
 
         request = APIRequestFactory().get(
-            '/api/words',
-            {
-                'text': word_to_search,
-            },
+            f'/api/words?search_word={word_to_search}',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
@@ -1713,13 +1750,12 @@ class WordTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for word in response.data:
-            self.assertFalse(word.get('text').find(word_to_search.lower()), -1)
-        self.assertTrue(Word.objects.filter(text__icontains=word_to_search))
+            self.assertTrue(word_to_search.lower() in word.get('text'))
+            self.assertEqual(word.get('occurrences'), 1)
         return
     
     def test_get_should_return_matching_words_given_full_word(self):
         word_to_search = 'FakeTitleForFakePost'
-        self.assertFalse(Word.objects.filter(text__icontains=word_to_search))
         Post.objects.create(
             title='FakeTitleForFakePost',
             body='FakeTextForFakePost',
@@ -1727,10 +1763,7 @@ class WordTest(TestCase):
         )
 
         request = APIRequestFactory().get(
-            '/api/words',
-            {
-                'text': word_to_search,
-            },
+            f'/api/words?search_word={word_to_search}',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
@@ -1738,9 +1771,56 @@ class WordTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for word in response.data:
-            self.assertFalse(word.get('text').find(word_to_search.lower()), -1)
-        self.assertTrue(Word.objects.filter(text__icontains=word_to_search))
+            self.assertTrue(word_to_search.lower() in word.get('text'))
+            self.assertEqual(word.get('occurrences'), 1)
         return
+    
+    def test_get_should_return_non_zero_occurrences_given_partial_search_word_and_multiple_wrapper_words_in_post(self):
+        word_to_search = 'Fake'
+        wrapper_word1 = 'Title'
+        wrapper_word2 = 'Post'
+        Post.objects.create(
+            title='FakeTitleForFakePost',
+            body='FakeTextForFakePost',
+            author=self.user,
+        )
+
+        request = APIRequestFactory().get(
+            f'/api/words?search_word={word_to_search}&wrapper_words={wrapper_word1}&wrapper_words={wrapper_word2}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+        response = WordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for word in response.data:
+            self.assertTrue(word_to_search.lower() in word.get('text'))
+            self.assertEqual(word.get('occurrences'), 1)
+        return
+
+    def test_get_should_return_zero_occurrences_given_search_word_and_multiple_wrapper_words_not_in_post(self):
+        word_to_search = 'Fake'
+        wrapper_word1 = 'ThisWordDoesNotExist'
+        wrapper_word2 = 'ThisWordDoesNotExistEither'
+        Post.objects.create(
+            title='FakeTitleForFakePost',
+            body='FakeTextForFakePost',
+            author=self.user,
+        )
+
+        request = APIRequestFactory().get(
+            f'/api/words?search_word={word_to_search}&wrapper_words={wrapper_word1}&wrapper_words={wrapper_word2}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+        response = WordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for word in response.data:
+            self.assertTrue(word_to_search.lower() in word.get('text'))
+            self.assertEqual(word.get('occurrences'), 0)
+        return
+
 
 class FriendRequestTest(TestCase):
     def setUp(self):

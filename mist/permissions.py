@@ -1,4 +1,3 @@
-from requests import RequestException
 from rest_framework import permissions
 from mist.models import Block, FriendRequest
 from users.generics import get_user_from_request

@@ -81,7 +81,7 @@ class PostView(viewsets.ModelViewSet):
         latitude = self.request.query_params.get('latitude')
         longitude = self.request.query_params.get('longitude')
         radius = self.request.query_params.get('radius')
-        text = self.request.query_params.get('text')
+        words = self.request.query_params.getlist('words')
         start_timestamp = self.request.query_params.get('start_timestamp')
         end_timestamp = self.request.query_params.get('end_timestamp')
         location_description = self.request.query_params.get('location_description')
@@ -93,10 +93,12 @@ class PostView(viewsets.ModelViewSet):
                 latitude, longitude, radius or self.MAX_DISTANCE)
         if ids:
             queryset = queryset.filter(pk__in=ids)
-        if text:
-            text_set = queryset.filter(body__icontains=text)
-            title_set = queryset.filter(title__icontains=text)
-            queryset = (text_set | title_set).distinct()
+        if words:
+            for word in words:
+                word_in_title = Post.objects.filter(title__icontains=word)
+                word_in_body = Post.objects.filter(body__icontains=word)
+                word_postset = (word_in_title | word_in_body).distinct()
+                queryset = queryset.intersection(word_postset)
         if start_timestamp and end_timestamp:
             queryset = queryset.filter(
                 timestamp__gte=start_timestamp,
@@ -108,9 +110,7 @@ class PostView(viewsets.ModelViewSet):
         if author:
             queryset = queryset.filter(author=author)
         # order
-        return queryset.annotate(
-            vote_count=Avg('vote__rating', default=0)
-            ).order_by('-vote_count')
+        return queryset
 
 class WordView(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
@@ -118,12 +118,17 @@ class WordView(generics.ListAPIView):
 
     def get_queryset(self):
         # parameters
-        text = self.request.query_params.get('text')
+        search_word = self.request.query_params.get('search_word')
+        wrapper_words = self.request.query_params.getlist('wrapper_words')
         # filter
-        if text == None: return []
-        return Word.objects.filter(text__icontains=text
-        ).annotate(post_count=Count('posts')
-        ).filter(post_count__gt=0)
+        if search_word == None: 
+            return Word.objects.none()
+        
+        search_word_objs = Word.objects.filter(text__icontains=search_word)
+        for search_word_obj in search_word_objs:
+            search_word_obj.occurrences = search_word_obj.calculate_occurrences(wrapper_words)
+        
+        return search_word_objs
 
 class CommentView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, CommentPermission)

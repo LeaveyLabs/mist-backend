@@ -51,20 +51,24 @@ class Post(models.Model):
             # for each word ...
             for word in words_in_post:
                 # ... if it doesn't exist create one
-                matching_words = Word.objects.filter(text__iexact=word.lower())
-                if len(matching_words) == 0:
-                    word_obj = Word.objects.create(text=word.lower())
-                    word_obj.posts.add(self)
-                # ... increment occurrences
-                else:
-                    matching_words[0].posts.add(self)
+                matching_word = Word.objects.filter(text__iexact=word.lower()).first()
+                if not matching_word:
+                    matching_word = Word.objects.create(text=word.lower())
 
 class Word(models.Model):
     text = models.CharField(max_length=100)
     posts = models.ManyToManyField(Post)
-
-    def calculate_occurrences(self):
-        return self.posts.count()
+    
+    def calculate_occurrences(self, wrapper_words=[]):
+        word_in_title = Post.objects.filter(title__icontains=self.text)
+        word_in_body = Post.objects.filter(body__icontains=self.text)
+        postset = (word_in_title | word_in_body).distinct()
+        for wrapper_word in wrapper_words:
+            wrapper_in_title = Post.objects.filter(title__icontains=wrapper_word)
+            wrapper_in_body = Post.objects.filter(body__icontains=wrapper_word)
+            wrapper_postset = (wrapper_in_title | wrapper_in_body).distinct()
+            postset = postset.intersection(wrapper_postset)
+        return postset.count()
 
 class Vote(models.Model):
     MIN_RATING = 0

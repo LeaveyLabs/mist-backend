@@ -2,11 +2,15 @@ from rest_framework import serializers
 from .models import Block, Favorite, Feature, Flag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, Vote, Word
 
 class WordSerializer(serializers.ModelSerializer):
-    occurrences = serializers.ReadOnlyField(source='calculate_occurrences')
+    occurrences = serializers.SerializerMethodField()
 
     class Meta:
         model = Word
         fields = ('id', 'text', 'occurrences')
+    
+    def get_occurrences(self, obj):
+        if obj.occurrences != None: return obj.occurrences
+        return obj.calculate_occurrences()
 
 class PostSerializer(serializers.ModelSerializer):
     averagerating = serializers.ReadOnlyField(source='calculate_averagerating')
