@@ -772,10 +772,13 @@ class CommentTest(TestCase):
         self.user = User(
             email='TestUser@usc.edu',
             username='TestUser',
+            first_name='Test',
+            last_name='User',
             date_of_birth=date(2000, 1, 1),
         )
         self.user.set_password("TestPassword@98374")
         self.user.save()
+        self.read_only_user = ReadOnlyUserSerializer(self.user)
         self.auth_token = Token.objects.create(user=self.user)
 
         self.post = Post.objects.create(
@@ -800,7 +803,7 @@ class CommentTest(TestCase):
         request = APIRequestFactory().get(
             '/api/comments',
             {
-                'post':self.post.pk,
+                'post': self.post.pk,
             },
             format="json",
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
@@ -810,7 +813,9 @@ class CommentTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(serialized_comment, response_comment)
-        self.assertIn('author_username', response_comment)
+        self.assertIn('author', response_comment)
+        self.assertIn('read_only_author', response_comment)
+        self.assertEqual(self.read_only_user.data, response_comment.get('read_only_author'))
         return
     
     def test_get_should_not_return_comment_given_invalid_post_pk(self):
@@ -827,6 +832,8 @@ class CommentTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response_comment)
+        self.assertNotIn('author', response_comment)
+        self.assertNotIn('read_only_author', response_comment)
         return
 
     def test_post_should_create_comment_given_valid_comment(self):

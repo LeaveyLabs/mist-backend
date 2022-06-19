@@ -1,4 +1,7 @@
 from rest_framework import serializers
+from users.models import User
+
+from users.serializers import ReadOnlyUserSerializer
 from .models import Block, Favorite, Feature, Flag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, Vote, Word
 
 class WordSerializer(serializers.ModelSerializer):
@@ -52,19 +55,16 @@ class MatchRequestSerializer(serializers.ModelSerializer):
         fields = ('id', 'match_requesting_user', 'match_requested_user', 'post', 'timestamp')
 
 class CommentSerializer(serializers.ModelSerializer):
-    author_picture = serializers.ReadOnlyField(source='author.picture')
-    author_username = serializers.ReadOnlyField(source='author.username')
+    read_only_author = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ('id', 'body', 'timestamp', 'post', 'author', 
-        'author_picture', 'author_username')
+        fields = ('id', 'body', 'timestamp', 'post', 'author', 'read_only_author')
 
-    def to_representation(self, instance):
-        repr = super().to_representation(instance)
-        pic = repr.pop('author_picture')
-        if pic: repr['author_picture'] = pic.url
-        return repr
+    def get_read_only_author(self, obj):
+        author_pk = obj.author.pk
+        author_instance = User.objects.get(pk=author_pk)
+        return ReadOnlyUserSerializer(author_instance).data
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
