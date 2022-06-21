@@ -87,9 +87,11 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         return User.objects.create(**validated_data)
     
     def update(self, instance, validated_data):
+        if validated_data.get('password'):
+            instance.set_password(validated_data.get('password'))
         instance.email = validated_data.get('email', instance.email)
         instance.username = validated_data.get('username', instance.username)
-        instance.set_password(validated_data.get('password', instance.password))
+        instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
         instance.picture = validated_data.get('picture', instance.picture)
         instance.save()
         return instance

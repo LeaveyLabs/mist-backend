@@ -915,9 +915,16 @@ class UserViewPatchTest(TestCase):
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(fake_new_username, User.objects.get(pk=self.valid_user.pk).username)
+        self.assertEqual(fake_new_username, patched_user.username)
+        self.assertTrue(patched_user.check_password(self.password))
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
         return
     
     def test_patch_should_not_update_username_given_invalid_username(self):
@@ -932,9 +939,16 @@ class UserViewPatchTest(TestCase):
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertTrue(patched_user.check_password(self.password))
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
         return
     
     def test_patch_should_update_password_given_valid_password(self):
@@ -956,6 +970,7 @@ class UserViewPatchTest(TestCase):
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIsNone(
@@ -964,6 +979,12 @@ class UserViewPatchTest(TestCase):
         self.assertIsNotNone(
             authenticate(username=self.valid_user.username, 
                         password=fake_new_password))
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
         return
     
     def test_patch_should_not_update_password_given_weak_password(self):
@@ -985,6 +1006,7 @@ class UserViewPatchTest(TestCase):
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIsNone(
@@ -993,6 +1015,13 @@ class UserViewPatchTest(TestCase):
         self.assertIsNotNone(
             authenticate(username=self.valid_user.username, 
                         password=self.password))
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertTrue(patched_user.check_password(self.password))
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
         return
 
     def test_patch_should_not_update_first_name_given_first_name(self):
@@ -1009,9 +1038,15 @@ class UserViewPatchTest(TestCase):
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.valid_user.first_name, User.objects.get(pk=self.valid_user.pk).first_name)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
         return
     
     def test_patch_should_update_last_name_given_last_name(self):
@@ -1028,9 +1063,15 @@ class UserViewPatchTest(TestCase):
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
         return
 
     def test_patch_should_update_picture_given_valid_picture(self):
@@ -1040,7 +1081,8 @@ class UserViewPatchTest(TestCase):
             b'\x02\x4c\x01\x00\x3b'
         )
         image_file = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
-        self.assertFalse(User.objects.get(pk=self.valid_user.pk).picture)
+        pre_patched_user = User.objects.get(pk=self.valid_user.pk)
+        self.assertFalse(pre_patched_user.picture)
 
         request = APIRequestFactory().patch(
             'api/users/', 
@@ -1049,14 +1091,21 @@ class UserViewPatchTest(TestCase):
             HTTP_AUTHORIZATION=f"Token {self.auth_token}"
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(User.objects.get(pk=self.valid_user.pk).picture)
+        self.assertTrue(patched_user.picture)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         return
     
-    def test_patch_should_update_picture_given_invalid_picture(self):
+    def test_patch_should_not_update_picture_given_invalid_picture(self):
         ten_mb_limit = (1024 * 1024 * 10)
-        self.assertFalse(User.objects.get(pk=self.valid_user.pk).picture)
+        pre_patched_user = User.objects.get(pk=self.valid_user.pk)
+        self.assertFalse(pre_patched_user.picture)
 
         with TemporaryFile() as temp_file:
             temp_file.seek(ten_mb_limit)
@@ -1069,9 +1118,15 @@ class UserViewPatchTest(TestCase):
                 HTTP_AUTHORIZATION=f"Token {self.auth_token}"
             )
             response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+            patched_user = User.objects.get(pk=self.valid_user.pk)
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-            self.assertFalse(User.objects.get(pk=self.valid_user.pk).picture)
+            self.assertFalse(patched_user.picture)
+            self.assertEqual(self.valid_user.email, patched_user.email)
+            self.assertEqual(self.valid_user.username, patched_user.username)
+            self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+            self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+            self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         return
 
 class RequestPasswordResetViewTest(TestCase):
