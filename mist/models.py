@@ -14,7 +14,7 @@ class Post(models.Model):
     USC_LONGITUDE = Decimal(118.2851)
 
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
-    title = models.CharField(max_length=40)
+    title = models.CharField(max_length=50)
     body = models.CharField(max_length=1000)
     location_description = models.CharField(max_length=40, null=True)
     latitude = models.FloatField(null=True)
