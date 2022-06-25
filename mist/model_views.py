@@ -1,5 +1,7 @@
 from decimal import Decimal
 from django.db.models.expressions import RawSQL
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics
 from mist.permissions import BlockPermission, CommentPermission, FavoritePermission, FlagPermission, FriendRequestPermission, MatchRequestPermission, MessagePermission, PostPermission, TagPermission, VotePermission
 from rest_framework.permissions import IsAuthenticated
@@ -199,6 +201,19 @@ class BlockView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, BlockPermission)
     serializer_class = BlockSerializer
 
+    def get_object(self):
+        try: 
+            return super().get_object()
+        except Http404:
+            blocked_user = self.request.query_params.get("blocked_user")
+            blocking_user = self.request.query_params.get("blocking_user")
+            matching_block = get_object_or_404(
+                Block.objects.all(), 
+                blocked_user=blocked_user,
+                blocking_user=blocking_user)
+            self.check_object_permissions(self.request, matching_block)
+            return matching_block
+
     def get_queryset(self):
         blocked_user = self.request.query_params.get("blocked_user")
         blocking_user = self.request.query_params.get("blocking_user")
@@ -254,6 +269,19 @@ class MatchRequestView(viewsets.ModelViewSet):
 class FavoriteView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, FavoritePermission)
     serializer_class = FavoriteSerializer
+
+    def get_object(self):
+        try: 
+            return super().get_object()
+        except Http404:
+            favoriting_user = self.request.query_params.get("favoriting_user")
+            post = self.request.query_params.get("post")
+            matching_block = get_object_or_404(
+                Favorite.objects.all(), 
+                favoriting_user=favoriting_user,
+                post=post)
+            self.check_object_permissions(self.request, matching_block)
+            return matching_block
     
     def get_queryset(self):
         favoriting_user = self.request.query_params.get("favoriting_user")
