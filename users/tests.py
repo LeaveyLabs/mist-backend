@@ -68,8 +68,8 @@ class ThrottleTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         return
 
-    def test_should_throttle_authenticated_user_above_100_calls(self):
-        number_of_calls = 100
+    def test_should_throttle_authenticated_user_above_200_calls(self):
+        number_of_calls = 200
         self.run_fake_authenticated_user_request(number_of_calls)
 
         number_of_email_registration_requests = len(mail.outbox)
@@ -88,8 +88,8 @@ class ThrottleTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         return
 
-    def test_should_not_throttle_authenticated_user_at_or_below_100_calls(self):
-        number_of_calls = 99
+    def test_should_not_throttle_authenticated_user_at_or_below_200_calls(self):
+        number_of_calls = 199
         self.run_fake_authenticated_user_request(number_of_calls)
 
         number_of_email_registration_requests = len(mail.outbox)
