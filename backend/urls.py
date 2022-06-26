@@ -19,8 +19,18 @@ from django.conf.urls.static import static
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
-from mist.accessory_views import FavoritedPostsView, FeaturedPostsView, FriendPostsView, FriendshipView, MatchView, MatchedPostsView, SubmittedPostsView
-from mist.model_views import BlockView, FavoriteView, FeatureView, FlagView, FriendRequestView, MatchRequestView, PostView, CommentView, MessageView, TagView, VoteView, WordView
+from mist.views.block import BlockView
+from mist.views.comment import CommentView
+from mist.views.favorite import FavoriteView
+from mist.views.feature import FeatureView
+from mist.views.flag import FlagView
+from mist.views.friend import FriendRequestView, FriendshipView
+from mist.views.match import MatchRequestView, MatchView
+from mist.views.message import MessageView
+from mist.views.post import FavoritedPostsView, FeaturedPostsView, FriendPostsView, MatchedPostsView, PostView, SubmittedPostsView
+from mist.views.tag import TagView
+from mist.views.vote import VoteView
+from mist.views.word import WordView
 from users.views import FinalizePasswordResetView, RegisterUserEmailView, RequestPasswordResetView, ValidatePasswordResetView, ValidateUserEmailView, UserView, ValidateUsernameView
 
 # Models
