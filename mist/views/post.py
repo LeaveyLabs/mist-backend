@@ -81,7 +81,6 @@ class PostView(viewsets.ModelViewSet):
                 location_description__icontains=location_description)
         if author:
             queryset = queryset.filter(author=author)
-        # order
         return queryset
 
 

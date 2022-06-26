@@ -84,6 +84,10 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         hashed_password = make_password(raw_password)
         validated_data.update({'password': hashed_password})
 
+        picture = validated_data.get('picture')
+        if not picture:
+            raise serializers.ValidationError({"picture": "Picture is required."})
+
         return User.objects.create(**validated_data)
     
     def update(self, instance, validated_data):

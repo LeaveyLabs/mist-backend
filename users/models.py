@@ -11,9 +11,17 @@ class User(AbstractUser):
         new_filename = f'{instance.id}.{ext}'
         return os.path.join('profiles', new_filename)
 
+    male = 'm'
+    female = 'f'
+    SEXES = (
+        (male, male),
+        (female, female),
+    )
+
     date_of_birth = models.DateField()
     picture = models.ImageField(upload_to=profile_picture_filepath, null=True)
     phone_number = PhoneNumberField(null=True)
+    sex = models.CharField(max_length=1, choices=SEXES, null=True)
 
     class Meta:
         db_table = 'auth_user'
