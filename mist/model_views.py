@@ -148,6 +148,23 @@ class VoteView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, VotePermission)
     serializer_class = VoteSerializer
 
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
+            return super().get_object()
+        else:
+            return self.get_object_by_query_params()
+            
+    def get_object_by_query_params(self):
+        voter = self.request.query_params.get("voter")
+        post = self.request.query_params.get("post")
+        matching_vote = get_object_or_404(
+            Vote.objects.all(), 
+            voter=voter,
+            post=post)
+        self.check_object_permissions(self.request, matching_vote)
+        return matching_vote
+
     def get_queryset(self):
         """
         If parameters are missing, return all votes.
@@ -202,17 +219,21 @@ class BlockView(viewsets.ModelViewSet):
     serializer_class = BlockSerializer
 
     def get_object(self):
-        try: 
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
             return super().get_object()
-        except Http404:
-            blocked_user = self.request.query_params.get("blocked_user")
-            blocking_user = self.request.query_params.get("blocking_user")
-            matching_block = get_object_or_404(
-                Block.objects.all(), 
-                blocked_user=blocked_user,
-                blocking_user=blocking_user)
-            self.check_object_permissions(self.request, matching_block)
-            return matching_block
+        else:
+            return self.get_object_by_query_params()
+
+    def get_object_by_query_params(self):
+        blocked_user = self.request.query_params.get("blocked_user")
+        blocking_user = self.request.query_params.get("blocking_user")
+        matching_block = get_object_or_404(
+            Block.objects.all(), 
+            blocked_user=blocked_user,
+            blocking_user=blocking_user)
+        self.check_object_permissions(self.request, matching_block)
+        return matching_block
 
     def get_queryset(self):
         blocked_user = self.request.query_params.get("blocked_user")
@@ -242,6 +263,23 @@ class FriendRequestView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, FriendRequestPermission)
     serializer_class = FriendRequestSerializer
 
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
+            return super().get_object()
+        else:
+            return self.get_object_by_query_params()
+    
+    def get_object_by_query_params(self):
+        friend_requesting_user = self.request.query_params.get("friend_requesting_user")
+        friend_requested_user = self.request.query_params.get("friend_requested_user")
+        matching_friend_request = get_object_or_404(
+            FriendRequest.objects.all(), 
+            friend_requesting_user=friend_requesting_user,
+            friend_requested_user=friend_requested_user)
+        self.check_object_permissions(self.request, matching_friend_request)
+        return matching_friend_request
+
     def get_queryset(self):
         friend_requesting_user = self.request.query_params.get("friend_requesting_user")
         friend_requested_user = self.request.query_params.get("friend_requested_user")
@@ -255,6 +293,23 @@ class FriendRequestView(viewsets.ModelViewSet):
 class MatchRequestView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MatchRequestPermission)
     serializer_class = MatchRequestSerializer
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
+            return super().get_object()
+        else:
+            return self.get_object_by_query_params()
+    
+    def get_object_by_query_params(self):
+        match_requesting_user = self.request.query_params.get("match_requesting_user")
+        match_requested_user = self.request.query_params.get("match_requested_user")
+        matching_match_request = get_object_or_404(
+            MatchRequest.objects.all(), 
+            match_requesting_user=match_requesting_user,
+            match_requested_user=match_requested_user)
+        self.check_object_permissions(self.request, matching_match_request)
+        return matching_match_request
 
     def get_queryset(self):
         match_requesting_user = self.request.query_params.get("match_requesting_user")
@@ -271,17 +326,21 @@ class FavoriteView(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
 
     def get_object(self):
-        try: 
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
             return super().get_object()
-        except Http404:
-            favoriting_user = self.request.query_params.get("favoriting_user")
-            post = self.request.query_params.get("post")
-            matching_block = get_object_or_404(
-                Favorite.objects.all(), 
-                favoriting_user=favoriting_user,
-                post=post)
-            self.check_object_permissions(self.request, matching_block)
-            return matching_block
+        else:
+            return self.get_object_by_query_params()
+    
+    def get_object_by_query_params(self):
+        favoriting_user = self.request.query_params.get("favoriting_user")
+        post = self.request.query_params.get("post")
+        matching_block = get_object_or_404(
+            Favorite.objects.all(), 
+            favoriting_user=favoriting_user,
+            post=post)
+        self.check_object_permissions(self.request, matching_block)
+        return matching_block
     
     def get_queryset(self):
         favoriting_user = self.request.query_params.get("favoriting_user")

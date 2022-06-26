@@ -727,7 +727,7 @@ class VoteTest(TestCase):
         ))
         return
     
-    def test_delete_should_delete_vote(self):
+    def test_delete_should_delete_vote_given_pk(self):
         vote = Vote.objects.create(
             voter=self.user1,
             post=self.post,
@@ -736,6 +736,86 @@ class VoteTest(TestCase):
         self.assertTrue(Vote.objects.filter(pk=vote.pk))
 
         request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
+        response = VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Vote.objects.filter(pk=vote.pk))
+        return
+
+    def test_delete_should_delete_vote_given_voter_and_post(self):
+        vote = Vote.objects.create(
+            voter=self.user1,
+            post=self.post,
+            rating=10,
+        )
+        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/votes?voter={vote.voter.pk}&post={vote.post.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
+        response = VoteView.as_view({'delete':'destroy'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Vote.objects.filter(pk=vote.pk))
+        return
+    
+    def test_delete_should_not_delete_vote_given_no_parameters(self):
+        vote = Vote.objects.create(
+            voter=self.user1,
+            post=self.post,
+            rating=10,
+        )
+        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+
+        request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
+        response = VoteView.as_view({'delete':'destroy'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+        return
+
+    def test_delete_should_not_delete_vote_given_nonexistent_pk(self):
+        nonexistent_pk = 99999
+        self.assertFalse(Vote.objects.filter(pk=nonexistent_pk))
+
+        request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
+        response = VoteView.as_view({'delete':'destroy'})(request, pk=nonexistent_pk)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(Vote.objects.filter(pk=nonexistent_pk))
+        return
+
+    def test_delete_should_not_delete_vote_given_invalid_voter_post_combination(self):
+        vote = Vote.objects.create(
+            voter=self.user1,
+            post=self.post,
+            rating=10,
+        )
+        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+        self.assertFalse(Vote.objects.filter(
+            voter=self.user2.pk, 
+            post=vote.post.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/votes?voter={self.user2.pk}&post={vote.post.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
+        response = VoteView.as_view({'delete':'destroy'})(request, pk='')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+        return
+    
+    def test_delete_should_delete_vote_given_pk_and_query_combo(self):
+        vote = Vote.objects.create(
+            voter=self.user1,
+            post=self.post,
+            rating=10,
+        )
+        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/votes?voter={vote.voter.pk}&post={vote.post.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
         response = VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -1398,7 +1478,7 @@ class BlockTest(TestCase):
 
         self.assertTrue(Block.objects.filter(pk=block.pk))
 
-        request = APIRequestFactory().delete('/api/blocks/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        request = APIRequestFactory().delete('/api/delete-block/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
         response = BlockView.as_view({'delete':'destroy'})(request, pk=block.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -1415,9 +1495,9 @@ class BlockTest(TestCase):
         self.assertTrue(Block.objects.filter(pk=block.pk))
 
         request = APIRequestFactory().delete(
-            f'/api/blocks/?blocking_user={self.user1.pk}&blocked_user={self.user2.pk}', 
+            f'/api/delete-block/?blocking_user={self.user1.pk}&blocked_user={self.user2.pk}', 
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
-        response = BlockView.as_view({'delete':'destroy'})(request, pk='')
+        response = BlockView.as_view({'delete':'destroy'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Block.objects.filter(pk=block.pk))
@@ -1433,15 +1513,16 @@ class BlockTest(TestCase):
         self.assertTrue(Block.objects.filter(pk=block.pk))
 
         request = APIRequestFactory().delete(
-            f'/api/blocks/', 
+            f'/api/delete-block/', 
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
-        response = BlockView.as_view({'delete':'destroy'})(request, pk='')
+        response = BlockView.as_view({'delete':'destroy'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Block.objects.filter(pk=block.pk))
         return
 
     def test_delete_should_not_delete_block_given_nonexistent_pk(self):
+        nonexistent_pk = -1
         block = Block.objects.create(
             blocking_user=self.user1,
             blocked_user=self.user2,
@@ -1449,14 +1530,60 @@ class BlockTest(TestCase):
         )
 
         self.assertTrue(Block.objects.filter(pk=block.pk))
+        self.assertFalse(Block.objects.filter(pk=nonexistent_pk))
 
         request = APIRequestFactory().delete(
-            f'/api/blocks/', 
+            f'/api/delete-block/', 
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
-        response = BlockView.as_view({'delete':'destroy'})(request, pk=-1)
+        response = BlockView.as_view({'delete':'destroy'})(request, pk=nonexistent_pk)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Block.objects.filter(pk=block.pk))
+        return
+    
+    def test_delete_should_not_delete_block_given_invalid_query_combo(self):
+        nonexistent_pk = -1
+        block = Block.objects.create(
+            blocking_user=self.user1,
+            blocked_user=self.user2,
+            timestamp=0,        
+        )
+
+        self.assertTrue(Block.objects.filter(pk=block.pk))
+        self.assertFalse(Block.objects.filter(pk=nonexistent_pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/delete-block/?blocking_user={self.user1.pk}&blocked_user={self.user1.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = BlockView.as_view({'delete':'destroy'})(request, pk=nonexistent_pk)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Block.objects.filter(pk=block.pk))
+        return
+    
+    def test_delete_should_delete_block_given_pk_and_query_combo(self):
+        block_1 = Block.objects.create(
+            blocking_user=self.user1,
+            blocked_user=self.user2,
+            timestamp=0,        
+        )
+        block_2 = Block.objects.create(
+            blocking_user=self.user2,
+            blocked_user=self.user1,
+            timestamp=0,        
+        )
+
+        self.assertTrue(Block.objects.filter(pk=block_1.pk))
+        self.assertTrue(Block.objects.filter(pk=block_2.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/delete-block/?blocking_user={self.user1.pk}&blocked_user={self.user2.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = BlockView.as_view({'delete':'destroy'})(request, pk=block_1.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Block.objects.filter(pk=block_1.pk))
+        self.assertTrue(Block.objects.filter(pk=block_2.pk))
         return
 
 class MessageTest(TestCase):
@@ -2081,7 +2208,7 @@ class FriendRequestTest(TestCase):
         ))
         return
     
-    def test_delete_should_delete_friend_request(self):
+    def test_delete_should_delete_friend_request_given_pk(self):
         friend_request = FriendRequest.objects.create(
             friend_requesting_user=self.user1,
             friend_requested_user=self.user2,
@@ -2095,6 +2222,120 @@ class FriendRequestTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(FriendRequest.objects.filter(pk=friend_request.pk))
+        return
+    
+    def test_delete_should_delete_friend_request_given_query_combo(self):
+        friend_request = FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+            timestamp=0,
+        )
+
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/friend_request/?friend_requesting_user={self.user1.pk}&friend_requested_user={self.user2.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = FriendRequestView.as_view({'delete':'destroy'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(FriendRequest.objects.filter(pk=friend_request.pk))
+        return
+    
+    def test_delete_should_delete_friend_request_given_no_parameters(self):
+        friend_request = FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+            timestamp=0,
+        )
+
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/friend_request/', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = FriendRequestView.as_view({'delete':'destroy'})(request, pk='')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request.pk))
+        return
+    
+    def test_delete_should_not_delete_friend_request_given_nonexistent_pk(self):
+        nonexistent_pk = 999999
+        self.assertFalse(FriendRequest.objects.filter(pk=nonexistent_pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/friend_request/', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = FriendRequestView.as_view({'delete':'destroy'})(request, pk=nonexistent_pk)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(FriendRequest.objects.filter(pk=nonexistent_pk))
+        return
+    
+    def test_delete_should_not_delete_friend_request_given_invalid_query_combo(self):
+        friend_request = FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+            timestamp=0,
+        )
+
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/friend_request/?friend_requesting_user={self.user2.pk}&friend_requested_user={self.user1.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = FriendRequestView.as_view({'delete':'destroy'})(request, pk='')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request.pk))
+        return
+    
+    def test_delete_should_delete_friend_request_with_pk_given_both_pk_and_query_combo(self):
+        friend_request_1 = FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+            timestamp=0,
+        )
+        friend_request_2 = FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user3,
+            timestamp=0,
+        )
+
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request_1.pk))
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request_2.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/friend_request/?friend_requesting_user={self.user1.pk}&friend_requested_user={self.user2.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = FriendRequestView.as_view({'delete':'destroy'})(request, pk=friend_request_1.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(FriendRequest.objects.filter(pk=friend_request_1.pk))
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request_2.pk))
+        return
+    
+    def test_delete_should_not_delete_friend_request_given_invalid_pk_and_query_combo(self):
+        friend_request_1 = FriendRequest.objects.create(
+            friend_requesting_user=self.user1,
+            friend_requested_user=self.user2,
+            timestamp=0,
+        )
+        friend_request_2 = FriendRequest.objects.create(
+            friend_requesting_user=self.user2,
+            friend_requested_user=self.user1,
+            timestamp=0,
+        )
+
+        request = APIRequestFactory().delete(
+            f'/api/friend_request/?friend_requesting_user={self.user1.pk}&friend_requested_user={self.user2.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = FriendRequestView.as_view({'delete':'destroy'})(request, pk=friend_request_2.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request_1.pk))
+        self.assertTrue(FriendRequest.objects.filter(pk=friend_request_2.pk))
         return
 
 class FavoriteTest(TestCase):
@@ -2230,7 +2471,7 @@ class FavoriteTest(TestCase):
         self.assertFalse(Favorite.objects.filter(pk=favorite.pk))
         return
 
-    def test_delete_should_delete_favorite_given_favoriting_user_and_post(self):
+    def test_delete_should_delete_favorite_given_query_combo(self):
         favorite = Favorite.objects.create(
             timestamp=0,
             post=self.post,
@@ -2242,7 +2483,7 @@ class FavoriteTest(TestCase):
         request = APIRequestFactory().delete(
             f'/api/favorite/?favoriting_user={favorite.favoriting_user.pk}&post={favorite.post.pk}',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
-        response = FavoriteView.as_view({'delete':'destroy'})(request, pk='')
+        response = FavoriteView.as_view({'delete':'destroy'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Favorite.objects.filter(pk=favorite.pk))
@@ -2265,6 +2506,24 @@ class FavoriteTest(TestCase):
         return
 
     def test_delete_should_not_delete_favorite_given_nonexistent_pk(self):
+        nonexistent_pk = -1
+        favorite = Favorite.objects.create(
+            timestamp=0,
+            post=self.post,
+            favoriting_user=self.user1,
+        )
+
+        self.assertTrue(Favorite.objects.filter(pk=favorite.pk))
+        self.assertFalse(Favorite.objects.filter(pk=nonexistent_pk))
+
+        request = APIRequestFactory().delete('/api/favorite/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = FavoriteView.as_view({'delete':'destroy'})(request, pk=nonexistent_pk)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Favorite.objects.filter(pk=favorite.pk))
+        return
+    
+    def test_delete_should_not_delete_favorite_given_invalid_query_combo(self):
         favorite = Favorite.objects.create(
             timestamp=0,
             post=self.post,
@@ -2273,11 +2532,38 @@ class FavoriteTest(TestCase):
 
         self.assertTrue(Favorite.objects.filter(pk=favorite.pk))
 
-        request = APIRequestFactory().delete('/api/favorite/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
-        response = FavoriteView.as_view({'delete':'destroy'})(request, pk=-1)
+        request = APIRequestFactory().delete(
+            f'/api/favorite/?favoriting_user={self.user2.pk}&post={favorite.post.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}')
+        response = FavoriteView.as_view({'delete':'destroy'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Favorite.objects.filter(pk=favorite.pk))
+        return
+    
+    def test_delete_should_delete_favorite_with_pk_given_pk_and_query_combo(self):
+        favorite_1 = Favorite.objects.create(
+            timestamp=0,
+            post=self.post,
+            favoriting_user=self.user1,
+        )
+        favorite_2 = Favorite.objects.create(
+            timestamp=0,
+            post=self.post,
+            favoriting_user=self.user2,
+        )
+
+        self.assertTrue(Favorite.objects.filter(pk=favorite_1.pk))
+        self.assertTrue(Favorite.objects.filter(pk=favorite_2.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/favorite/?favoriting_user={favorite_1.favoriting_user.pk}&post={favorite_1.post.pk}', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = FavoriteView.as_view({'delete':'destroy'})(request, pk=favorite_1.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Favorite.objects.filter(pk=favorite_1.pk))
+        self.assertTrue(Favorite.objects.filter(pk=favorite_2.pk))
         return
     
 class FeatureTest(TestCase):
@@ -2530,7 +2816,7 @@ class MatchRequestTest(TestCase):
         ))
         return
     
-    def test_delete_should_delete_match_request(self):
+    def test_delete_should_delete_match_request_given_pk(self):
         match_request = MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
@@ -2550,6 +2836,133 @@ class MatchRequestTest(TestCase):
         self.assertFalse(MatchRequest.objects.filter(pk=match_request.pk))
         return
 
+    def test_delete_should_delete_favorite_given_query_combo(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/match_requests?match_requesting_user={self.user1.pk}&match_requested_user={self.user2.pk}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(MatchRequest.objects.filter(pk=match_request.pk))
+        return
+    
+    def test_delete_should_not_delete_favorite_given_invalid_query_combo(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/match_requests?match_requesting_user={self.user2.pk}&match_requested_user={self.user1.pk}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
+        return
+
+    def test_delete_should_not_delete_favorite_given_nonexistent_pk(self):
+        nonexistent_pk = 9999999
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
+        self.assertFalse(MatchRequest.objects.filter(pk=nonexistent_pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/match_requests',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request, pk=nonexistent_pk)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
+        return
+
+    def test_delete_should_not_delete_favorite_given_no_parameters(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/match_requests',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
+        return
+
+    def test_delete_should_delete_favorite_given_pk_and_query_combo(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
+
+        request = APIRequestFactory().delete(
+            f'/api/match_requests?match_requesting_user={self.user1.pk}&match_requested_user={self.user2.pk}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request, pk=match_request.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(MatchRequest.objects.filter(pk=match_request.pk))
+        return
+
+    def test_delete_should_not_delete_favorite_given_invalid_pk_and_query_combo(self):
+        match_request_1 = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        match_request_2 = MatchRequest.objects.create(
+            match_requesting_user=self.user2,
+            match_requested_user=self.user1,
+            post=self.post,
+            timestamp=0,
+        )
+
+        request = APIRequestFactory().delete(
+            f'/api/match_requests?match_requesting_user={self.user1.pk}&match_requested_user={self.user2.pk}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request, pk=match_request_2.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request_1.pk))
+        self.assertTrue(MatchRequest.objects.filter(pk=match_request_2.pk))
+        return
 
 # ACCESSORY VIEWS
 

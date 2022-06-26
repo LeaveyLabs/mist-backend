@@ -58,6 +58,12 @@ urlpatterns = [
     path('api/friend-posts/', FriendPostsView.as_view()),
     path('api/favorited-posts/', FavoritedPostsView.as_view()),
     path('api/submitted-posts/', SubmittedPostsView.as_view()),
+    # Requests
+    path('api/delete-block/', BlockView.as_view({'delete':'destroy'})),
+    path('api/delete-vote/', VoteView.as_view({'delete':'destroy'})),
+    path('api/delete-favorite/', FavoriteView.as_view({'delete':'destroy'})),
+    path('api/delete-friend-request/', FriendRequestView.as_view({'delete':'destroy'})),
+    path('api/delete-match-request/', MatchRequestView.as_view({'delete':'destroy'})),
 ]
 
 if settings.DEBUG: 
