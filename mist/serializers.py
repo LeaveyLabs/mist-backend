@@ -20,11 +20,12 @@ class PostSerializer(serializers.ModelSerializer):
     votecount = serializers.ReadOnlyField(source='calculate_votecount')
     averagerating = serializers.ReadOnlyField(source='calculate_averagerating')
     commentcount = serializers.ReadOnlyField(source='calculate_commentcount')
+    flagcount = serializers.ReadOnlyField(source='calculate_flagcount')
 
     class Meta:
         model = Post
         fields = ('id', 'title', 'body', 'latitude', 'longitude', 'location_description',
-        'timestamp', 'author', 'averagerating', 'commentcount', 'votecount', 'read_only_author')
+        'timestamp', 'author', 'averagerating', 'commentcount', 'votecount', 'flagcount', 'read_only_author')
     
     def get_read_only_author(self, obj):
         author_pk = obj.author.pk

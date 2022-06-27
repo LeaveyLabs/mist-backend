@@ -4,7 +4,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Post, Vote, Word
+from mist.models import Comment, Favorite, Feature, Flag, FriendRequest, MatchRequest, Post, Vote, Word
 from mist.serializers import PostSerializer
 from mist.views.post import FavoritedPostsView, FeaturedPostsView, MatchedPostsView, PostView, SubmittedPostsView
 
@@ -15,43 +15,57 @@ class PostTest(TestCase):
     USC_LONGITUDE = Decimal(118.2851)
 
     def setUp(self):
-        self.user = User(
+        self.user1 = User(
             email='TestUser@usc.edu',
             username='TestUser',
             date_of_birth=date(2000, 1, 1),
         )
-        self.user.set_password("TestPassword@98374")
-        self.user.save()
-        self.auth_token = Token.objects.create(user=self.user)
+        self.user1.set_password("TestPassword@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user2.set_password("TestPassword@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
 
         self.post1 = Post.objects.create(
             title='FakeTitleForFirstPost',
             body='FakeTextForFirstPost',
             timestamp=0,
-            author=self.user,
+            author=self.user1,
         )
         self.post2 = Post.objects.create(
             title='FakeTitleForSecondPost',
             body='FakeTextForSecondPost',
             timestamp=1,
-            author=self.user,
+            author=self.user1,
         )
         self.post3 = Post.objects.create(
             title='FakeTitleForThirdPost',
             body='FakeTextForThirdPost',
             timestamp=2,
-            author=self.user,
+            author=self.user1,
         )
 
         self.vote = Vote.objects.create(
-            voter=self.user,
+            voter=self.user1,
             post=self.post1,
         )
 
         self.comment = Comment.objects.create(
             body='FakeTextForComment',
             post=self.post1,
-            author=self.user,
+            author=self.user1,
+        )
+
+        self.flag = Flag.objects.create(
+            post=self.post1,
+            flagger=self.user1,
         )
         return
     
@@ -64,12 +78,15 @@ class PostTest(TestCase):
     
     def test_calculate_commentcount_should_return_number_of_comments(self):
         return self.assertEquals(self.post1.calculate_commentcount(), 1)
+    
+    def test_calculate_flagcount_should_return_number_of_flags(self):
+        return self.assertEquals(self.post1.calculate_flagcount(), 1)
 
     def test_post_should_create_words_in_post(self):
         Post.objects.create(
             title='TitleWord',
             body='StartingTextWord MiddleTextWord NumbersWord123',
-            author=self.user,
+            author=self.user1,
         )
         self.assertTrue(Word.objects.filter(text__iexact='TitleWord'))
         self.assertTrue(Word.objects.filter(text__iexact='StartingTextWord'))
@@ -82,12 +99,12 @@ class PostTest(TestCase):
         Post.objects.create(
             title='w',
             body='wo',
-            author=self.user,
+            author=self.user1,
         )
         Post.objects.create(
             title='wor',
             body='word',
-            author=self.user,
+            author=self.user1,
         )
         word1 = Word.objects.get(text__iexact='w')
         word2 = Word.objects.get(text__iexact='wo')
@@ -105,7 +122,7 @@ class PostTest(TestCase):
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
             timestamp=0,
-            author=self.user,
+            author=self.user1,
         )
         serialized_post = PostSerializer(test_post).data
 
@@ -122,7 +139,7 @@ class PostTest(TestCase):
             '/api/posts',
             serialized_post,
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = PostView.as_view({'post':'create'})(request)
         response_post = response.data
@@ -154,7 +171,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             '/api/posts',
             format="json",
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -168,7 +185,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             '/api/posts',
             format="json",
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -182,6 +199,54 @@ class PostTest(TestCase):
             self.assertTrue('read_only_author' in response_post)
         return
     
+    def test_get_should_return_posts_in_vote_minus_flag_order(self):
+        Vote.objects.create(voter=self.user1, post=self.post2)
+        Vote.objects.create(voter=self.user2, post=self.post2)
+        Vote.objects.create(voter=self.user2, post=self.post1)
+        
+        serialized_posts = [
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post3).data,
+        ]
+        
+        request = APIRequestFactory().get(
+            '/api/posts',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts[0], response_posts[0])
+        self.assertEqual(serialized_posts[1], response_posts[1])
+        self.assertEqual(serialized_posts[2], response_posts[2])
+        return
+    
+    def test_get_should_not_return_posts_with_flags_greater_than_square_root_of_votes(self):
+        Flag.objects.create(flagger=self.user1, post=self.post3)
+        Flag.objects.create(flagger=self.user2, post=self.post3)
+
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
+        ]
+
+        request = APIRequestFactory().get(
+            '/api/posts',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertCountEqual(serialized_posts, response_posts)
+        return
+    
     def test_get_should_return_post_with_matching_id_given_id(self):
         serialized_posts = [
             PostSerializer(self.post1).data,
@@ -193,7 +258,7 @@ class PostTest(TestCase):
                 'ids': self.post1.id,
             },
             format="json",
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -212,7 +277,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             f'/api/posts?ids={self.post1.id}&ids={self.post2.id}',
             format="json",
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -229,7 +294,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             f'/api/posts?words={word}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -249,7 +314,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             f'/api/posts?words={word1}&words={word2}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
  
         response = PostView.as_view({'get':'list'})(request)
@@ -271,7 +336,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             f'/api/posts?words={word1}&words={word2}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
  
         response = PostView.as_view({'get':'list'})(request)
@@ -287,7 +352,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             f'/api/posts?start_timestamp={self.post1.timestamp}&end_timestamp={self.post1.timestamp}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -305,7 +370,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             f'/api/posts?start_timestamp={self.post1.timestamp}&end_timestamp={self.post2.timestamp}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -322,7 +387,7 @@ class PostTest(TestCase):
             timestamp=0,
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
-            author=self.user,
+            author=self.user1,
         )
         post_from_north_pole = Post.objects.create(
             title='FakeTitleOfNorthPolePost',
@@ -330,7 +395,7 @@ class PostTest(TestCase):
             timestamp=0,
             latitude=Decimal(0),
             longitude=Decimal(0),
-            author=self.user,
+            author=self.user1,
         )
 
         serialized_posts_from_usc = [PostSerializer(post_from_usc).data]
@@ -342,7 +407,7 @@ class PostTest(TestCase):
                 'longitude': self.USC_LONGITUDE,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -361,7 +426,7 @@ class PostTest(TestCase):
             timestamp=0,
             latitude=self.USC_LATITUDE,
             longitude=self.USC_LONGITUDE,
-            author=self.user,
+            author=self.user1,
         )
         post_from_usc_inexact = Post.objects.create(
             title='FakeTitleOfUSCPost',
@@ -369,7 +434,7 @@ class PostTest(TestCase):
             timestamp=0,
             latitude=self.USC_LATITUDE+Decimal(.001),
             longitude=self.USC_LONGITUDE+Decimal(.001),
-            author=self.user,
+            author=self.user1,
         )
         
         serialized_posts_from_usc = [PostSerializer(post_from_usc_exact).data]
@@ -382,7 +447,7 @@ class PostTest(TestCase):
                 'radius': super_small_radius,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -400,7 +465,7 @@ class PostTest(TestCase):
             timestamp=0,
             latitude=Decimal(0),
             longitude=Decimal(0),
-            author=self.user,
+            author=self.user1,
         )
 
         serialized_posts_from_north_pole = [
@@ -412,7 +477,7 @@ class PostTest(TestCase):
                 'location_description': 'North Pole'
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -430,7 +495,7 @@ class PostTest(TestCase):
             timestamp=0,
             latitude=Decimal(0),
             longitude=Decimal(0),
-            author=self.user,
+            author=self.user1,
         )
 
         serialized_posts_from_north_pole = [
@@ -442,7 +507,7 @@ class PostTest(TestCase):
                 'location_description': 'North'
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -462,10 +527,10 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             '/api/posts',
             {
-                'author': self.user.pk,
+                'author': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -485,13 +550,13 @@ class PostTest(TestCase):
         friend.save()
         friend_auth_token = Token.objects.create(user=friend)
         FriendRequest.objects.create(
-            friend_requesting_user=self.user,
+            friend_requesting_user=self.user1,
             friend_requested_user=friend,
             timestamp=0,
         )
         FriendRequest.objects.create(
             friend_requesting_user=friend,
-            friend_requested_user=self.user,
+            friend_requested_user=self.user1,
             timestamp=0,
         )
         serialized_posts = [
@@ -503,10 +568,10 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             '/api/posts',
             {
-                'author': self.user.pk,
+                'author': self.user1.pk,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'get':'list'})(request)
@@ -529,7 +594,7 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             '/api/posts',
             {
-                'author': self.user.pk,
+                'author': self.user1.pk,
             },
             format='json',
             HTTP_AUTHORIZATION=f'Token {stranger_auth_token}',
@@ -551,7 +616,7 @@ class PostTest(TestCase):
             '/api/posts/',
             serialized_post,
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'put':'update'})(request, pk=self.post1.pk)
@@ -573,7 +638,7 @@ class PostTest(TestCase):
             '/api/posts/',
             serialized_post,
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'put':'update'})(request, pk=self.post1.pk)
@@ -595,7 +660,7 @@ class PostTest(TestCase):
                 'title': fake_title,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
 
         response = PostView.as_view({'patch':'partial_update'})(request, pk=self.post1.pk)
@@ -617,7 +682,7 @@ class PostTest(TestCase):
                 'body': fake_text,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = PostView.as_view({'patch':'partial_update'})(request, pk=self.post1.pk)
         
@@ -629,7 +694,7 @@ class PostTest(TestCase):
     def test_delete_should_delete_post(self):
         self.assertTrue(Post.objects.filter(pk=self.post1.pk))
 
-        request = APIRequestFactory().delete('/api/posts/', HTTP_AUTHORIZATION=f'Token {self.auth_token}',)
+        request = APIRequestFactory().delete('/api/posts/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
         response = PostView.as_view({'delete':'destroy'})(request, pk=self.post1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

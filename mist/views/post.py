@@ -1,4 +1,6 @@
 from decimal import Decimal
+from enum import Enum
+import math
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
 from mist.permissions import PostPermission
@@ -9,38 +11,32 @@ from users.generics import get_user_from_request
 from ..serializers import PostSerializer
 from ..models import Favorite, Feature, FriendRequest, MatchRequest, Post
 
+class Order(Enum):
+    VOTE = 0
+    TIME = 1    
+
 class PostView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, PostPermission,)
     serializer_class = PostSerializer
 
-    # Max distance around post is 5 kilometer
+    # Max distance around post is 5 kilometers
     MAX_DISTANCE = Decimal(5)
 
-    def get_locations_nearby_coords(self, latitude, longitude, max_distance=MAX_DISTANCE):
-        """
-        Return objects sorted by distance to specified coordinates
-        which distance is less than max_distance given in kilometers
-        """
-        # Great circle distance formula
-        gcd_formula = "6371 * acos(least(greatest(\
-        cos(radians(%s)) * cos(radians(latitude)) \
-        * cos(radians(longitude) - radians(%s)) + \
-        sin(radians(%s)) * sin(radians(latitude)) \
-        , -1), 1))"
-        distance_raw_sql = RawSQL(
-            gcd_formula,
-            (latitude, longitude, latitude)
-        )
-        # make sure the latitude + longtitude exists
-        # make sure the distance is under the max
-        qs = Post.objects.all()\
-        .filter(latitude__isnull=False)\
-        .filter(longitude__isnull=False)\
-        .annotate(distance=distance_raw_sql)\
-        .order_by('distance')
-        # distance must be less than max distance
-        qs = qs.filter(distance__lt=max_distance)
-        return qs
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        response.data = self.filter_and_order_serialized_posts(response.data)
+        return response
+    
+    def filter_and_order_serialized_posts(self, serialized_posts):
+        filtered_posts = []
+        for serialized_post in serialized_posts:
+            flagcount = serialized_post.get('flagcount')
+            votecount = serialized_post.get('votecount')
+            if flagcount <= math.sqrt(votecount):
+                filtered_posts.append(serialized_post)
+        votes_minus_flags = lambda post: post.get('votecount') - post.get('flagcount')
+        ordered_posts = sorted(filtered_posts, key=votes_minus_flags, reverse=True)
+        return ordered_posts
 
     def get_queryset(self):
         """
@@ -82,6 +78,32 @@ class PostView(viewsets.ModelViewSet):
         if author:
             queryset = queryset.filter(author=author)
         return queryset
+
+    def get_locations_nearby_coords(self, latitude, longitude, max_distance=MAX_DISTANCE):
+        """
+        Return objects sorted by distance to specified coordinates
+        which distance is less than max_distance given in kilometers
+        """
+        # Great circle distance formula
+        gcd_formula = "6371 * acos(least(greatest(\
+        cos(radians(%s)) * cos(radians(latitude)) \
+        * cos(radians(longitude) - radians(%s)) + \
+        sin(radians(%s)) * sin(radians(latitude)) \
+        , -1), 1))"
+        distance_raw_sql = RawSQL(
+            gcd_formula,
+            (latitude, longitude, latitude)
+        )
+        # make sure the latitude + longtitude exists
+        # make sure the distance is under the max
+        qs = Post.objects.all()\
+        .filter(latitude__isnull=False)\
+        .filter(longitude__isnull=False)\
+        .annotate(distance=distance_raw_sql)\
+        .order_by('distance')
+        # distance must be less than max distance
+        qs = qs.filter(distance__lt=max_distance)
+        return qs
 
 
 class MatchedPostsView(generics.ListAPIView):

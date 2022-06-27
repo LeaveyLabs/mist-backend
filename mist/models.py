@@ -34,7 +34,10 @@ class Post(models.Model):
         return sum(vote.rating for vote in votes)/float(len(votes))
     
     def calculate_commentcount(self):
-        return len(Comment.objects.filter(post=self.pk))
+        return Comment.objects.filter(post=self.pk).count()
+    
+    def calculate_flagcount(self):
+        return Flag.objects.filter(post=self.pk).count()
     
     def save(self, *args, **kwargs):
         # check if the post is new
