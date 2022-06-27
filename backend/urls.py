@@ -26,7 +26,7 @@ from mist.views.feature import FeatureView
 from mist.views.flag import FlagView
 from mist.views.friend import FriendRequestView, FriendshipView
 from mist.views.match import MatchRequestView, MatchView
-from mist.views.message import MessageView
+from mist.views.message import ConversationView, MessageView
 from mist.views.post import FavoritedPostsView, FeaturedPostsView, FriendPostsView, MatchedPostsView, PostView, SubmittedPostsView
 from mist.views.tag import TagView
 from mist.views.vote import VoteView
@@ -63,6 +63,7 @@ urlpatterns = [
     path('api/features/', FeatureView.as_view()),
     path('api/matches/', MatchView.as_view()),
     path('api/friendships/', FriendshipView.as_view()),
+    path('api/conversations/', ConversationView.as_view()),
     path('api/matched-posts/', MatchedPostsView.as_view()),
     path('api/featured-posts/', FeaturedPostsView.as_view()),
     path('api/friend-posts/', FriendPostsView.as_view()),
