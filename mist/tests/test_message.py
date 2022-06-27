@@ -5,7 +5,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from mist.models import Block, Message, Post
 from mist.serializers import MessageSerializer
-from mist.views.message import MessageView
+from mist.views.message import ConversationView, MessageView
 
 from users.models import User
 
@@ -352,4 +352,94 @@ class MessageTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Message.objects.filter(pk=message.pk))
+        return
+
+class ConversationViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.user3 = User(
+            email='TestUser3@usc.edu',
+            username='TestUser3',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user3.set_password("TestPassword3@98374")
+        self.user3.save()
+        self.auth_token3 = Token.objects.create(user=self.user3)
+        return
+    
+    def test_get_should_return_status_error_given_invalid_token(self):
+        request = APIRequestFactory().get(
+            'api/conversations', 
+            HTTP_AUTHORIZATION=f'Token INVALIDTOKEN')
+        response = ConversationView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    def test_get_should_return_all_user_conversations_given_no_parameters(self):
+        user1_to_user2 = Message.objects.create(
+            sender=self.user1,
+            receiver=self.user2,
+            body='TestMessageBody1'
+        )
+        user1_to_user3 = Message.objects.create(
+            sender=self.user1,
+            receiver=self.user3,
+            body='TestMessageBody2'
+        )
+        user2_to_user1 = Message.objects.create(
+            sender=self.user2,
+            receiver=self.user1,
+            body='TestMessageBody3'
+        )
+        user2_to_user3 = Message.objects.create(
+            sender=self.user2,
+            receiver=self.user3,
+            body='TestMessageBody4'
+        )
+        user3_to_user2 = Message.objects.create(
+            sender=self.user3,
+            receiver=self.user2,
+            body='TestMessageBody5'
+        )
+        user3_to_user1 = Message.objects.create(
+            sender=self.user3,
+            receiver=self.user1,
+            body='TestMessageBody6'
+        )
+        expected_response_data = {
+            self.user2.pk: [
+                MessageSerializer(user1_to_user2).data,
+                MessageSerializer(user2_to_user1).data,
+            ],
+            self.user3.pk: [
+                MessageSerializer(user1_to_user3).data,
+                MessageSerializer(user3_to_user1).data,
+            ]
+        }
+
+        request = APIRequestFactory().get(
+            'api/conversations', 
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
+        response = ConversationView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get(self.user2.pk), expected_response_data.get(self.user2.pk))
+        self.assertEqual(response.data.get(self.user3.pk), expected_response_data.get(self.user3.pk))
         return
