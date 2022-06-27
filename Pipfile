@@ -25,6 +25,7 @@ phonenumbers = "*"
 coverage = "*"
 django-nose = "*"
 locust = "*"
+freezegun = "*"
 
 [dev-packages]
 

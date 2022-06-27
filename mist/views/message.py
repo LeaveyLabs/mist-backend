@@ -54,6 +54,5 @@ class ConversationView(generics.ListAPIView):
             if pk not in conversations:
                 conversations[pk] = []
             conversations[pk].append(message_data)
-        print(conversations)
 
         return Response(conversations, status.HTTP_200_OK)

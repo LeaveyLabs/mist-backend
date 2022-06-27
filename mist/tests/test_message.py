@@ -1,5 +1,6 @@
 from datetime import date
 from django.test import TestCase
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
@@ -354,6 +355,7 @@ class MessageTest(TestCase):
         self.assertFalse(Message.objects.filter(pk=message.pk))
         return
 
+@freeze_time('2022-06-26')
 class ConversationViewTest(TestCase):
     def setUp(self):
         self.user1 = User(
