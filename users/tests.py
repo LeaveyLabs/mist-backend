@@ -320,14 +320,14 @@ class UserViewPostTest(TestCase):
         self.fake_last_name = 'LastNameOfFakeUser'
         self.fake_date_of_birth = date(2000, 1, 1)
 
-    def test_post_should_create_user_given_validated_email(self):
         small_gif = (
             b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
             b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
             b'\x02\x4c\x01\x00\x3b'
         )
-        image_file = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
+        self.image_file = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
 
+    def test_post_should_create_user_given_validated_email(self):
         self.assertFalse(User.objects.filter(
             email=self.email_auth.email,
             username=self.fake_username,
@@ -346,7 +346,7 @@ class UserViewPostTest(TestCase):
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
-                'picture': image_file
+                'picture': self.image_file
             }),
             content_type=MULTIPART_CONTENT,
         )
@@ -373,6 +373,7 @@ class UserViewPostTest(TestCase):
 
         request = APIRequestFactory().post(
             'api/users/',
+            encode_multipart(boundary=BOUNDARY, data=
             {
                 'email': 'thisEmailDoesNotExist@usc.edu',
                 'username': self.fake_username,
@@ -380,8 +381,9 @@ class UserViewPostTest(TestCase):
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
-            },
-            format='json',
+                'picture': self.image_file,
+            }),
+            content_type=MULTIPART_CONTENT,
         )
         response = UserView.as_view({'post':'create'})(request)
         
@@ -430,6 +432,13 @@ class UserViewPostTest(TestCase):
         return
     
     def test_post_should_not_create_user_given_expired_validation(self):
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        image_file = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
+
         self.assertFalse(User.objects.filter(
             email='thisEmailDoesNotExist@usc.edu',
             username=self.fake_username,
@@ -445,6 +454,7 @@ class UserViewPostTest(TestCase):
 
         request = APIRequestFactory().post(
             'api/users/',
+            encode_multipart(boundary=BOUNDARY, data=
             {
                 'email': 'thisEmailDoesNotExist@usc.edu',
                 'username': self.fake_username,
@@ -452,8 +462,9 @@ class UserViewPostTest(TestCase):
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
-            },
-            format='json',
+                'picture': self.image_file,
+            }),
+            content_type=MULTIPART_CONTENT,
         )
         response = UserView.as_view({'post':'create'})(request)
         
@@ -477,6 +488,7 @@ class UserViewPostTest(TestCase):
 
         request = APIRequestFactory().post(
             'api/users/',
+            encode_multipart(boundary=BOUNDARY, data=
             {
                 'email': 'thisEmailDoesNotExist@usc.edu',
                 'username': self.fake_username,
@@ -484,8 +496,9 @@ class UserViewPostTest(TestCase):
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': date.today(),
-            },
-            format='json',
+                'picture': self.image_file,
+            }),
+            content_type=MULTIPART_CONTENT,
         )
         response = UserView.as_view({'post':'create'})(request)
         
