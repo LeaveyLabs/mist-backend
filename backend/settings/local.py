@@ -34,6 +34,9 @@ else:
             'PORT': '5432'
         }
     }
+
+EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+
 # TODO: Pictures
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
 MEDIA_URL = '/media/'

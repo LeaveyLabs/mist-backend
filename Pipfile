@@ -17,7 +17,6 @@ pillow = "*"
 django-storages = "*"
 boto3 = "*"
 websockets = "*"
-asyncio = "*"
 jsonpickle = "*"
 requests = "*"
 django-phonenumber-field = "*"
@@ -26,6 +25,7 @@ coverage = "*"
 django-nose = "*"
 locust = "*"
 freezegun = "*"
+websocket-client = "*"
 
 [dev-packages]
 
