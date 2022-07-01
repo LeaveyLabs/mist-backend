@@ -36,6 +36,24 @@ class MatchRequestTest(TestCase):
             author=self.user1,
         )
         return
+
+    def test_serializer_returns_computed_properties(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        serialized_match_request = MatchRequestSerializer(match_request).data
+        properties = (
+            'id', 
+            'match_requesting_user',
+            'match_requested_user',
+            'post', 
+            'read_only_post',
+            'timestamp')
+        for property in properties:
+            self.assertTrue(property in serialized_match_request)
     
     def test_get_should_return_match_requests_given_valid_requesting_user(self):
         match_request = MatchRequest.objects.create(
@@ -116,11 +134,13 @@ class MatchRequestTest(TestCase):
     def test_post_should_not_create_match_request_given_invalid_match_request(self):
         match_request = MatchRequest(
             match_requesting_user=self.user1,
+            post=self.post,
         )
         serialized_match_request = MatchRequestSerializer(match_request).data
 
         self.assertFalse(MatchRequest.objects.filter(
             match_requesting_user=match_request.match_requesting_user,
+            post=match_request.post,
         ))
 
         request = APIRequestFactory().post(
@@ -134,6 +154,7 @@ class MatchRequestTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(MatchRequest.objects.filter(
             match_requesting_user=match_request.match_requesting_user,
+            post=match_request.post,
         ))
         return
     

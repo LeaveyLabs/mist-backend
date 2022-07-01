@@ -58,9 +58,16 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         fields = ('id', 'friend_requesting_user', 'friend_requested_user', 'timestamp')
 
 class MatchRequestSerializer(serializers.ModelSerializer):
+    read_only_post = serializers.SerializerMethodField()
+
     class Meta:
         model = MatchRequest
-        fields = ('id', 'match_requesting_user', 'match_requested_user', 'post', 'timestamp')
+        fields = ('id', 'match_requesting_user', 'match_requested_user', 'post', 'read_only_post', 'timestamp')
+
+    def get_read_only_post(self, obj):
+        post_pk = obj.post.pk
+        post_instance = Post.objects.get(pk=post_pk)
+        return PostSerializer(post_instance).data
 
 class CommentSerializer(serializers.ModelSerializer):
     read_only_author = serializers.SerializerMethodField()
