@@ -4,6 +4,7 @@ from rest_framework import serializers
 from .models import PasswordReset, User, EmailAuthentication
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
+import face_recognition
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,7 +13,8 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', )
 
 class CompleteUserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(max_length=50, write_only=True, required=False)
+    password = serializers.CharField(max_length=50, write_only=True)
+    confirm_picture = serializers.ImageField(write_only=True)
 
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
     MEGABYTE_LIMIT = 10
@@ -20,12 +22,46 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'password',
-        'first_name', 'last_name', 'picture', 'date_of_birth', )
+        'first_name', 'last_name', 'picture', 'confirm_picture', 
+        'date_of_birth', )
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
         last_name_in_email = email.find(last_name) != -1
         return first_name_in_email or last_name_in_email
+
+    def picture_below_size_limit(self, picture, field_name):
+        filesize = picture.size
+        if filesize > self.MEGABYTE_LIMIT * 1024 * 1024:
+            raise ValidationError({f"{field_name}": f"Max file size is {self.MEGABYTE_LIMIT}MB"})
+        return picture
+
+    def is_match(self, picture, confirm_picture):
+        processed_picture = face_recognition.load_image_file(picture)
+        processed_confirm = face_recognition.load_image_file(confirm_picture)
+        picture_encodings = face_recognition.face_encodings(processed_picture)
+        confirm_encodings = face_recognition.face_encodings(processed_confirm)
+        results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
+        return results[0]
+
+    def validate(self, data):
+        picture = data.get('picture')
+        confirm_picture = data.get('confirm_picture')
+        if not picture and not confirm_picture: return data
+        if picture and not confirm_picture: 
+            raise ValidationError(
+                {
+                    "picture": "Picture must be validated, input confirm_picture",
+                }
+            )
+        if not self.is_match(picture, confirm_picture):
+            raise ValidationError(
+                {
+                    "picture": "Does not contain the same person as confirm_picture",
+                    "confirm_picture": "Does not contain the same person as picture"
+                }
+            )
+        return data
     
     def validate_date_of_birth(self, date_of_birth):
         today = date.today()
@@ -44,10 +80,10 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         return password
     
     def validate_picture(self, picture):
-        filesize = picture.size
-        if filesize > self.MEGABYTE_LIMIT * 1024 * 1024:
-            raise ValidationError({"picture": "Max file size is {}MB".format(self.MEGABYTE_LIMIT)})
-        return picture
+        return self.picture_below_size_limit(picture, 'picture')
+    
+    def validate_confirm_picture(self, confirm_picture):
+        return self.picture_below_size_limit(confirm_picture, 'confirm_picture')
 
     def create(self, validated_data):
         email = validated_data.get('email')
@@ -87,6 +123,11 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         picture = validated_data.get('picture')
         if not picture:
             raise serializers.ValidationError({"picture": "Picture is required."})
+
+        confirm_picture = validated_data.get('confirm_picture')
+        if not confirm_picture:
+            raise serializers.ValidationError({"confirm_picture": "Picture is required."})
+        validated_data.pop('confirm_picture')
 
         return User.objects.create(**validated_data)
     

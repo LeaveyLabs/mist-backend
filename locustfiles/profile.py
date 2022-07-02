@@ -31,7 +31,7 @@ class UpdateUsernamePasswordPicture(TaskSet):
 
     @task
     def update_picture(self):
-        files = {'media': open('locustfiles/test_assets/test.jpeg', 'rb')}
+        files = {'media': open('../test_assets/test.jpeg', 'rb')}
         self.api_throttled_or_valid_user(
             endpoint=f'api/users/{self.id}/',
             data=None,

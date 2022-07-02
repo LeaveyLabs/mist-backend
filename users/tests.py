@@ -1,5 +1,7 @@
 from datetime import date, datetime, timedelta
+from io import BytesIO, StringIO
 from tempfile import TemporaryFile
+from PIL import Image
 from django.core import mail, cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
@@ -320,12 +322,16 @@ class UserViewPostTest(TestCase):
         self.fake_last_name = 'LastNameOfFakeUser'
         self.fake_date_of_birth = date(2000, 1, 1)
 
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
-            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
-            b'\x02\x4c\x01\x00\x3b'
-        )
-        self.image_file = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
+        test_image1 = Image.open('test_assets/test1.jpeg')
+        test_image_io1 = BytesIO()
+        test_image1.save(test_image_io1, format='JPEG')
+
+        test_image2 = Image.open('test_assets/test2.jpeg')
+        test_image_io2 = BytesIO()
+        test_image2.save(test_image_io2, format='JPEG')
+
+        self.image_file1 = SimpleUploadedFile('test1.jpeg', test_image_io1.getvalue(), content_type='image/jpeg')
+        self.image_file2 = SimpleUploadedFile('test2.jpeg', test_image_io2.getvalue(), content_type='image/jpeg')
 
     def test_post_should_create_user_given_validated_email(self):
         self.assertFalse(User.objects.filter(
@@ -346,11 +352,13 @@ class UserViewPostTest(TestCase):
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
-                'picture': self.image_file
+                'picture': self.image_file1,
+                'confirm_picture': self.image_file2,
             }),
             content_type=MULTIPART_CONTENT,
         )
         response = UserView.as_view({'post':'create'})(request)
+        print(response.data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(
@@ -381,7 +389,8 @@ class UserViewPostTest(TestCase):
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
-                'picture': self.image_file,
+                'picture': self.image_file1,
+                'confirm_picture': self.image_file1,
             }),
             content_type=MULTIPART_CONTENT,
         )
@@ -462,7 +471,8 @@ class UserViewPostTest(TestCase):
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
-                'picture': self.image_file,
+                'picture': self.image_file1,
+                'confirm_picture': self.image_file1,
             }),
             content_type=MULTIPART_CONTENT,
         )
@@ -496,7 +506,8 @@ class UserViewPostTest(TestCase):
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': date.today(),
-                'picture': self.image_file,
+                'picture': self.image_file1,
+                'confirm_picture': self.image_file1,
             }),
             content_type=MULTIPART_CONTENT,
         )
@@ -948,6 +959,17 @@ class UserViewPatchTest(TestCase):
         self.auth_token = Token.objects.create(user=self.valid_user)
         self.unused_pk = 151
 
+        test_image1 = Image.open('test_assets/test1.jpeg')
+        test_image_io1 = BytesIO()
+        test_image1.save(test_image_io1, format='JPEG')
+
+        test_image2 = Image.open('test_assets/test2.jpeg')
+        test_image_io2 = BytesIO()
+        test_image2.save(test_image_io2, format='JPEG')
+
+        self.image_file1 = SimpleUploadedFile('test1.jpeg', test_image_io1.getvalue(), content_type='image/jpeg')
+        self.image_file2 = SimpleUploadedFile('test2.jpeg', test_image_io2.getvalue(), content_type='image/jpeg')
+
     def test_patch_should_not_update_given_invalid_user(self):
         self.assertFalse(User.objects.filter(pk=self.unused_pk))
 
@@ -1131,18 +1153,15 @@ class UserViewPatchTest(TestCase):
         return
 
     def test_patch_should_update_picture_given_valid_picture(self):
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x00\x00\x00\x21\xf9\x04'
-            b'\x01\x0a\x00\x01\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02'
-            b'\x02\x4c\x01\x00\x3b'
-        )
-        image_file = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
         pre_patched_user = User.objects.get(pk=self.valid_user.pk)
         self.assertFalse(pre_patched_user.picture)
 
         request = APIRequestFactory().patch(
             'api/users/', 
-            encode_multipart(boundary=BOUNDARY, data={'picture': image_file}),
+            encode_multipart(boundary=BOUNDARY, data={
+                'picture': self.image_file1,
+                'confirm_picture': self.image_file2,
+            }),
             content_type=MULTIPART_CONTENT,
             HTTP_AUTHORIZATION=f"Token {self.auth_token}"
         )

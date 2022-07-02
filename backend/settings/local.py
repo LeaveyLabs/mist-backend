@@ -19,7 +19,7 @@ if os.getenv('GITHUB_WORKFLOW'):
             'NAME': config('POSTGRES_DB'),
             'USER': config('POSTGRES_USER'),
             'PASSWORD': config('POSTGRES_PASSWORD'),
-            'HOST': 'localhost',
+            'HOST': config('HOST'),
             'PORT': '5432'
         }
     }
@@ -28,9 +28,9 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': 'postgres',
-            'USER': 'kevinsun',
+            'USER': 'postgres',
             'PASSWORD': '',
-            'HOST': 'localhost',
+            'HOST': config('HOST'),
             'PORT': '5432'
         }
     }
