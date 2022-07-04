@@ -159,7 +159,7 @@ class FriendRequest(models.Model):
 class MatchRequest(models.Model):
     match_requesting_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='match_requesting_user', on_delete=models.CASCADE)
     match_requested_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='match_requested_user', on_delete=models.CASCADE)
-    post = models.ForeignKey(Post, on_delete=models.SET_NULL)
+    post = models.ForeignKey(Post, null=True, on_delete=models.SET_NULL)
     timestamp = models.FloatField(default=get_current_time, null=True)
         
     class Meta:
