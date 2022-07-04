@@ -53,7 +53,7 @@ urlpatterns = [
     path('api-register-email/', RegisterUserEmailView.as_view()),
     path('api-validate-email/', ValidateUserEmailView.as_view()),
     path('api-validate-username/', ValidateUsernameView.as_view()),
-    path('api-validate-password/', ValidatePasswordView.as_view())
+    path('api-validate-password/', ValidatePasswordView.as_view()),
     path('api-token/', obtain_auth_token),
     path('api-request-reset-password/', RequestPasswordResetView.as_view()),
     path('api-validate-reset-password/', ValidatePasswordResetView.as_view()),
