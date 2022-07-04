@@ -13,7 +13,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
-from .views import FinalizePasswordResetView, RegisterUserEmailView, RequestPasswordResetView, UserView, ValidatePasswordResetView, ValidateUserEmailView, ValidateUsernameView
+from .views import FinalizePasswordResetView, RegisterUserEmailView, RequestPasswordResetView, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, ValidateUsernameView
 from .models import PasswordReset, User, EmailAuthentication
 
 # Create your tests here.
@@ -304,6 +304,82 @@ class ValidateUsernameViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(User.objects.filter(username=taken_username))
         return
+
+class ValidatePasswordViewTest(TestCase):
+    def setUp(self):
+        cache.cache.clear()
+        self.username = 'FakeTestingUsername'
+        self.strong_password = 'FakeTestingPassword@3124587'
+        self.short_passowrd = 'fff'
+        self.generic_password = 'password'
+        self.numerical_password = '1234567'
+        self.username_password = 'FakeTestingUsername'
+        return
+
+    def test_post_should_accept_strong_password(self):
+        request = APIRequestFactory().post(
+            'api-validate-password/',
+            {
+                'username': self.username,
+                'password': self.strong_password,
+            },
+            format='json',
+        )
+        response = ValidatePasswordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_post_should_not_accept_password_under_9_characters(self):
+        request = APIRequestFactory().post(
+            'api-validate-password/',
+            {
+                'username': self.username,
+                'password': self.short_passowrd,
+            },
+            format='json',
+        )
+        response = ValidatePasswordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_post_should_not_accept_generic_password(self):
+        request = APIRequestFactory().post(
+            'api-validate-password/',
+            {
+                'username': self.username,
+                'password': self.generic_password,
+            },
+            format='json',
+        )
+        response = ValidatePasswordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_post_should_not_accept_only_numerical_password(self):
+        request = APIRequestFactory().post(
+            'api-validate-password/',
+            {
+                'username': self.username,
+                'password': self.numerical_password,
+            },
+            format='json',
+        )
+        response = ValidatePasswordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_post_should_not_accept_password_too_close_to_username(self):
+        request = APIRequestFactory().post(
+            'api-validate-password/',
+            {
+                'username': self.username,
+                'password': self.username_password,
+            },
+            format='json',
+        )
+        response = ValidatePasswordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 class UserViewPostTest(TestCase):
     def setUp(self):

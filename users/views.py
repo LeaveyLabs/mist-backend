@@ -13,6 +13,7 @@ from .serializers import (
     PasswordResetFinalizationSerializer,
     PasswordResetRequestSerializer,
     PasswordResetValidationSerializer,
+    PasswordValidationRequestSerializer,
     ReadOnlyUserSerializer,
     UserEmailRegistrationSerializer,
     UserEmailValidationRequestSerializer,
@@ -163,6 +164,24 @@ class ValidateUsernameView(generics.CreateAPIView):
                 "data": validation_request.data,
             },
             status=status.HTTP_200_OK)
+
+class ValidatePasswordView(generics.CreateAPIView):
+    """
+    View to validate password
+    """
+    permission_classes = (AllowAny, )
+    serializer_class = PasswordValidationRequestSerializer
+    
+    def post(self, request):
+        validation_request = PasswordValidationRequestSerializer(data=request.data)
+        validation_request.is_valid(raise_exception=True)
+
+        return Response(
+            {
+                "status": "success",
+                "data": validation_request.data,
+            },
+            status=status.HTTP_201_CREATED)
 
 class RequestPasswordResetView(generics.CreateAPIView):
     """
