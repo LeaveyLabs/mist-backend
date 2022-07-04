@@ -17,6 +17,7 @@ jobs:
         SECRET_KEY: ${{secrets.SECRET_KEY}}
         EMAIL_HOST_USER: ${{secrets.EMAIL_HOST_USER}}
         EMAIL_HOST_PASSWORD: ${{secrets.EMAIL_HOST_PASSWORD}}
+        HOST: host.docker.internal
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
         POSTGRES_DB: postgres
