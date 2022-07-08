@@ -22,7 +22,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'email', 'username', 'password',
         'first_name', 'last_name', 'picture', 'confirm_picture', 
-        'date_of_birth', )
+        'date_of_birth', 'sex', )
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
