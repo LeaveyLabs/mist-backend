@@ -65,6 +65,7 @@ class MatchRequestSerializer(serializers.ModelSerializer):
         fields = ('id', 'match_requesting_user', 'match_requested_user', 'post', 'read_only_post', 'timestamp')
 
     def get_read_only_post(self, obj):
+        if not obj.post: return None
         post_pk = obj.post.pk
         post_instance = Post.objects.get(pk=post_pk)
         return PostSerializer(post_instance).data

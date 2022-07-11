@@ -100,6 +100,35 @@ class MatchRequestTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         return
+
+    def test_get_should_return_match_requests_with_deleted_post(self):
+        pre_delete_match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        
+        self.post.delete()
+
+        post_delete_match_request = MatchRequest.objects.get(
+            id=pre_delete_match_request.id)
+        serialized_match_request = MatchRequestSerializer(post_delete_match_request).data
+
+        request = APIRequestFactory().get(
+            '/api/match_requests',
+            {
+                'match_requesting_user': self.user1.pk,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'get':'list'})(request)
+        response_match_request = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_match_request, serialized_match_request)
+        return
     
     def test_post_should_create_match_request_given_valid_match_request(self):
         match_request = MatchRequest(
