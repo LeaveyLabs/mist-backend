@@ -2,8 +2,10 @@ from datetime import date, datetime, timedelta
 from django.forms import ValidationError
 from rest_framework import serializers
 from .models import PasswordReset, User, EmailAuthentication
+from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
+from django.core.validators import validate_email
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -86,7 +88,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         return self.picture_below_size_limit(confirm_picture, 'confirm_picture')
 
     def create(self, validated_data):
-        email = validated_data.get('email')
+        email = validated_data.get('email').lower()
         validations_with_matching_email = EmailAuthentication.objects.filter(
             email__iexact=email)
         email_auth_requests = validations_with_matching_email.order_by('-validation_time')
@@ -106,7 +108,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if validation_expired:
             raise serializers.ValidationError({"email": "Email validation expired."})
 
-        users_with_matching_email = User.objects.filter(email=email)
+        users_with_matching_email = User.objects.filter(email__iexact=email)
         if len(users_with_matching_email):
             raise serializers.ValidationError({"email": "Email already taken."})
 
@@ -134,7 +136,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         if validated_data.get('password'):
             instance.set_password(validated_data.get('password'))
-        instance.email = validated_data.get('email', instance.email)
+        instance.email = validated_data.get('email', instance.email).lower()
         instance.username = validated_data.get('username', instance.username)
         instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
         instance.picture = validated_data.get('picture', instance.picture)
@@ -143,6 +145,47 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     
     def partial_update(self, instance, validated_data):
         return self.update(self, instance, validated_data)
+
+class LoginSerializer(serializers.Serializer):
+    email_or_username = serializers.CharField()
+    password = serializers.CharField()
+
+    def validate(self, data):
+        email_or_username = data.get('email_or_username').lower()
+        password = data.get('password')
+
+        missing_fields = {}
+        if not email_or_username:
+            missing_fields['email_or_username'] = "Email or username is required."
+        if not password:
+            missing_fields['password'] = "Password is required."
+        if missing_fields: 
+            raise serializers.ValidationError(missing_fields)
+
+        users_with_matching_email = User.objects.filter(email__iexact=email_or_username)
+        if users_with_matching_email:
+            user_with_matching_email = users_with_matching_email[0]
+            email_or_username = user_with_matching_email.username
+        print(email_or_username)
+        user = authenticate(username=email_or_username, password=password)
+        if user:
+            if not user.is_active:
+                raise serializers.ValidationError({
+                    "non_field_errors": [
+                        "User account is disabled."
+                    ]
+                })
+        else:
+            raise serializers.ValidationError({
+                    "non_field_errors": [
+                        "Unable to log in with provided credentials."
+                    ]
+                })
+
+        data['user'] = user
+        return data
+            
+            
 
 class UserEmailRegistrationSerializer(serializers.ModelSerializer):
     class Meta:

@@ -163,7 +163,7 @@ class MatchRequest(models.Model):
     timestamp = models.FloatField(default=get_current_time, null=True)
         
     class Meta:
-        unique_together = ('match_requesting_user', 'match_requested_user', 'post')
+        unique_together = ('match_requesting_user', 'match_requested_user')
 
 class Message(models.Model):
     body = models.CharField(max_length=1000)

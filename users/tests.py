@@ -13,7 +13,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
-from .views import FinalizePasswordResetView, RegisterUserEmailView, RequestPasswordResetView, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, ValidateUsernameView
+from .views import FinalizePasswordResetView, LoginView, RegisterUserEmailView, RequestPasswordResetView, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, ValidateUsernameView
 from .models import PasswordReset, User, EmailAuthentication
 
 # Create your tests here.
@@ -602,19 +602,20 @@ class APITokenViewPostTest(TestCase):
     def setUp(self):
         cache.cache.clear()
 
+        self.fake_username = 'FakeTestingUsername'
+        self.fake_email = 'thisEmailDoesExist@usc.edu'
+        self.fake_password = 'FakeTestingPassword@3124587'
+        self.fake_first_name = 'FirstNameOfFakeUser'
+        self.fake_last_name = 'LastNameOfFakeUser'
+
         self.email_auth = EmailAuthentication.objects.create(
-            email='thisEmailDoesExist@usc.edu',
+            email=self.fake_email,
         )
         self.email_auth.validated = True
         self.email_auth.validation_time = datetime.now().timestamp()
         self.email_auth.save()
-
-        self.fake_username = 'FakeTestingUsername'
-        self.fake_password = 'FakeTestingPassword@3124587'
-        self.fake_first_name = 'FirstNameOfFakeUser'
-        self.fake_last_name = 'LastNameOfFakeUser'
         
-    def test_post_should_obtain_token_given_valid_credentials(self):
+    def test_post_should_obtain_token_given_valid_username_valid_password(self):
         user = User(
             email=self.email_auth.email,
             username=self.fake_username,
@@ -626,12 +627,35 @@ class APITokenViewPostTest(TestCase):
         request = APIRequestFactory().post(
             'api-token/',
             {
-                'username': self.fake_username, 
+                'email_or_username': self.fake_username, 
                 'password': self.fake_password,
             },
             format='json',
         )
-        response = obtain_auth_token(request)
+        response = LoginView.as_view()(request)
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('token', response.data)
+        return
+    
+    def test_post_should_obtain_token_given_valid_email_valid_password(self):
+        user = User(
+            email=self.email_auth.email,
+            username=self.fake_username,
+            date_of_birth=date(2000, 1, 1),
+        )
+        user.set_password(self.fake_password)
+        user.save()
+
+        request = APIRequestFactory().post(
+            'api-token/',
+            {
+                'email_or_username': self.fake_email, 
+                'password': self.fake_password,
+            },
+            format='json',
+        )
+        response = LoginView.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
@@ -649,12 +673,35 @@ class APITokenViewPostTest(TestCase):
         request = APIRequestFactory().post(
             'api-token/',
             {
-                'username': 'ThisUserDoesNotExist', 
+                'email_or_username': 'ThisUserDoesNotExist', 
                 'password': self.fake_password,
             },
             format='json',
         )
-        response = obtain_auth_token(request)
+        response = LoginView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn('token', response.data)
+        return
+    
+    def test_post_should_not_obtain_token_given_invalid_email(self):
+        user = User(
+            email=self.email_auth.email,
+            username=self.fake_username,
+            date_of_birth=date(2000, 1, 1),
+        )
+        user.set_password(self.fake_password)
+        user.save()
+
+        request = APIRequestFactory().post(
+            'api-token/',
+            {
+                'email_or_username': 'thisEmailDoesNotExist@doesNotExist.usc.edu', 
+                'password': self.fake_password,
+            },
+            format='json',
+        )
+        response = LoginView.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertNotIn('token', response.data)
@@ -672,13 +719,13 @@ class APITokenViewPostTest(TestCase):
         request = APIRequestFactory().post(
             'api-token/',
             {
-                'username': self.fake_username, 
+                'email_or_username': self.fake_username, 
                 'password': 'ThisPasswordDoesNotExist',
             },
             format='json',
         )
 
-        response = obtain_auth_token(request)
+        response = LoginView.as_view()(request)
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertNotIn('token', response.data)

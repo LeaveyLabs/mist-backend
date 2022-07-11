@@ -10,6 +10,7 @@ from django.core.mail import send_mail
 from django.db.models import Q
 
 from .serializers import (
+    LoginSerializer,
     PasswordResetFinalizationSerializer,
     PasswordResetRequestSerializer,
     PasswordResetValidationSerializer,
@@ -182,6 +183,22 @@ class ValidatePasswordView(generics.CreateAPIView):
                 "data": validation_request.data,
             },
             status=status.HTTP_201_CREATED)
+
+class LoginView(generics.CreateAPIView):
+    """
+    View to login
+    """
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+
+        content = {
+            'token': token.key,
+        }
+
+        return Response(content)
 
 class RequestPasswordResetView(generics.CreateAPIView):
     """

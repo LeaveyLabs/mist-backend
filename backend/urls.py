@@ -31,7 +31,7 @@ from mist.views.post import FavoritedPostsView, FeaturedPostsView, FriendPostsVi
 from mist.views.tag import TagView
 from mist.views.vote import VoteView
 from mist.views.word import WordView
-from users.views import FinalizePasswordResetView, RegisterUserEmailView, RequestPasswordResetView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, UserView, ValidateUsernameView
+from users.views import FinalizePasswordResetView, LoginView, RegisterUserEmailView, RequestPasswordResetView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, UserView, ValidateUsernameView
 
 # Models
 router = routers.DefaultRouter()
@@ -54,7 +54,7 @@ urlpatterns = [
     path('api-validate-email/', ValidateUserEmailView.as_view()),
     path('api-validate-username/', ValidateUsernameView.as_view()),
     path('api-validate-password/', ValidatePasswordView.as_view()),
-    path('api-token/', obtain_auth_token),
+    path('api-token/', LoginView.as_view()),
     path('api-request-reset-password/', RequestPasswordResetView.as_view()),
     path('api-validate-reset-password/', ValidatePasswordResetView.as_view()),
     path('api-finalize-reset-password/', FinalizePasswordResetView.as_view()),
