@@ -49,8 +49,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          pip install --user pipenv
-          pipenv install
+          docker-compose build
       - name: Test
         run: |
-          pipenv run python3 manage.py test
+          docker-compose run web ./manage.py test
