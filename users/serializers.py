@@ -166,7 +166,7 @@ class LoginSerializer(serializers.Serializer):
         if users_with_matching_email:
             user_with_matching_email = users_with_matching_email[0]
             email_or_username = user_with_matching_email.username
-        print(email_or_username)
+            
         user = authenticate(username=email_or_username, password=password)
         if user:
             if not user.is_active:
