@@ -68,8 +68,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def validate_date_of_birth(self, date_of_birth):
         today = date.today()
         age = today.year - date_of_birth.year - ((today.month, today.day) < (date_of_birth.month, date_of_birth.day))
-        if age < 13:
-            raise ValidationError({"date_of_birth": "Users must be over 13 years old."})
+        if age < 18:
+            raise ValidationError({"date_of_birth": "Users must be over 18 years old."})
         return date_of_birth
     
     def validate_email(self, email):
