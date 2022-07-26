@@ -5,12 +5,12 @@ from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
 
-from ..serializers import VoteSerializer
-from ..models import Vote
+from ..serializers import CommentVoteSerializer
+from ..models import CommentVote
 
-class VoteView(viewsets.ModelViewSet):
+class CommentVoteView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, VotePermission)
-    serializer_class = VoteSerializer
+    serializer_class = CommentVoteSerializer
 
     def get_object(self):
         lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
@@ -21,11 +21,11 @@ class VoteView(viewsets.ModelViewSet):
             
     def get_object_by_query_params(self):
         voter = self.request.query_params.get("voter")
-        post = self.request.query_params.get("post")
+        comment = self.request.query_params.get("comment")
         matching_vote = get_object_or_404(
-            Vote.objects.all(), 
+            CommentVote.objects.all(), 
             voter=voter,
-            post=post)
+            comment=comment)
         self.check_object_permissions(self.request, matching_vote)
         return matching_vote
 
@@ -36,13 +36,13 @@ class VoteView(viewsets.ModelViewSet):
         """
         # parameters
         voter = self.request.query_params.get("voter")
-        post = self.request.query_params.get("post")
+        comment = self.request.query_params.get("comment")
         # filters
-        queryset = Vote.objects.all()
+        queryset = CommentVote.objects.all()
         if voter:
             matching_users = User.objects.filter(pk=voter)
-            if not matching_users: return Vote.objects.none()
+            if not matching_users: return CommentVote.objects.none()
             queryset = queryset.filter(voter=matching_users[0])
-        if post:
-            queryset = queryset.filter(post=post)
+        if comment:
+            queryset = queryset.filter(comment=comment)
         return queryset

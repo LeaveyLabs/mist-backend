@@ -43,25 +43,39 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Create env file
-        run: |
-          touch .env
-          echo DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE} > .env
-          echo SECRET_KEY=${SECRET_KEY} > .env
-          echo EMAIL_HOST_USER=${EMAIL_HOST_USER} > .env
-          echo EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD} > .env
-          echo HOST=${HOST} > .env
-          echo POSTGRES_USER=${POSTGRES_USER} > .env
-          echo POSTGRES_PASSWORD=${POSTGRES_PASSWORD} > .env
-          echo POSTGRES_DB=${POSTGRES_DB} > .env
-          cat .env
+      # - name: local-fix
+      #   run: |
+      #     # Hack to get setup-python to work on act
+      #     # (see https://github.com/nektos/act/issues/251)
+      #     if [ ! -f "/etc/lsb-release" ] ; then
+      #       echo "DISTRIB_RELEASE=18.04" > /etc/lsb-release
+      #     fi
+      # - name: Set up Python ${{ matrix.python-version }}
+      #   uses: actions/setup-python@v3
+      #   with:
+      #     python-version: ${{ matrix.python-version }}
+      # - name: Create env file
+      #   run: |
+      #     touch .env
+      #     echo DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE} > .env
+      #     echo SECRET_KEY=${SECRET_KEY} > .env
+      #     echo EMAIL_HOST_USER=${EMAIL_HOST_USER} > .env
+      #     echo EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD} > .env
+      #     echo HOST=${HOST} > .env
+      #     echo POSTGRES_USER=${POSTGRES_USER} > .env
+      #     echo POSTGRES_PASSWORD=${POSTGRES_PASSWORD} > .env
+      #     echo POSTGRES_DB=${POSTGRES_DB} > .env
+      #     cat .env
+      # - name: Install dependencies
+      #   run: |
+      #     docker-compose build
+      # - name: Test
+      #   run: |
+      #     docker-compose run web ./manage.py test
       - name: Install dependencies
         run: |
-          docker-compose build
+          pip install --user pipenv
+          pipenv install
       - name: Test
         run: |
-          docker-compose run web ./manage.py test
+          pipenv run python3 manage.py test

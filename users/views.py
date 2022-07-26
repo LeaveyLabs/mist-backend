@@ -8,6 +8,7 @@ from users.generics import get_user_from_request
 from users.permissions import UserPermissions
 from django.core.mail import send_mail
 from django.db.models import Q
+from django.db.models.expressions import RawSQL
 
 from .serializers import (
     LoginSerializer,
@@ -94,6 +95,45 @@ class UserView(viewsets.ModelViewSet):
                 self.serializer_class = CompleteUserSerializer
 
         return queryset
+
+class NearbyUsersView(generics.ListAPIView):
+    permission_classes = (UserPermissions, )
+    serializer_class = ReadOnlyUserSerializer
+
+    MAX_DISTANCE = .1
+
+    def get_locations_nearby_coords(self, latitude, longitude, max_distance=MAX_DISTANCE):
+        """
+        Return objects sorted by distance to specified coordinates
+        which distance is less than max_distance given in kilometers
+        """
+        # Great circle distance formula
+        gcd_formula = "6371 * acos(least(greatest(\
+        cos(radians(%s)) * cos(radians(latitude)) \
+        * cos(radians(longitude) - radians(%s)) + \
+        sin(radians(%s)) * sin(radians(latitude)) \
+        , -1), 1))"
+        distance_raw_sql = RawSQL(
+            gcd_formula,
+            (latitude, longitude, latitude)
+        )
+        # make sure the latitude + longtitude exists
+        # make sure the distance is under the max
+        qs = User.objects.all()\
+        .filter(latitude__isnull=False)\
+        .filter(longitude__isnull=False)\
+        .annotate(distance=distance_raw_sql)\
+        .order_by('distance')
+        # distance must be less than max distance
+        qs = qs.filter(distance__lt=max_distance)
+        return qs
+
+    def get_queryset(self):
+        requesting_user = get_user_from_request(self.request)
+        nearby_users = self.get_locations_nearby_coords(
+            requesting_user.latitude,
+            requesting_user.longitude)
+        return nearby_users
 
 class RegisterUserEmailView(generics.CreateAPIView):
     permission_classes = (AllowAny, )

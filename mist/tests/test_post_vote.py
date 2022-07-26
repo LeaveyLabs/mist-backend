@@ -3,13 +3,13 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import Post, Vote
-from mist.serializers import VoteSerializer
-from mist.views.vote import VoteView
+from mist.models import Post, PostVote
+from mist.serializers import PostVoteSerializer
+from mist.views.post_vote import PostVoteView
 
 from users.models import User
 
-class VoteTest(TestCase):
+class PostVoteTest(TestCase):
     def setUp(self):
         self.user1 = User(
             email='TestUser@usc.edu',
@@ -37,14 +37,14 @@ class VoteTest(TestCase):
         return
     
     def test_post_should_create_vote_given_valid_vote(self):
-        vote = Vote(
+        vote = PostVote(
             voter=self.user1,
             post=self.post,
             rating=10,
         )
-        serialized_vote = VoteSerializer(vote).data
+        serialized_vote = PostVoteSerializer(vote).data
 
-        self.assertFalse(Vote.objects.filter(
+        self.assertFalse(PostVote.objects.filter(
             voter=vote.voter,
             post=vote.post,
             rating=vote.rating,
@@ -56,7 +56,7 @@ class VoteTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = VoteView.as_view({'post':'create'})(request)
+        response = PostVoteView.as_view({'post':'create'})(request)
 
         response_vote = response.data
 
@@ -64,7 +64,7 @@ class VoteTest(TestCase):
         self.assertEqual(response_vote.get('voter'), serialized_vote.get('voter'))
         self.assertEqual(response_vote.get('post'), serialized_vote.get('post'))
         self.assertEqual(response_vote.get('rating'), serialized_vote.get('rating'))
-        self.assertTrue(Vote.objects.filter(
+        self.assertTrue(PostVote.objects.filter(
             voter=vote.voter,
             post=vote.post,
             rating=vote.rating,
@@ -72,121 +72,121 @@ class VoteTest(TestCase):
         return
     
     def test_delete_should_delete_vote_given_pk(self):
-        vote = Vote.objects.create(
+        vote = PostVote.objects.create(
             voter=self.user1,
             post=self.post,
             rating=10,
         )
-        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+        self.assertTrue(PostVote.objects.filter(pk=vote.pk))
 
         request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
-        response = VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
+        response = PostVoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Vote.objects.filter(pk=vote.pk))
+        self.assertFalse(PostVote.objects.filter(pk=vote.pk))
         return
 
     def test_delete_should_delete_vote_given_voter_and_post(self):
-        vote = Vote.objects.create(
+        vote = PostVote.objects.create(
             voter=self.user1,
             post=self.post,
             rating=10,
         )
-        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+        self.assertTrue(PostVote.objects.filter(pk=vote.pk))
 
         request = APIRequestFactory().delete(
             f'/api/votes?voter={vote.voter.pk}&post={vote.post.pk}', 
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
-        response = VoteView.as_view({'delete':'destroy'})(request)
+        response = PostVoteView.as_view({'delete':'destroy'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Vote.objects.filter(pk=vote.pk))
+        self.assertFalse(PostVote.objects.filter(pk=vote.pk))
         return
     
     def test_delete_should_not_delete_vote_given_no_parameters(self):
-        vote = Vote.objects.create(
+        vote = PostVote.objects.create(
             voter=self.user1,
             post=self.post,
             rating=10,
         )
-        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+        self.assertTrue(PostVote.objects.filter(pk=vote.pk))
 
         request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
-        response = VoteView.as_view({'delete':'destroy'})(request)
+        response = PostVoteView.as_view({'delete':'destroy'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+        self.assertTrue(PostVote.objects.filter(pk=vote.pk))
         return
 
     def test_delete_should_not_delete_vote_given_nonexistent_pk(self):
         nonexistent_pk = 99999
-        self.assertFalse(Vote.objects.filter(pk=nonexistent_pk))
+        self.assertFalse(PostVote.objects.filter(pk=nonexistent_pk))
 
         request = APIRequestFactory().delete('/api/votes/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
-        response = VoteView.as_view({'delete':'destroy'})(request, pk=nonexistent_pk)
+        response = PostVoteView.as_view({'delete':'destroy'})(request, pk=nonexistent_pk)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertFalse(Vote.objects.filter(pk=nonexistent_pk))
+        self.assertFalse(PostVote.objects.filter(pk=nonexistent_pk))
         return
 
     def test_delete_should_not_delete_vote_given_invalid_voter_post_combination(self):
-        vote = Vote.objects.create(
+        vote = PostVote.objects.create(
             voter=self.user1,
             post=self.post,
             rating=10,
         )
-        self.assertTrue(Vote.objects.filter(pk=vote.pk))
-        self.assertFalse(Vote.objects.filter(
+        self.assertTrue(PostVote.objects.filter(pk=vote.pk))
+        self.assertFalse(PostVote.objects.filter(
             voter=self.user2.pk, 
             post=vote.post.pk))
 
         request = APIRequestFactory().delete(
             f'/api/votes?voter={self.user2.pk}&post={vote.post.pk}', 
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
-        response = VoteView.as_view({'delete':'destroy'})(request, pk='')
+        response = PostVoteView.as_view({'delete':'destroy'})(request, pk='')
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+        self.assertTrue(PostVote.objects.filter(pk=vote.pk))
         return
     
     def test_delete_should_delete_vote_given_pk_and_query_combo(self):
-        vote = Vote.objects.create(
+        vote = PostVote.objects.create(
             voter=self.user1,
             post=self.post,
             rating=10,
         )
-        self.assertTrue(Vote.objects.filter(pk=vote.pk))
+        self.assertTrue(PostVote.objects.filter(pk=vote.pk))
 
         request = APIRequestFactory().delete(
             f'/api/votes?voter={vote.voter.pk}&post={vote.post.pk}', 
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
-        response = VoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
+        response = PostVoteView.as_view({'delete':'destroy'})(request, pk=vote.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Vote.objects.filter(pk=vote.pk))
+        self.assertFalse(PostVote.objects.filter(pk=vote.pk))
         return
     
     def test_get_should_return_votes_by_voter_on_post_given_voter_and_post(self):
-        vote1 = Vote.objects.create(
+        vote1 = PostVote.objects.create(
             voter=self.user1,
             post=self.post,
             timestamp=0,
             rating=10,
         )
-        vote2 = Vote.objects.create(
+        vote2 = PostVote.objects.create(
             voter=self.user2,
             post=self.post,
             timestamp=0,
             rating=10,
         )
-        serialized_vote = VoteSerializer(vote1).data
-        self.assertTrue(Vote.objects.filter(
+        serialized_vote = PostVoteSerializer(vote1).data
+        self.assertTrue(PostVote.objects.filter(
             voter=vote1.voter,
             post=vote1.post,
             timestamp=vote1.timestamp,
             rating=vote1.rating,
         ))
-        self.assertTrue(Vote.objects.filter(
+        self.assertTrue(PostVote.objects.filter(
             voter=vote2.voter,
             post=vote2.post,
             timestamp=vote2.timestamp,
@@ -202,7 +202,7 @@ class VoteTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = VoteView.as_view({'get':'list'})(request)
+        response = PostVoteView.as_view({'get':'list'})(request)
         response_vote = response.data[0]
 
         self.assertEqual(len(response.data), 1)

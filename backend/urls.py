@@ -21,26 +21,30 @@ from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 from mist.views.block import BlockView
 from mist.views.comment import CommentView
+from mist.views.comment_flag import CommentFlagView
+from mist.views.comment_vote import CommentVoteView
 from mist.views.favorite import FavoriteView
 from mist.views.feature import FeatureView
-from mist.views.flag import FlagView
+from mist.views.post_flag import PostFlagView
 from mist.views.friend import FriendRequestView, FriendshipView
 from mist.views.match import MatchRequestView, MatchView
 from mist.views.message import ConversationView, MessageView
 from mist.views.post import FavoritedPostsView, FeaturedPostsView, FriendPostsView, MatchedPostsView, PostView, SubmittedPostsView
 from mist.views.tag import TagView
-from mist.views.vote import VoteView
+from mist.views.post_vote import PostVoteView
 from mist.views.word import WordView
-from users.views import FinalizePasswordResetView, LoginView, RegisterUserEmailView, RequestPasswordResetView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, UserView, ValidateUsernameView
+from users.views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterUserEmailView, RequestPasswordResetView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, UserView, ValidateUsernameView
 
 # Models
 router = routers.DefaultRouter()
 router.register(r'users', UserView, 'user')
 router.register(r'posts', PostView, 'post')
+router.register(r'post-votes', PostVoteView, 'post_vote')
+router.register(r'post-flags', PostFlagView, 'post_flag')
 router.register(r'comments', CommentView, 'comment')
+router.register(r'comment-votes', CommentVoteView, 'comment_vote')
+router.register(r'comment-flags', CommentFlagView, 'comment_flag')
 router.register(r'messages', MessageView, 'message')
-router.register(r'votes', VoteView, 'vote')
-router.register(r'flags', FlagView, 'flag')
 router.register(r'tags', TagView, 'tag')
 router.register(r'blocks', BlockView, 'block')
 router.register(r'favorites', FavoriteView, 'favorite')
@@ -60,6 +64,7 @@ urlpatterns = [
     path('api-finalize-reset-password/', FinalizePasswordResetView.as_view()),
     # Database
     path('api/', include(router.urls)),
+    path('api/nearby-users/', NearbyUsersView.as_view()),
     path('api/words/', WordView.as_view()),
     path('api/features/', FeatureView.as_view()),
     path('api/matches/', MatchView.as_view()),
@@ -72,7 +77,8 @@ urlpatterns = [
     path('api/submitted-posts/', SubmittedPostsView.as_view()),
     # Requests
     path('api/delete-block/', BlockView.as_view({'delete':'destroy'})),
-    path('api/delete-vote/', VoteView.as_view({'delete':'destroy'})),
+    path('api/delete-post-vote/', PostVoteView.as_view({'delete':'destroy'})),
+    path('api/delete-comment-vote/', CommentVoteView.as_view({'delete':'destroy'})),
     path('api/delete-favorite/', FavoriteView.as_view({'delete':'destroy'})),
     path('api/delete-friend-request/', FriendRequestView.as_view({'delete':'destroy'})),
     path('api/delete-match-request/', MatchRequestView.as_view({'delete':'destroy'})),

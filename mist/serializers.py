@@ -2,7 +2,7 @@ from rest_framework import serializers
 from users.models import User
 
 from users.serializers import ReadOnlyUserSerializer
-from .models import Block, Favorite, Feature, Flag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, Vote, Word
+from .models import Block, CommentFlag, CommentVote, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.SerializerMethodField()
@@ -32,14 +32,14 @@ class PostSerializer(serializers.ModelSerializer):
         author_instance = User.objects.get(pk=author_pk)
         return ReadOnlyUserSerializer(author_instance).data
 
-class VoteSerializer(serializers.ModelSerializer):
+class PostVoteSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Vote
+        model = PostVote
         fields = ('id', 'voter', 'post', 'timestamp', 'rating')
     
-class FlagSerializer(serializers.ModelSerializer):
+class PostFlagSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Flag
+        model = PostFlag
         fields = ('id', 'flagger', 'post', 'timestamp', 'rating')
 
 class TagSerializer(serializers.ModelSerializer):
@@ -81,6 +81,16 @@ class CommentSerializer(serializers.ModelSerializer):
         author_pk = obj.author.pk
         author_instance = User.objects.get(pk=author_pk)
         return ReadOnlyUserSerializer(author_instance).data
+
+class CommentVoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommentVote
+        fields = ('id', 'voter', 'comment', 'timestamp', 'rating')
+    
+class CommentFlagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommentFlag
+        fields = ('id', 'flagger', 'comment', 'timestamp', 'rating')
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:

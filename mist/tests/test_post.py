@@ -4,7 +4,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import Comment, Favorite, Feature, Flag, FriendRequest, MatchRequest, Post, Vote, Word
+from mist.models import Comment, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Word
 from mist.serializers import PostSerializer
 from mist.views.post import FavoritedPostsView, FeaturedPostsView, MatchedPostsView, PostView, SubmittedPostsView
 
@@ -52,7 +52,7 @@ class PostTest(TestCase):
             author=self.user1,
         )
 
-        self.vote = Vote.objects.create(
+        self.vote = PostVote.objects.create(
             voter=self.user1,
             post=self.post1,
         )
@@ -63,7 +63,7 @@ class PostTest(TestCase):
             author=self.user1,
         )
 
-        self.flag = Flag.objects.create(
+        self.flag = PostFlag.objects.create(
             post=self.post1,
             flagger=self.user1,
         )
@@ -200,9 +200,9 @@ class PostTest(TestCase):
         return
     
     def test_get_should_return_posts_in_vote_minus_flag_order(self):
-        Vote.objects.create(voter=self.user1, post=self.post2)
-        Vote.objects.create(voter=self.user2, post=self.post2)
-        Vote.objects.create(voter=self.user2, post=self.post1)
+        PostVote.objects.create(voter=self.user1, post=self.post2)
+        PostVote.objects.create(voter=self.user2, post=self.post2)
+        PostVote.objects.create(voter=self.user2, post=self.post1)
         
         serialized_posts = [
             PostSerializer(self.post2).data,
@@ -226,8 +226,8 @@ class PostTest(TestCase):
         return
     
     def test_get_should_not_return_posts_with_flags_greater_than_square_root_of_votes(self):
-        Flag.objects.create(flagger=self.user1, post=self.post3)
-        Flag.objects.create(flagger=self.user2, post=self.post3)
+        PostFlag.objects.create(flagger=self.user1, post=self.post3)
+        PostFlag.objects.create(flagger=self.user2, post=self.post3)
 
         serialized_posts = [
             PostSerializer(self.post1).data,

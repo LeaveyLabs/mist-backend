@@ -13,7 +13,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
-from .views import FinalizePasswordResetView, LoginView, RegisterUserEmailView, RequestPasswordResetView, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, ValidateUsernameView
+from .views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterUserEmailView, RequestPasswordResetView, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, ValidateUsernameView
 from .models import PasswordReset, User, EmailAuthentication
 
 # Create your tests here.
@@ -1075,7 +1075,9 @@ class UserViewPatchTest(TestCase):
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
             last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1))
+            date_of_birth=date(2000, 1, 1),
+            latitude=0,
+            longitude=0,)
         self.password = "strongPassword@1354689$"
         self.valid_user.set_password(self.password)
         self.valid_user.save()
@@ -1325,6 +1327,118 @@ class UserViewPatchTest(TestCase):
             self.assertEqual(self.valid_user.first_name, patched_user.first_name)
             self.assertEqual(self.valid_user.last_name, patched_user.last_name)
             self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        return
+
+    def test_patch_should_update_latitude_given_valid_latitude(self):
+        new_latitude = 1.0
+
+        request = APIRequestFactory().patch(
+            'api/users/',
+            {
+                'latitude': new_latitude,
+            },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(patched_user.latitude, new_latitude)
+        return
+    
+    def test_patch_should_update_longitude_given_valid_longitude(self):
+        new_longitude = 1.0
+
+        request = APIRequestFactory().patch(
+            'api/users/',
+            {
+                'longitude': new_longitude,
+            },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(patched_user.longitude, new_longitude)
+        return
+
+class NearbyUsersViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1),
+            latitude=0,
+            longitude=0,)
+        self.user1.set_password('randomPassword')
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User.objects.create(
+            email="email2@usc.edu",
+            username="unrelatedUsername2",
+            first_name="completelyDifferentFirstName2",
+            last_name="notTheSameLastName2",
+            date_of_birth=date(2000, 1, 1),
+            latitude=0,
+            longitude=0,)
+        self.user2.set_password('randomPassword')
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.user3 = User.objects.create(
+            email="email3@usc.edu",
+            username="unrelatedUsername3",
+            first_name="completelyDifferentFirstName3",
+            last_name="notTheSameLastName3",
+            date_of_birth=date(2000, 1, 1),
+            latitude=100,
+            longitude=100,)
+        self.user3.set_password('randomPassword')
+        self.user3.save()
+        self.auth_token3 = Token.objects.create(user=self.user3)
+        return
+
+    def test_get_should_not_return_given_no_auth_user(self):
+        request = APIRequestFactory().get(
+            'api/nearby-users/',
+        )
+        response = NearbyUsersView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+    def test_get_should_return_only_nearby_users(self):
+        serialized_users = [
+            ReadOnlyUserSerializer(self.user1).data,
+            ReadOnlyUserSerializer(self.user2).data,
+        ]
+
+        request = APIRequestFactory().get(
+            'api/nearby-users/',
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        )
+        response = NearbyUsersView.as_view()(request)
+        response_users = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(response_users, serialized_users)
+        self.assertCountEqual(response_users, serialized_users)
         return
 
 class RequestPasswordResetViewTest(TestCase):

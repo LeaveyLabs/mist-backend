@@ -1,0 +1,30 @@
+[
+    {
+        "username": "doreyv",
+        "email": "doreyv@usc.edu",
+        "password": "randomstringofcharacters1234",
+        "sex": "m",
+        "date_of_birth": "2000-01-01"
+    },
+    {
+        "username": "jacoba",
+        "email": "jacoba@usc.edu",
+        "password": "randomstringofcharacters1234",
+        "sex": "m",
+        "date_of_birth": "2000-01-01"
+    },
+    {
+        "username": "miral",
+        "email": "miral@usc.edu",
+        "password": "randomstringofcharacters1234",
+        "sex": "f",
+        "date_of_birth": "2000-01-01"
+    },
+    {
+        "username": "jasminep",
+        "email": "jasminep@usc.edu",
+        "password": "randomstringofcharacters1234",
+        "sex": "f",
+        "date_of_birth": "2000-01-01"
+    }
+]

@@ -3,13 +3,13 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import Flag, Post
-from mist.serializers import FlagSerializer
-from mist.views.flag import FlagView
+from mist.models import Comment, CommentFlag, Post
+from mist.serializers import CommentFlagSerializer
+from mist.views.comment_flag import CommentFlagView
 
 from users.models import User
 
-class FlagTest(TestCase):
+class CommentFlagTest(TestCase):
     def setUp(self):
         self.user = User(
             email='TestUser@usc.edu',
@@ -25,15 +25,20 @@ class FlagTest(TestCase):
             body='FakeTextForFirstPost',
             author=self.user,
         )
+        self.comment = Comment.objects.create(
+            body="FakeTextForFirstComment",
+            author=self.user,
+            post=self.post,
+        )
         return
 
     def test_get_should_return_flag_given_valid_flagger(self):
-        flag = Flag.objects.create(
+        flag = CommentFlag.objects.create(
             flagger=self.user,
-            post=self.post,
+            comment=self.comment,
             timestamp=0,
         )
-        serialized_flag = FlagSerializer(flag).data
+        serialized_flag = CommentFlagSerializer(flag).data
 
         request = APIRequestFactory().get(
             '/api/flags',
@@ -43,7 +48,7 @@ class FlagTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
-        response = FlagView.as_view({'get':'list'})(request)
+        response = CommentFlagView.as_view({'get':'list'})(request)
         response_flag = response.data[0]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -59,37 +64,37 @@ class FlagTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
-        response = FlagView.as_view({'get':'list'})(request)
+        response = CommentFlagView.as_view({'get':'list'})(request)
         response_flags = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response_flags)
         return
     
-    def test_get_should_return_flag_given_valid_post(self):
-        flag = Flag.objects.create(
+    def test_get_should_return_flag_given_valid_comment(self):
+        flag = CommentFlag.objects.create(
             flagger=self.user,
-            post=self.post,
+            comment=self.comment,
             timestamp=0,
         )
-        serialized_flag = FlagSerializer(flag).data
+        serialized_flag = CommentFlagSerializer(flag).data
 
         request = APIRequestFactory().get(
             '/api/flags',
             {
-                'post': flag.post.pk,
+                'post': flag.comment.pk,
             },
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
-        response = FlagView.as_view({'get':'list'})(request)
+        response = CommentFlagView.as_view({'get':'list'})(request)
         response_flag = response.data[0]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response_flag, serialized_flag)
         return
     
-    def test_get_should_not_return_flag_given_invalid_post(self):
+    def test_get_should_not_return_flag_given_invalid_comment(self):
         request = APIRequestFactory().get(
             '/api/flags',
             {
@@ -98,7 +103,7 @@ class FlagTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
-        response = FlagView.as_view({'get':'list'})(request)
+        response = CommentFlagView.as_view({'get':'list'})(request)
         response_flags = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -106,16 +111,16 @@ class FlagTest(TestCase):
         return
     
     def test_post_should_create_flag_given_valid_flag(self):
-        flag = Flag(
+        flag = CommentFlag(
             flagger=self.user,
-            post=self.post,
+            comment=self.comment,
             timestamp=0,
         )
-        serialized_flag = FlagSerializer(flag).data
+        serialized_flag = CommentFlagSerializer(flag).data
 
-        self.assertFalse(Flag.objects.filter(
+        self.assertFalse(CommentFlag.objects.filter(
             flagger=flag.flagger,
-            post=flag.post,
+            comment=flag.comment,
             timestamp=flag.timestamp,
         ))
 
@@ -125,28 +130,28 @@ class FlagTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
-        response = FlagView.as_view({'post':'create'})(request)
+        response = CommentFlagView.as_view({'post':'create'})(request)
         response_flag = response.data
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response_flag.get('flagger'), serialized_flag.get('flagger'))
         self.assertEqual(response_flag.get('post'), serialized_flag.get('post'))
-        self.assertTrue(Flag.objects.filter(
+        self.assertTrue(CommentFlag.objects.filter(
             flagger=flag.flagger,
-            post=flag.post,
+            comment=flag.comment,
             timestamp=flag.timestamp,
         ))
         return
     
     def test_delete_should_delete_flag(self):
-        flag = Flag.objects.create(
+        flag = CommentFlag.objects.create(
             flagger=self.user,
-            post=self.post,
+            comment=self.comment,
         )
-        self.assertTrue(Flag.objects.filter(pk=flag.pk))
+        self.assertTrue(CommentFlag.objects.filter(pk=flag.pk))
         request = APIRequestFactory().delete('/api/flags/', HTTP_AUTHORIZATION=f'Token {self.auth_token}')
-        response = FlagView.as_view({'delete':'destroy'})(request, pk=flag.pk)
+        response = CommentFlagView.as_view({'delete':'destroy'})(request, pk=flag.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Flag.objects.filter(pk=flag.pk))
+        self.assertFalse(CommentFlag.objects.filter(pk=flag.pk))
         return

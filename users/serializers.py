@@ -24,7 +24,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'email', 'username', 'password',
         'first_name', 'last_name', 'picture', 'confirm_picture', 
-        'date_of_birth', 'sex', )
+        'date_of_birth', 'sex', 'latitude', 'longitude', )
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
@@ -140,6 +140,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.username = validated_data.get('username', instance.username)
         instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
         instance.picture = validated_data.get('picture', instance.picture)
+        instance.latitude = validated_data.get('latitude', instance.latitude)
+        instance.longitude = validated_data.get('longitude', instance.longitude)
         instance.save()
         return instance
     
