@@ -21,6 +21,7 @@ class PostView(viewsets.ModelViewSet):
 
     # Max distance around post is 5 kilometers
     MAX_DISTANCE = Decimal(5)
+    LOWER_FLAG_BOUND = 3
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
@@ -32,7 +33,8 @@ class PostView(viewsets.ModelViewSet):
         for serialized_post in serialized_posts:
             flagcount = serialized_post.get('flagcount')
             votecount = serialized_post.get('votecount')
-            if flagcount <= math.sqrt(votecount):
+            below_min_flag_count = flagcount < self.LOWER_FLAG_BOUND
+            if below_min_flag_count or flagcount <= math.sqrt(votecount):
                 filtered_posts.append(serialized_post)
         votes_minus_flags = lambda post: post.get('votecount') - post.get('flagcount')
         ordered_posts = sorted(filtered_posts, key=votes_minus_flags, reverse=True)

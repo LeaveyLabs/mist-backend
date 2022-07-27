@@ -33,6 +33,15 @@ class PostTest(TestCase):
         self.user2.save()
         self.auth_token2 = Token.objects.create(user=self.user2)
 
+        self.user3 = User(
+            email='TestUser3@usc.edu',
+            username='TestUser3',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user3.set_password("TestPassword@98374")
+        self.user3.save()
+        self.auth_token3 = Token.objects.create(user=self.user3)
+
         self.post1 = Post.objects.create(
             title='FakeTitleForFirstPost',
             body='FakeTextForFirstPost',
@@ -228,6 +237,7 @@ class PostTest(TestCase):
     def test_get_should_not_return_posts_with_flags_greater_than_square_root_of_votes(self):
         PostFlag.objects.create(flagger=self.user1, post=self.post3)
         PostFlag.objects.create(flagger=self.user2, post=self.post3)
+        PostFlag.objects.create(flagger=self.user3, post=self.post3)
 
         serialized_posts = [
             PostSerializer(self.post1).data,
