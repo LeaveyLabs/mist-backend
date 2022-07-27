@@ -39,6 +39,10 @@ from users.views import FinalizePasswordResetView, LoginView, NearbyUsersView, R
 router = routers.DefaultRouter()
 router.register(r'users', UserView, 'user')
 router.register(r'posts', PostView, 'post')
+# DEPRECATED: REMOVE
+router.register(r'votes', PostVoteView, 'post_vote')
+router.register(r'flags', PostFlagView, 'post_flag')
+# END DEPRECATED
 router.register(r'post-votes', PostVoteView, 'post_vote')
 router.register(r'post-flags', PostFlagView, 'post_flag')
 router.register(r'comments', CommentView, 'comment')
