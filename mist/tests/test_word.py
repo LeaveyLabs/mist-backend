@@ -61,6 +61,25 @@ class WordTest(TestCase):
             self.assertEqual(word.get('occurrences'), 1)
         return
     
+    def test_get_should_not_return_words_with_zero_occurrences(self):
+        word_to_search = 'thisWordDoesNotExist'
+        Post.objects.create(
+            title='FakeTitleForFakePost',
+            body='FakeTextForFakePost',
+            author=self.user,
+        )
+
+        request = APIRequestFactory().get(
+            f'/api/words?search_word={word_to_search}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+        response = WordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)
+        return
+    
     def test_get_should_return_non_zero_occurrences_given_partial_search_word_and_multiple_wrapper_words_in_post(self):
         word_to_search = 'Fake'
         wrapper_word1 = 'Title'
