@@ -126,6 +126,12 @@ class Comment(models.Model):
 
     def _str_(self):
         return self.text
+    
+    def calculate_votecount(self):
+        return CommentVote.objects.filter(comment_id=self.pk).count()
+    
+    def calculate_flagcount(self):
+        return CommentFlag.objects.filter(comment_id=self.pk).count()
 
 class CommentVote(models.Model):
     MIN_RATING = 0

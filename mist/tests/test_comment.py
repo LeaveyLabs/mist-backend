@@ -3,7 +3,7 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import Comment, Post
+from mist.models import Comment, CommentFlag, Post
 from mist.serializers import CommentSerializer
 from mist.views.comment import CommentView
 
@@ -14,33 +14,57 @@ class CommentTest(TestCase):
     maxDiff = None
 
     def setUp(self):
-        self.user = User(
-            email='TestUser@usc.edu',
-            username='TestUser',
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
             first_name='Test',
             last_name='User',
             date_of_birth=date(2000, 1, 1),
         )
-        self.user.set_password("TestPassword@98374")
-        self.user.save()
-        self.read_only_user = ReadOnlyUserSerializer(self.user)
-        self.auth_token = Token.objects.create(user=self.user)
+        self.user1.set_password("TestPassword@98374")
+        self.user1.save()
+        self.read_only_user1 = ReadOnlyUserSerializer(self.user1)
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+            first_name='Test',
+            last_name='User',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user2.set_password("TestPassword@98374")
+        self.user2.save()
+        self.read_only_user2 = ReadOnlyUserSerializer(self.user2)
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.user3 = User(
+            email='TestUser3@usc.edu',
+            username='TestUser3',
+            first_name='Test',
+            last_name='User',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user3.set_password("TestPassword@98374")
+        self.user3.save()
+        self.read_only_user3 = ReadOnlyUserSerializer(self.user3)
+        self.auth_token3 = Token.objects.create(user=self.user3)
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
             body='FakeTextForFirstPost',
-            author=self.user,
+            author=self.user1,
         )
 
         self.comment = Comment.objects.create(
             body='FakeTextForComment',
             post=self.post,
-            author=self.user,
+            author=self.user1,
             timestamp=0,
         )
 
         self.unused_post_id = 155
-        return 
+        return
         
     def test_get_should_return_comment_given_post_pk(self):
         serialized_comment = CommentSerializer(self.comment).data
@@ -51,7 +75,7 @@ class CommentTest(TestCase):
                 'post': self.post.pk,
             },
             format="json",
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = CommentView.as_view({'get':'list'})(request)
         response_comment = response.data[0]
@@ -60,7 +84,7 @@ class CommentTest(TestCase):
         self.assertEqual(serialized_comment, response_comment)
         self.assertIn('author', response_comment)
         self.assertIn('read_only_author', response_comment)
-        self.assertEqual(self.read_only_user.data, response_comment.get('read_only_author'))
+        self.assertEqual(self.read_only_user1.data, response_comment.get('read_only_author'))
         return
     
     def test_get_should_not_return_comment_given_invalid_post_pk(self):
@@ -70,22 +94,42 @@ class CommentTest(TestCase):
                 'post': self.unused_post_id,
             },
             format="json",
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = CommentView.as_view({'get':'list'})(request)
-        response_comment = response.data
+        response_comments = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response_comment)
-        self.assertNotIn('author', response_comment)
-        self.assertNotIn('read_only_author', response_comment)
+        self.assertFalse(response_comments)
+        return
+    
+    def test_get_should_not_return_comments_with_excessive_flags(self):
+        CommentFlag.objects.create(flagger=self.user1, comment=self.comment)
+        CommentFlag.objects.create(flagger=self.user2, comment=self.comment)
+        CommentFlag.objects.create(flagger=self.user3, comment=self.comment)
+
+        serialized_comment = CommentSerializer(self.comment).data
+
+        request = APIRequestFactory().get(
+            '/api/comments',
+            {
+                'post': self.post.pk,
+            },
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = CommentView.as_view({'get':'list'})(request)
+        response_comments = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(serialized_comment not in response_comments)
         return
 
     def test_post_should_create_comment_given_valid_comment(self):
         test_comment = Comment(
             body='FakeTextForTestComment',
             post=self.post,
-            author=self.user
+            author=self.user1
         )
         serialized_comment = CommentSerializer(test_comment).data
 
@@ -98,7 +142,7 @@ class CommentTest(TestCase):
             '/api/comments/',
             serialized_comment,
             format="json",
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = CommentView.as_view({'post':'create'})(request)
         response_comment = response.data
@@ -116,7 +160,7 @@ class CommentTest(TestCase):
     def test_delete_should_delete_comment(self):
         self.assertTrue(Comment.objects.filter(pk=self.comment.pk))
 
-        request = APIRequestFactory().delete('/api/comment/', HTTP_AUTHORIZATION=f'Token {self.auth_token}')
+        request = APIRequestFactory().delete('/api/comment/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
         response = CommentView.as_view({'delete':'destroy'})(request, pk=self.comment.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)

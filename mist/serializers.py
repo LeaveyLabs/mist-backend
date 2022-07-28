@@ -72,10 +72,14 @@ class MatchRequestSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     read_only_author = serializers.SerializerMethodField()
+    votecount = serializers.ReadOnlyField(source='calculate_votecount')
+    flagcount = serializers.ReadOnlyField(source='calculate_flagcount')
 
     class Meta:
         model = Comment
-        fields = ('id', 'body', 'timestamp', 'post', 'author', 'read_only_author')
+        fields = ('id', 'body', 'timestamp', 
+        'post', 'author', 'read_only_author',
+        'votecount', 'flagcount',)
 
     def get_read_only_author(self, obj):
         author_pk = obj.author.pk
