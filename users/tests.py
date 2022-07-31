@@ -304,6 +304,38 @@ class ValidateUsernameViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(User.objects.filter(username=taken_username))
         return
+    
+    def test_post_should_not_accept_identical_but_lowercase_username(self):
+        all_lowercased_username = 'takenusername'
+
+        request = APIRequestFactory().post(
+            'api-validate-username/',
+            {
+                'username': all_lowercased_username,
+            },
+            format='json',
+        )
+        response = ValidateUsernameView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(User.objects.filter(username__iexact=all_lowercased_username))
+        return
+    
+    def test_post_should_not_accept_identical_but_uppercase_username(self):
+        all_lowercased_username = 'TAKENUSERNAME'
+
+        request = APIRequestFactory().post(
+            'api-validate-username/',
+            {
+                'username': all_lowercased_username,
+            },
+            format='json',
+        )
+        response = ValidateUsernameView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(User.objects.filter(username__iexact=all_lowercased_username))
+        return
 
 class ValidatePasswordViewTest(TestCase):
     def setUp(self):
@@ -1072,7 +1104,7 @@ class UserViewPatchTest(TestCase):
 
         self.valid_user = User.objects.create(
             email="email@usc.edu",
-            username="unrelatedUsername",
+            username="unrelatedusername",
             first_name="completelyDifferentFirstName",
             last_name="notTheSameLastName",
             date_of_birth=date(2000, 1, 1),
@@ -1121,7 +1153,7 @@ class UserViewPatchTest(TestCase):
         patched_user = User.objects.get(pk=self.valid_user.pk)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(fake_new_username, patched_user.username)
+        self.assertEqual(fake_new_username.lower(), patched_user.username)
         self.assertTrue(patched_user.check_password(self.password))
         self.assertEqual(self.valid_user.email, patched_user.email)
         self.assertEqual(self.valid_user.first_name, patched_user.first_name)
@@ -1252,7 +1284,7 @@ class UserViewPatchTest(TestCase):
         self.assertFalse(patched_user.picture)
         return
     
-    def test_patch_should_update_last_name_given_last_name(self):
+    def test_patch_should_not_update_last_name_given_last_name(self):
         fake_last_name = 'heyMyRealLastName'
 
         self.assertEqual(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)

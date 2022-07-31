@@ -112,8 +112,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if len(users_with_matching_email):
             raise serializers.ValidationError({"email": "Email already taken."})
 
-        username = validated_data.get('username')
-        users_with_matching_username = User.objects.filter(username=username)
+        username = validated_data.get('username').lower()
+        users_with_matching_username = User.objects.filter(username__iexact=username)
         
         if len(users_with_matching_username):
             raise serializers.ValidationError({"username": "Username already taken."})
@@ -137,7 +137,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if validated_data.get('password'):
             instance.set_password(validated_data.get('password'))
         instance.email = validated_data.get('email', instance.email).lower()
-        instance.username = validated_data.get('username', instance.username)
+        instance.username = validated_data.get('username', instance.username).lower()
         instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
         instance.picture = validated_data.get('picture', instance.picture)
         instance.latitude = validated_data.get('latitude', instance.latitude)
@@ -241,12 +241,12 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
     username = serializers.CharField()
 
     def validate(self, data):
-        username = data.get('username')
+        username = data.get('username').lower()
 
         if not username:
             raise ValidationError({"username": "Username was not provided."})
 
-        users_with_matching_username = User.objects.filter(username=username)
+        users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
             raise ValidationError({"username": "Username is not unique."})
 
@@ -257,7 +257,7 @@ class PasswordValidationRequestSerializer(serializers.Serializer):
     password = serializers.CharField()
 
     def validate(self, data):
-        username = data.get('username')
+        username = data.get('username').lower()
         password = data.get('password')
 
         missing_fields = {}
