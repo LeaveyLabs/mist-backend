@@ -85,6 +85,7 @@ class PostVote(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
     rating = models.IntegerField(default=AVG_RATING)
+    emoji = models.CharField(max_length=5, null=True)
 
     class Meta:
         unique_together = ('voter', 'post',)

@@ -35,7 +35,7 @@ class PostSerializer(serializers.ModelSerializer):
 class PostVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostVote
-        fields = ('id', 'voter', 'post', 'timestamp', 'rating')
+        fields = ('id', 'voter', 'post', 'timestamp', 'rating', 'emoji',)
     
 class PostFlagSerializer(serializers.ModelSerializer):
     class Meta:

@@ -36,7 +36,7 @@ class PostVoteTest(TestCase):
         )
         return
     
-    def test_post_should_create_vote_given_valid_vote(self):
+    def test_post_should_create_vote_given_valid_vote_without_emoji(self):
         vote = PostVote(
             voter=self.user1,
             post=self.post,
@@ -47,7 +47,6 @@ class PostVoteTest(TestCase):
         self.assertFalse(PostVote.objects.filter(
             voter=vote.voter,
             post=vote.post,
-            rating=vote.rating,
         ))
 
         request = APIRequestFactory().post(
@@ -67,7 +66,42 @@ class PostVoteTest(TestCase):
         self.assertTrue(PostVote.objects.filter(
             voter=vote.voter,
             post=vote.post,
-            rating=vote.rating,
+        ))
+        return
+    
+    def test_post_should_create_vote_given_valid_vote_with_emoji(self):
+        vote = PostVote(
+            voter=self.user1,
+            post=self.post,
+            rating=10,
+            emoji="😭",
+        )
+        serialized_vote = PostVoteSerializer(vote).data
+
+        self.assertFalse(PostVote.objects.filter(
+            voter=vote.voter,
+            post=vote.post,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/votes',
+            serialized_vote,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = PostVoteView.as_view({'post':'create'})(request)
+
+        response_vote = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_vote.get('voter'), serialized_vote.get('voter'))
+        self.assertEqual(response_vote.get('post'), serialized_vote.get('post'))
+        self.assertEqual(response_vote.get('rating'), serialized_vote.get('rating'))
+        self.assertEqual(response_vote.get('emoji'), serialized_vote.get('emoji'))
+        self.assertTrue(PostVote.objects.filter(
+            voter=vote.voter,
+            post=vote.post,
+            emoji=vote.emoji,
         ))
         return
     
@@ -172,6 +206,7 @@ class PostVoteTest(TestCase):
             post=self.post,
             timestamp=0,
             rating=10,
+            emoji="😭",
         )
         vote2 = PostVote.objects.create(
             voter=self.user2,
