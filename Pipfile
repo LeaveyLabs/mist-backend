@@ -27,6 +27,7 @@ locust = "*"
 freezegun = "*"
 websocket-client = "*"
 django = "*"
+twilio = "*"
 
 [dev-packages]
 
