@@ -80,12 +80,13 @@ class PostVote(models.Model):
     MIN_RATING = 0
     MAX_RATING = 10
     AVG_RATING = (MIN_RATING+MAX_RATING)//2
+    DEFAULT_EMOJI = "👍"
 
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
     rating = models.IntegerField(default=AVG_RATING)
-    emoji = models.CharField(max_length=5, null=True)
+    emoji = models.CharField(max_length=5, default=DEFAULT_EMOJI)
 
     class Meta:
         unique_together = ('voter', 'post',)
