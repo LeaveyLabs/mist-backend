@@ -1,9 +1,11 @@
 from datetime import datetime
+import os
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from twilio.rest import Client
 from users.generics import get_user_from_request
 from users.permissions import UserPermissions
 from django.core.mail import send_mail
@@ -27,6 +29,11 @@ from .models import (
     User,
     EmailAuthentication,
 )
+
+account_sid = os.environ['TWILIO_ACCOUNT_SID']
+auth_token = os.environ['TWILIO_AUTH_TOKEN']
+twilio_phone_number = os.environ['TWILIO_PHONE_NUMBER']
+twilio_client = Client(account_sid, auth_token)
 
 class UserView(viewsets.ModelViewSet):
     permission_classes = (UserPermissions, )
@@ -321,3 +328,35 @@ class FinalizePasswordResetView(generics.CreateAPIView):
                 "status": "success",
             }, 
             status=status.HTTP_200_OK)
+
+class RegisterPhoneNumberView(generics.CreateAPIView):
+    """
+    View to register phone numbers
+    """
+    
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+class ValidatePhoneNumberView(generics.CreateAPIView):
+    """
+    View to validate phone numbers
+    """
+    
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+class RequestLoginCodeView(generics.CreateAPIView):
+    """
+    View to request login code to phone number
+    """
+    
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+class ValidateLoginCodeView(generics.CreateAPIView):
+    """
+    View to validate login code sent to phone number
+    """
+    
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)

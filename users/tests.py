@@ -1726,3 +1726,68 @@ class FinalizePasswordResetViewTest(TestCase):
         self.assertTrue(requesting_user.check_password(self.new_strong_password))
         self.assertFalse(requesting_user.check_password(self.old_password))
         return
+
+# Phone Numbers
+class RegisterPhoneNumberViewTest(TestCase):
+    def setUp(self):
+        # phone number
+        # email_or_username
+        # code
+        return
+
+    def test_post_should_send_code_given_valid_phone_number(self):
+        return
+    
+    def test_post_should_send_code_given_unused_phone_number(self):
+        return
+    
+    def test_post_should_send_code_given_multiple_registrations(self):
+        return
+    
+    def test_post_should_not_send_code_given_invalid_phone_number(self):
+        return
+    
+    def test_post_should_not_send_code_given_used_phone_number(self):
+        return
+
+class ValidatePhoneNumberViewTest(TestCase):
+    def setUp(self):
+        # phone number
+        # email_or_username
+        # code
+        return
+    
+    def test_post_should_return_success_given_matching_code(self):
+        return
+
+    def test_post_should_not_return_success_given_nonmatching_code(self):
+        return
+    
+    def test_post_should_not_return_success_given_expired_code(self):
+        return
+    
+    def test_post_should_not_return_success_given_wrong_combo(self):
+        return
+
+class RequestLoginCodeViewTest(TestCase):
+    def setUp(self):
+        return
+
+    def test_post_should_send_code_given_valid_email(self):
+        return
+    
+    def test_post_should_send_code_given_valid_username(self):
+        return
+    
+    def test_post_should_not_send_code_given_invalid_email_or_username(self):
+        return
+
+class ValidateLoginCodeViewTest(TestCase):
+    def setUp(self):
+        return
+
+    def test_post_should_return_token_given_valid_email_or_username_code_combo(self):
+        return
+    
+    def test_post_should_not_return_token_given_invalid_email_or_username_code_combo(self):
+        return

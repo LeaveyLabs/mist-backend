@@ -17,6 +17,8 @@ class WordSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     read_only_author = serializers.SerializerMethodField()
+    votes = serializers.SerializerMethodField()
+
     votecount = serializers.ReadOnlyField(source='calculate_votecount')
     averagerating = serializers.ReadOnlyField(source='calculate_averagerating')
     commentcount = serializers.ReadOnlyField(source='calculate_commentcount')
@@ -25,12 +27,20 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ('id', 'title', 'body', 'latitude', 'longitude', 'location_description',
-        'timestamp', 'author', 'averagerating', 'commentcount', 'votecount', 'flagcount', 'read_only_author')
+        'timestamp', 'author', 'averagerating', 'commentcount', 'votecount', 'flagcount', 
+        'read_only_author', 'votes', )
     
     def get_read_only_author(self, obj):
         author_pk = obj.author.pk
         author_instance = User.objects.get(pk=author_pk)
         return ReadOnlyUserSerializer(author_instance).data
+    
+    def get_votes(self, obj):
+        vote_instances = PostVote.objects.filter(post_id=obj.id)
+        votes_data = []
+        for vote_instance in vote_instances:
+            votes_data.append(PostVoteSerializer(vote_instance).data)
+        return votes_data
 
 class PostVoteSerializer(serializers.ModelSerializer):
     class Meta:

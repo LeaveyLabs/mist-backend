@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from mist.models import Comment, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Word
-from mist.serializers import PostSerializer
+from mist.serializers import PostSerializer, PostVoteSerializer
 from mist.views.post import FavoritedPostsView, FeaturedPostsView, MatchedPostsView, PostView, SubmittedPostsView
 
 from users.models import User
@@ -206,6 +206,25 @@ class PostTest(TestCase):
             self.assertTrue('commentcount' in response_post)
             self.assertTrue('averagerating' in response_post)
             self.assertTrue('read_only_author' in response_post)
+            self.assertTrue('votes' in response_post)
+        return
+    
+    def test_get_should_return_correct_votes(self):
+        serialized_vote = PostVoteSerializer(self.vote).data
+
+        request = APIRequestFactory().get(
+            '/api/posts',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for post in response_posts:
+            if post.get('id') == self.vote.post.pk:
+                self.assertTrue(serialized_vote in post.get('votes'))
         return
     
     def test_get_should_return_posts_in_vote_minus_flag_order(self):
