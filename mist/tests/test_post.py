@@ -224,7 +224,9 @@ class PostTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for post in response_posts:
             if post.get('id') == self.vote.post.pk:
-                self.assertTrue(serialized_vote in post.get('votes'))
+                vote_ids = [vote.get('id') for vote in post.get('votes')]
+                correct_vote_id = serialized_vote.get('id')
+                self.assertTrue(correct_vote_id in vote_ids)
         return
     
     def test_get_should_return_posts_in_vote_minus_flag_order(self):
