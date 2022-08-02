@@ -244,3 +244,30 @@ class PostVoteTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(serialized_vote, response_vote)
         return
+    
+    def test_patch_should_update_emoji_given_emoji(self):
+        new_emoji = "🤠"
+
+        vote = PostVote.objects.create(
+            voter=self.user1,
+            post=self.post,
+            rating=10,
+        )
+
+        request = APIRequestFactory().patch(
+            f'/api/votes/?voter={vote.voter.pk}&post={vote.post.pk}',
+            {
+                'emoji': new_emoji,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = PostVoteView.as_view({'patch':'partial_update'})(request)
+        response_vote = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_vote.get('emoji'), new_emoji)
+        self.assertTrue(PostVote.objects.filter(
+            voter=vote.voter, 
+            post=vote.post,
+            emoji=new_emoji))

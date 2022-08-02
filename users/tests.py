@@ -1770,6 +1770,7 @@ class ValidatePhoneNumberViewTest(TestCase):
         return
 
 class RequestLoginCodeViewTest(TestCase):
+    # phone number
     def setUp(self):
         return
 
