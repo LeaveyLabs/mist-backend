@@ -63,9 +63,9 @@ class UserView(viewsets.ModelViewSet):
 
         # filter by text...
         if text != None:
-            username_set = User.objects.filter(username__contains=text)
-            first_name_set = User.objects.filter(first_name__contains=text)
-            last_name_set = User.objects.filter(last_name__contains=text)
+            username_set = User.objects.filter(username__icontains=text)
+            first_name_set = User.objects.filter(first_name__icontains=text)
+            last_name_set = User.objects.filter(last_name__icontains=text)
             queryset = (username_set | first_name_set | last_name_set).distinct()
         # or username, first_name, and last_name
         elif username or first_name or last_name:
