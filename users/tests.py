@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 from io import BytesIO, StringIO
 from tempfile import TemporaryFile
+import twilio
 from PIL import Image
 from django.core import mail, cache
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -15,6 +16,27 @@ from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
 from .views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterUserEmailView, RequestPasswordResetView, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, ValidateUsernameView
 from .models import PasswordReset, User, EmailAuthentication
+
+class TwilioTestClient:
+
+    def __init__(self, sid, token):
+        self.sid = sid
+        self.token = token
+        self.messages = TwillioTestClientMessages()
+
+class TwillioTestClientMessages:
+
+    def __init__(self):
+        self.created = []
+
+    def create(self, to, from_, body):
+        self.created.append({
+            'to': to,
+            'from_': from_,
+            'body': body
+        })
+
+twilio.Client = TwilioTestClient
 
 # Create your tests here.
 class ThrottleTest(TestCase):
@@ -822,6 +844,21 @@ class UserViewGetTest(TestCase):
             'api/users/',
             {
                 'text': 'name',
+            },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+        )
+        response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
+        return
+    
+    def test_get_should_return_user_given_case_insensitive_text(self):
+        request = APIRequestFactory().get(
+            'api/users/',
+            {
+                'text': 'NAME',
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
@@ -1733,6 +1770,7 @@ class RegisterPhoneNumberViewTest(TestCase):
         # phone number
         # email_or_username
         # code
+        
         return
 
     def test_post_should_send_code_given_valid_phone_number(self):
