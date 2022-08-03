@@ -79,7 +79,9 @@ urlpatterns = [
     path('api/friend-posts/', FriendPostsView.as_view()),
     path('api/favorited-posts/', FavoritedPostsView.as_view()),
     path('api/submitted-posts/', SubmittedPostsView.as_view()),
-    # Requests
+    # Patch Requests
+    path('api/patch-post-vote/', PostVoteView.as_view({'patch':'partial_update'})),
+    # Delete Requests
     path('api/delete-block/', BlockView.as_view({'delete':'destroy'})),
     path('api/delete-post-vote/', PostVoteView.as_view({'delete':'destroy'})),
     path('api/delete-comment-vote/', CommentVoteView.as_view({'delete':'destroy'})),
