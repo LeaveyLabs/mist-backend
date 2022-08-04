@@ -65,8 +65,8 @@ class TagSerializer(serializers.ModelSerializer):
     def validate(self, data):
         tagged_phone_number = data.get('tagged_phone_number')
         tagged_user = data.get('tagged_user')
-        if not tagged_phone_number and not tagged_user:
-            raise serializers.ValidationError({"detail": "at least one of tagged_user and tagged_phone_number is required"})
+        if (not tagged_phone_number and not tagged_user) or (tagged_phone_number and tagged_user):
+            raise serializers.ValidationError({"detail": "exactly one of tagged_user and tagged_phone_number is required"})
         return data
 
 class BlockSerializer(serializers.ModelSerializer):

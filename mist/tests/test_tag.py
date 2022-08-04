@@ -222,7 +222,7 @@ class TagTest(TestCase):
         ))
         return
     
-    def test_post_should_not_create_tag_given_invalid_tag(self):
+    def test_post_should_not_create_tag_given_neither_tagged_user_or_phone_number(self):
         tag = Tag(
             comment=self.comment,
             tagging_user=self.user1,
@@ -249,6 +249,43 @@ class TagTest(TestCase):
         ))
         return
     
+    def test_post_should_not_create_tag_given_with_both_tagged_user_and_phone_number(self):
+        test_phone_number = "+12134789920"
+
+        tag = Tag(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
+            tagged_name=self.user2.username,
+            tagged_phone_number=test_phone_number,
+        )
+        serialized_tag = TagSerializer(tag).data
+
+        self.assertFalse(Tag.objects.filter(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
+            tagged_name=self.user2.username,
+            tagged_phone_number=test_phone_number,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/tags',
+            serialized_tag,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = TagView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Tag.objects.filter(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
+            tagged_name=self.user2.username,
+            tagged_phone_number=test_phone_number,
+        ))
+
     def test_delete_should_delete_tag(self):
         tag = Tag.objects.create(
             comment=self.comment,
