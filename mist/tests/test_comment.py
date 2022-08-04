@@ -3,8 +3,8 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import Comment, CommentFlag, Post
-from mist.serializers import CommentSerializer
+from mist.models import Comment, CommentFlag, Post, Tag
+from mist.serializers import CommentSerializer, TagSerializer
 from mist.views.comment import CommentView
 
 from users.models import User
@@ -87,6 +87,25 @@ class CommentTest(TestCase):
         self.assertEqual(self.read_only_user1.data, response_comment.get('read_only_author'))
         return
     
+    def test_get_should_return_comment_with_tags(self):
+        tag = Tag.objects.create(comment=self.comment, tagging_user=self.user1, tagged_user=self.user2)
+        serialized_tag = TagSerializer(tag).data
+
+        request = APIRequestFactory().get(
+            '/api/comments',
+            {
+                'post': self.post.pk,
+            },
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = CommentView.as_view({'get':'list'})(request)
+        response_comment = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_comment.get('tags'), [serialized_tag])
+        return
+    
     def test_get_should_not_return_comment_given_invalid_post_pk(self):
         request = APIRequestFactory().get(
             '/api/comments',
@@ -102,6 +121,7 @@ class CommentTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response_comments)
         return
+    
     
     def test_get_should_not_return_comments_with_excessive_flags(self):
         CommentFlag.objects.create(flagger=self.user1, comment=self.comment)

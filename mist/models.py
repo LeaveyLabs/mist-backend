@@ -2,6 +2,8 @@ from datetime import datetime
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
+from django.forms import ValidationError
+from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
 
@@ -110,15 +112,6 @@ class PostFlag(models.Model):
     def _str_(self):
         return self.flagger.pk
 
-class Tag(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
-    tagged_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tagged_user', on_delete=models.CASCADE)
-    tagging_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tagging_user', on_delete=models.CASCADE)
-    timestamp = models.FloatField(default=get_current_time, null=True)
-
-    class Meta:
-        unique_together = ('tagged_user', 'tagging_user',)
-
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     body = models.CharField(max_length=500)
@@ -134,6 +127,34 @@ class Comment(models.Model):
     
     def calculate_flagcount(self):
         return CommentFlag.objects.filter(comment_id=self.pk).count()
+
+class Tag(models.Model):
+    DEFAULT_NAME = "anonymous"
+
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    tagged_name = models.CharField(max_length=50, default=DEFAULT_NAME)
+    tagging_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tagging_user', on_delete=models.CASCADE)
+    tagged_phone_number = PhoneNumberField(null=True)
+    tagged_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tagged_user', on_delete=models.CASCADE, null=True)
+    timestamp = models.FloatField(default=get_current_time, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['tagged_user', 'tagging_user'], name='tagged_user_tagging_user'),
+            models.UniqueConstraint(fields=['tagged_phone_number', 'tagging_user'], name='tagged_phone_number_tagging_user'),
+            models.CheckConstraint(
+                name="%(app_label)s_%(class)s_tagged_phone_number_or_tagged_user",
+                check=(
+                    models.Q(tagged_user__isnull=True, tagged_phone_number__isnull=False)
+                    | models.Q(tagged_user__isnull=False, tagged_phone_number__isnull=True)
+                ),
+            )
+        ]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get('tagged_user') and not cleaned_data.get('tagged_phone_number'):  # This will check for None or Empty
+            raise ValidationError({'detail': 'Even one of tagged_user or tagged_phone_number should have a value.'})
 
 class CommentVote(models.Model):
     MIN_RATING = 0

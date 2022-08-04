@@ -55,7 +55,19 @@ class PostFlagSerializer(serializers.ModelSerializer):
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ('id', 'post', 'tagged_user', 'tagging_user', 'timestamp')
+        fields = ('id', 'comment', 'tagged_name', 'tagged_phone_number',
+        'tagged_user', 'tagging_user', 'timestamp')
+        extra_kwargs = {
+            'tagged_phone_number': {'required': False},
+            'tagged_user': {'required': False},
+        }
+    
+    def validate(self, data):
+        tagged_phone_number = data.get('tagged_phone_number')
+        tagged_user = data.get('tagged_user')
+        if not tagged_phone_number and not tagged_user:
+            raise serializers.ValidationError({"detail": "at least one of tagged_user and tagged_phone_number is required"})
+        return data
 
 class BlockSerializer(serializers.ModelSerializer):
     class Meta:
@@ -84,17 +96,22 @@ class CommentSerializer(serializers.ModelSerializer):
     read_only_author = serializers.SerializerMethodField()
     votecount = serializers.ReadOnlyField(source='calculate_votecount')
     flagcount = serializers.ReadOnlyField(source='calculate_flagcount')
+    tags = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
         fields = ('id', 'body', 'timestamp', 
         'post', 'author', 'read_only_author',
-        'votecount', 'flagcount',)
+        'votecount', 'flagcount', 'tags')
 
     def get_read_only_author(self, obj):
         author_pk = obj.author.pk
         author_instance = User.objects.get(pk=author_pk)
         return ReadOnlyUserSerializer(author_instance).data
+    
+    def get_tags(self, obj):
+        tags = Tag.objects.filter(comment_id=obj.id)
+        return [TagSerializer(tag).data for tag in tags]
 
 class CommentVoteSerializer(serializers.ModelSerializer):
     class Meta:

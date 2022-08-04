@@ -1,6 +1,7 @@
-from datetime import datetime 
+from datetime import datetime
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from .generics import get_current_time, get_random_code
 import os
 from phonenumber_field.modelfields import PhoneNumberField
 import random
@@ -56,3 +57,13 @@ class PasswordReset(models.Model):
     code_time = models.FloatField(default=get_current_time, editable=False)
     validated = models.BooleanField(default=False)
     validation_time = models.FloatField(null=True)
+
+# class PhoneNumberAuthentication(models.Model):
+    # email
+    # phone number
+    # code
+    # code_time
+    # validated
+    # validation_time
+    
+    
