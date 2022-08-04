@@ -10,6 +10,7 @@ from mist.views.message import ConversationView, MessageView
 
 from users.models import User
 
+@freeze_time("2020-01-01")
 class MessageTest(TestCase):
     def setUp(self):
         self.user1 = User(

@@ -1,5 +1,6 @@
 from datetime import date
 from django.test import TestCase
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
@@ -10,6 +11,7 @@ from mist.views.friend import FriendRequestView, FriendshipView
 from users.models import User
 from users.serializers import ReadOnlyUserSerializer
 
+@freeze_time("2020-01-01")
 class FriendRequestTest(TestCase):
     def setUp(self):
         self.user1 = User(

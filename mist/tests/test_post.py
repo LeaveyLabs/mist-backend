@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from django.test import TestCase
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
@@ -10,6 +11,7 @@ from mist.views.post import FavoritedPostsView, FeaturedPostsView, MatchedPostsV
 
 from users.models import User
 
+@freeze_time("2020-01-01")
 class PostTest(TestCase):
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)

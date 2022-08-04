@@ -1,5 +1,6 @@
 from datetime import date
 from django.test import TestCase
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
@@ -8,6 +9,7 @@ from mist.views.word import WordView
 
 from users.models import User
 
+@freeze_time("2020-01-01")
 class WordTest(TestCase):
     def setUp(self):
         self.user = User(
