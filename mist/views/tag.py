@@ -12,12 +12,12 @@ class TagView(viewsets.ModelViewSet):
     def get_queryset(self):
         tagged_user = self.request.query_params.get("tagged_user")
         tagging_user = self.request.query_params.get("tagging_user")
-        post = self.request.query_params.get("post")
+        comment = self.request.query_params.get("comment")
         queryset = Tag.objects.all()
         if tagged_user:
             queryset = queryset.filter(tagged_user=tagged_user)
         if tagging_user:
             queryset = queryset.filter(tagging_user=tagging_user)
-        if post:
-            queryset = queryset.filter(post=post)
+        if comment:
+            queryset = queryset.filter(comment=comment)
         return queryset

@@ -68,6 +68,30 @@ class TagTest(TestCase):
         self.assertEqual(response_tag, serialized_tag)
         return
     
+    def test_get_should_return_tag_given_comment(self):
+        tag = Tag.objects.create(
+            comment=self.comment,
+            tagged_user=self.user1,
+            tagging_user=self.user2,
+            timestamp=0,
+        )
+        serialized_tag = TagSerializer(tag).data
+
+        request = APIRequestFactory().get(
+            '/api/tags',
+            {
+                'comment': self.comment.id,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = TagView.as_view({'get':'list'})(request)
+        response_tag = response.data[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_tag, serialized_tag)
+        return
+    
     def test_get_should_not_return_tag_given_invalid_tagged_user(self):
         request = APIRequestFactory().get(
             '/api/tags',
