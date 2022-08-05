@@ -18,6 +18,7 @@ from .serializers import (
     PasswordResetRequestSerializer,
     PasswordResetValidationSerializer,
     PasswordValidationRequestSerializer,
+    PhoneNumberRegistrationSerializer,
     ReadOnlyUserSerializer,
     UserEmailRegistrationSerializer,
     UserEmailValidationRequestSerializer,
@@ -26,15 +27,44 @@ from .serializers import (
 )
 from .models import (
     PasswordReset,
+    PhoneNumberAuthentication,
     User,
     EmailAuthentication,
 )
 
+
+# Twilio Initialization
+environment = os.getenv('ENVIRONMENT', 'dev')
+
+class TwilioTestClient:
+
+    def __init__(self, sid, token):
+        self.sid = sid
+        self.token = token
+        self.messages = TwillioTestClientMessages()
+
+class TwillioTestClientMessages:
+
+    created = []
+
+    def create(self, to, from_, body):
+        self.created.append({
+            'to': to,
+            'from_': from_,
+            'body': body
+        })
+
 account_sid = os.environ['TWILIO_ACCOUNT_SID']
 auth_token = os.environ['TWILIO_AUTH_TOKEN']
 twilio_phone_number = os.environ['TWILIO_PHONE_NUMBER']
-twilio_client = Client(account_sid, auth_token)
 
+if environment == 'dev':
+    twilio_client = TwilioTestClient(account_sid, auth_token)
+else:
+    twilio_client = Client(account_sid, auth_token)
+
+
+# Views
 class UserView(viewsets.ModelViewSet):
     permission_classes = (UserPermissions, )
     serializer_class = CompleteUserSerializer
@@ -335,7 +365,29 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
     """
     
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        phone_number_registration = PhoneNumberRegistrationSerializer(data=request.data)
+        phone_number_registration.is_valid(raise_exception=True)
+        print(phone_number_registration.data)
+        phone_number = phone_number_registration.data.get('phone_number')
+        email = phone_number_registration.data.get('email').lower()
+
+        PhoneNumberAuthentication.objects.filter(email__iexact=email).delete()
+        phone_number_authentication = PhoneNumberAuthentication.objects.create(
+            email=email, phone_number=phone_number)
+
+        twilio_client.messages.create(
+            body=f"Your verification code for Mist is \
+            {phone_number_authentication.code}",
+            from_=twilio_phone_number,
+            to=phone_number_authentication.phone_number,
+        )
+
+        return Response(
+            {
+                "status": "success",
+                "data": phone_number_registration.data,
+            },
+            status=status.HTTP_201_CREATED)
 
 class ValidatePhoneNumberView(generics.CreateAPIView):
     """

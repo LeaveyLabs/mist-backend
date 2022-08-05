@@ -1,11 +1,12 @@
 from datetime import date, datetime, timedelta
 from django.forms import ValidationError
 from rest_framework import serializers
-from .models import PasswordReset, User, EmailAuthentication
+from .models import PasswordReset, PhoneNumberAuthentication, User, EmailAuthentication
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
 from django.core.validators import validate_email
+from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -337,3 +338,50 @@ class PasswordResetFinalizationSerializer(serializers.Serializer):
     def validate_password(self, password):
         validate_password(password)
         return password
+
+class PhoneNumberRegistrationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    phone_number = PhoneNumberField()
+
+    def validate_email(self, email):
+        matching_users = User.objects.filter(email__iexact=email.lower())
+        if not matching_users:
+            raise ValidationError({"email": "User with email does not exist."})
+        return email
+
+class LoginCodeRequestSerializer(serializers.Serializer):
+    phone_number = PhoneNumberField()
+
+    def validate_phone_number(self, phone_number):
+        matching_users = User.objects.filter(phone_number=phone_number)
+        if not matching_users:
+            raise ValidationError({"phone_number": "User with phone number does not exist."})
+        return phone_number
+
+class PhoneNumberValidationSerializer(serializers.Serializer):
+    phone_number = PhoneNumberField()
+    code = serializers.CharField()
+
+    def validate_phone_number(self, phone_number):
+        matching_registration_requests = PhoneNumberAuthentication.objects.filter(
+            phone_number=phone_number).order_by('-code_time')
+        if not matching_registration_requests:
+            raise ValidationError({"phone_number": "No registration with matching phone number."})
+        
+        matching_registration_request = matching_registration_requests[0]
+        current_time = datetime.now().timestamp()
+
+        time_since_registration_request = current_time - matching_registration_request.validation_time
+        request_expired = time_since_registration_request > self.EXPIRATION_TIME
+        if request_expired:
+            raise ValidationError({"phone_number": "Request validation has expired."})
+        
+        return phone_number
+        
+    def validate(self, data):
+        phone_number = data.get('phone_number')
+        code = data.get('code')
+        registration_request = PhoneNumberAuthentication.objects.get(phone_number=phone_number)
+        if registration_request.code != code:
+            raise ValidationError({"code": "Code does not match."})
+        return data

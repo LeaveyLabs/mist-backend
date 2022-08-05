@@ -10,33 +10,11 @@ from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from django.contrib.auth import authenticate
 from users.models import User
 from rest_framework import status
-from rest_framework.authtoken.views import obtain_auth_token
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
-from .views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterUserEmailView, RequestPasswordResetView, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, ValidateUsernameView
+from .views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterPhoneNumberView, RegisterUserEmailView, RequestPasswordResetView, TwillioTestClientMessages, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, ValidateUsernameView
 from .models import PasswordReset, User, EmailAuthentication
-
-class TwilioTestClient:
-
-    def __init__(self, sid, token):
-        self.sid = sid
-        self.token = token
-        self.messages = TwillioTestClientMessages()
-
-class TwillioTestClientMessages:
-
-    def __init__(self):
-        self.created = []
-
-    def create(self, to, from_, body):
-        self.created.append({
-            'to': to,
-            'from_': from_,
-            'body': body
-        })
-
-twilio.Client = TwilioTestClient
 
 # Create your tests here.
 class ThrottleTest(TestCase):
@@ -1767,31 +1745,112 @@ class FinalizePasswordResetViewTest(TestCase):
 # Phone Numbers
 class RegisterPhoneNumberViewTest(TestCase):
     def setUp(self):
-        # phone number
-        # email_or_username
-        # code
-        
+        self.strong_password = 'newPassword@3312$5'
+
+        self.user1 = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1), 
+            phone_number="+1234567899")
+        self.user1.set_password(self.strong_password)
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
         return
 
-    def test_post_should_send_code_given_valid_phone_number(self):
-        return
-    
-    def test_post_should_send_code_given_unused_phone_number(self):
+    def test_post_should_send_code_given_unused_and_valid_phone_number(self):
+        valid_phone_number = "+12136569000"
+
+        request = APIRequestFactory().post(
+            'api/register-phone-number/',
+            {
+                'email': self.user1.email,
+                'phone_number': valid_phone_number,
+            },
+        )
+        response = RegisterPhoneNumberView.as_view()(request)
+        messages = TwillioTestClientMessages.created
+        matching_messages = [
+            message.get('to') == valid_phone_number 
+            for message in messages
+        ]
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(messages)
+        self.assertTrue(matching_messages)
         return
     
     def test_post_should_send_code_given_multiple_registrations(self):
+        valid_phone_number = "+12136569000"
+
+        request = APIRequestFactory().post(
+            'api/register-phone-number/',
+            {
+                'email': self.user1.email,
+                'phone_number': valid_phone_number,
+            },
+        )
+        response = RegisterPhoneNumberView.as_view()(request)
+        response = RegisterPhoneNumberView.as_view()(request)
+
+        messages = TwillioTestClientMessages.created
+        matching_messages = [
+            message.get('to') == valid_phone_number 
+            for message in messages
+        ]
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(messages)
+        self.assertTrue(matching_messages)
         return
     
     def test_post_should_not_send_code_given_invalid_phone_number(self):
+        invalid_phone_number = "invalidPhoneNumber"
+
+        request = APIRequestFactory().post(
+            'api/register-phone-number/',
+            {
+                'email': self.user1.email,
+                'phone_number': invalid_phone_number,
+            },
+        )
+        response = RegisterPhoneNumberView.as_view()(request)
+
+        messages = TwillioTestClientMessages.created
+        matching_messages = [
+            message.get('to') == invalid_phone_number
+            for message in messages
+        ]
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(matching_messages)
         return
     
     def test_post_should_not_send_code_given_used_phone_number(self):
+        request = APIRequestFactory().post(
+            'api/register-phone-number/',
+            {
+                'email': self.user1.email,
+                'phone_number': self.user1.phone_number,
+            },
+        )
+        response = RegisterPhoneNumberView.as_view()(request)
+
+        messages = TwillioTestClientMessages.created
+        matching_messages = [
+            message.get('to') == self.user1.phone_number
+            for message in messages
+        ]
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(matching_messages)
         return
 
 class ValidatePhoneNumberViewTest(TestCase):
     def setUp(self):
         # phone number
-        # email_or_username
+        # email
         # code
         return
     

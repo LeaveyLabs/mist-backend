@@ -58,12 +58,10 @@ class PasswordReset(models.Model):
     validated = models.BooleanField(default=False)
     validation_time = models.FloatField(null=True)
 
-# class PhoneNumberAuthentication(models.Model):
-    # email
-    # phone number
-    # code
-    # code_time
-    # validated
-    # validation_time
-    
-    
+class PhoneNumberAuthentication(models.Model):
+    email = models.EmailField()
+    phone_number = PhoneNumberField()
+    code = models.CharField(max_length=6, default=get_random_code, editable=False)
+    code_time = models.FloatField(default=get_current_time, editable=False)
+    validated = models.BooleanField(default=False)
+    validation_time = models.FloatField(null=True)
