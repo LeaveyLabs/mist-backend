@@ -832,11 +832,11 @@ class UserViewGetTest(TestCase):
         return
 
     # Valid Queries
-    def test_get_should_return_user_given_text(self):
+    def test_get_should_return_user_given_word(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
-                'text': 'name',
+                'words': 'name',
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
@@ -847,12 +847,24 @@ class UserViewGetTest(TestCase):
         self.assertEqual(response.data[0], self.user_serializer.data)
         return
     
-    def test_get_should_return_user_given_case_insensitive_text(self):
+    def test_get_should_return_user_given_case_insensitive_word(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
-                'text': 'NAME',
+                'words': 'NAME',
             },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+        )
+        response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
+        return
+    
+    def test_get_should_return_user_given_multiple_words(self):
+        request = APIRequestFactory().get(
+            'api/users/?words=name&words=not',
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
         )
@@ -971,11 +983,11 @@ class UserViewGetTest(TestCase):
         return
 
     # Invalid User
-    def test_get_should_not_return_user_given_nonexistent_text(self):
+    def test_get_should_not_return_user_given_nonexistent_words(self):
         request = APIRequestFactory().get(
             'api/users/',
             {
-                'text': 'notInTheTextAtAll',
+                'words': 'notInTheTextAtAll',
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
@@ -1043,7 +1055,7 @@ class UserViewGetTest(TestCase):
         response = UserView.as_view({'get':'list'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data)        
+        self.assertFalse(response.data)
         return
 
     def test_get_should_not_return_user_given_nonexistent_full_last_name(self):

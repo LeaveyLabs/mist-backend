@@ -84,19 +84,22 @@ class UserView(viewsets.ModelViewSet):
         username = self.request.query_params.get('username')
         first_name = self.request.query_params.get('first_name')
         last_name = self.request.query_params.get('last_name')
-        text = self.request.query_params.get('text')
+        words = self.request.query_params.getlist('words')
         token = self.request.query_params.get('token')
         requesting_user = get_user_from_request(self.request)
 
         # default is to return all users
         queryset = User.objects.all()
 
-        # filter by text...
-        if text != None:
-            username_set = User.objects.filter(username__icontains=text)
-            first_name_set = User.objects.filter(first_name__icontains=text)
-            last_name_set = User.objects.filter(last_name__icontains=text)
-            queryset = (username_set | first_name_set | last_name_set).distinct()
+        # filter by words...
+        if words:
+            for word in words:
+                word_in_username = User.objects.filter(username__icontains=word)
+                word_in_first_name = User.objects.filter(first_name__icontains=word)
+                word_in_last_name = User.objects.filter(last_name__icontains=word)
+                word_userset = (word_in_username | word_in_first_name | word_in_last_name).distinct()
+                queryset = queryset.intersection(word_userset)
+            queryset = User.objects.filter(id__in=queryset.values_list('id'))
         # or username, first_name, and last_name
         elif username or first_name or last_name:
             username_set = User.objects.none()
