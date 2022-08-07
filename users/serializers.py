@@ -373,6 +373,8 @@ class PhoneNumberValidationSerializer(serializers.Serializer):
     phone_number = PhoneNumberField()
     code = serializers.CharField()
 
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
     def validate_phone_number(self, phone_number):
         matching_registration_requests = PhoneNumberAuthentication.objects.filter(
             phone_number=phone_number).order_by('-code_time')
@@ -382,10 +384,10 @@ class PhoneNumberValidationSerializer(serializers.Serializer):
         matching_registration_request = matching_registration_requests[0]
         current_time = datetime.now().timestamp()
 
-        time_since_registration_request = current_time - matching_registration_request.validation_time
+        time_since_registration_request = current_time - matching_registration_request.code_time
         request_expired = time_since_registration_request > self.EXPIRATION_TIME
         if request_expired:
-            raise ValidationError({"phone_number": "Request validation has expired."})
+            raise ValidationError({"phone_number": "Code has expired."})
         
         return phone_number
         

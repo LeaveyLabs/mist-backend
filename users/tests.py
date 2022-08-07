@@ -13,8 +13,8 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
-from .views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterPhoneNumberView, RegisterUserEmailView, RequestPasswordResetView, TwillioTestClientMessages, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, ValidateUsernameView
-from .models import PasswordReset, User, EmailAuthentication
+from .views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterPhoneNumberView, RegisterUserEmailView, RequestPasswordResetView, TwillioTestClientMessages, UserView, ValidatePasswordResetView, ValidatePasswordView, ValidatePhoneNumberView, ValidateUserEmailView, ValidateUsernameView
+from .models import PasswordReset, PhoneNumberAuthentication, User, EmailAuthentication
 
 # Create your tests here.
 class ThrottleTest(TestCase):
@@ -1874,23 +1874,75 @@ class RegisterPhoneNumberViewTest(TestCase):
         self.assertFalse(matching_messages)
         return
 
-class ValidatePhoneNumberViewTest(TestCase):
-    def setUp(self):
-        # phone number
-        # email
-        # code
-        return
-    
+class ValidatePhoneNumberViewTest(TestCase):    
     def test_post_should_return_success_given_matching_code(self):
+        PhoneNumberAuthentication.objects.create(
+            email="email@usc.edu",
+            phone_number="+12136879999",
+            code="123456",
+        )
+
+        request = APIRequestFactory().post(
+            'api/validate-phone-number/',
+            {
+                'phone_number': '+12136879999',
+                'code': '123456',
+            },
+        )
+        response = ValidatePhoneNumberView.as_view()(request)
+        authentication = PhoneNumberAuthentication.objects.filter(
+            email='email@usc.edu')[0]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(authentication.validated)
         return
 
     def test_post_should_not_return_success_given_nonmatching_code(self):
+        PhoneNumberAuthentication.objects.create(
+            email="email@usc.edu",
+            phone_number="+12136879999",
+            code="123456",
+        )
+
+        request = APIRequestFactory().post(
+            'api/validate-phone-number/',
+            {
+                'phone_number': '+12136879999',
+                'code': '999999',
+            },
+        )
+        response = ValidatePhoneNumberView.as_view()(request)
+        authentication = PhoneNumberAuthentication.objects.filter(
+            email='email@usc.edu')[0]
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(authentication.validated)
         return
     
     def test_post_should_not_return_success_given_expired_code(self):
-        return
-    
-    def test_post_should_not_return_success_given_wrong_combo(self):
+        now = datetime.now().timestamp()
+        ten_minutes = timedelta(minutes=10).total_seconds()
+
+        PhoneNumberAuthentication.objects.create(
+            email="email@usc.edu",
+            phone_number="+12136879999",
+            code="123456",
+            code_time=now-ten_minutes,
+        )
+
+        request = APIRequestFactory().post(
+            'api/validate-phone-number/',
+            {
+                'phone_number': '+12136879999',
+                'code': '999999',
+            },
+        )
+        response = ValidatePhoneNumberView.as_view()(request)
+        authentication = PhoneNumberAuthentication.objects.filter(
+            email='email@usc.edu')[0]
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(authentication.validated)
         return
 
 class RequestLoginCodeViewTest(TestCase):

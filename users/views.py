@@ -19,6 +19,7 @@ from .serializers import (
     PasswordResetValidationSerializer,
     PasswordValidationRequestSerializer,
     PhoneNumberRegistrationSerializer,
+    PhoneNumberValidationSerializer,
     ReadOnlyUserSerializer,
     UserEmailRegistrationSerializer,
     UserEmailValidationRequestSerializer,
@@ -370,7 +371,6 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
         phone_number_registration = PhoneNumberRegistrationSerializer(data=request.data)
         phone_number_registration.is_valid(raise_exception=True)
-        print(phone_number_registration.data)
         phone_number = phone_number_registration.data.get('phone_number')
         email = phone_number_registration.data.get('email').lower()
 
@@ -398,7 +398,25 @@ class ValidatePhoneNumberView(generics.CreateAPIView):
     """
     
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        validation = PhoneNumberValidationSerializer(data=request.data)
+        validation.is_valid(raise_exception=True)
+        phone_number = validation.data.get('phone_number')
+        code = validation.data.get('code')
+
+        authentication = PhoneNumberAuthentication.objects.filter(
+            phone_number=phone_number,
+            code=code,
+        ).order_by('-code_time')[0]
+        authentication.validated = True
+        authentication.validation_time = datetime.now().timestamp()
+        authentication.save()
+
+        return Response(
+            {
+                "status": "success",
+                "data": validation.data,
+            },
+            status=status.HTTP_200_OK)
 
 class RequestLoginCodeView(generics.CreateAPIView):
     """
