@@ -1,3 +1,4 @@
+from psycopg2 import IntegrityError
 from rest_framework import serializers
 from users.models import User
 
@@ -65,9 +66,46 @@ class TagSerializer(serializers.ModelSerializer):
     def validate(self, data):
         tagged_phone_number = data.get('tagged_phone_number')
         tagged_user = data.get('tagged_user')
+
         if (not tagged_phone_number and not tagged_user) or (tagged_phone_number and tagged_user):
-            raise serializers.ValidationError({"detail": "exactly one of tagged_user and tagged_phone_number is required"})
+            raise serializers.ValidationError(
+                {"detail": "exactly one of tagged_user and tagged_phone_number is required"})
+
         return data
+
+    def create(self, validated_data):
+        tagged_phone_number = validated_data.get('tagged_phone_number')
+        tagged_user = validated_data.get('tagged_user')
+        tagging_user = validated_data.get('tagging_user')
+        comment = validated_data.get('comment')
+
+        matching_tagged_user = (
+            tagged_user and
+            Tag.objects.filter(
+                comment_id=comment,
+                tagging_user_id=tagging_user,
+                tagged_user_id=tagged_user)
+        )
+        matching_tagged_phone_number = (
+            tagged_phone_number and
+            Tag.objects.filter(
+                comment_id=comment,
+                tagging_user_id=tagging_user,
+                tagged_phone_number=tagged_phone_number)
+        )
+
+        if matching_tagged_user:
+            raise serializers.ValidationError(
+                {"detail": "commment, tagged_user, and tagging_user must make a unique set."})
+        
+        if matching_tagged_phone_number:
+            raise serializers.ValidationError(
+                {"detail": "comment, tagged_user, and tagged_phone_number must make a unique set."})
+        
+        try:
+            return super().create(validated_data)
+        except IntegrityError as e:
+            raise serializers.ValidationError({"detail": str(e)})
 
 class BlockSerializer(serializers.ModelSerializer):
     class Meta:

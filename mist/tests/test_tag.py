@@ -287,6 +287,49 @@ class TagTest(TestCase):
             tagged_name=self.user2.username,
             tagged_phone_number=test_phone_number,
         ))
+        return
+
+    def test_post_should_not_create_tag_given_with_nonunique_tagging_taggged_user(self):
+        tag = Tag.objects.create(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
+            tagged_name=self.user2.username,
+        )
+        serialized_tag = TagSerializer(tag).data
+
+        request = APIRequestFactory().post(
+            '/api/tags',
+            serialized_tag,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = TagView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        return
+    
+    def test_post_should_not_create_tag_given_with_nonunique_tagging_tagged_phone_number(self):
+        test_phone_number = "+12134789920"
+        
+        tag = Tag.objects.create(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_phone_number=test_phone_number,
+            tagged_name=self.user2.username,
+        )
+        serialized_tag = TagSerializer(tag).data
+
+        request = APIRequestFactory().post(
+            '/api/tags',
+            serialized_tag,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = TagView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        return
 
     def test_delete_should_delete_tag(self):
         tag = Tag.objects.create(

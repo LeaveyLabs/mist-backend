@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from django.forms import ValidationError
+from rest_framework import serializers
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
@@ -140,8 +141,8 @@ class Tag(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['tagged_user', 'tagging_user'], name='tagged_user_tagging_user'),
-            models.UniqueConstraint(fields=['tagged_phone_number', 'tagging_user'], name='tagged_phone_number_tagging_user'),
+            models.UniqueConstraint(fields=['comment', 'tagged_user', 'tagging_user'], name='tagged_user_tagging_user'),
+            models.UniqueConstraint(fields=['comment', 'tagged_phone_number', 'tagging_user'], name='tagged_phone_number_tagging_user'),
             models.CheckConstraint(
                 name="%(app_label)s_%(class)s_tagged_phone_number_or_tagged_user",
                 check=(
@@ -150,11 +151,19 @@ class Tag(models.Model):
                 ),
             )
         ]
-
+    
     def clean(self):
         cleaned_data = super().clean()
         if not cleaned_data.get('tagged_user') and not cleaned_data.get('tagged_phone_number'):  # This will check for None or Empty
             raise ValidationError({'detail': 'Even one of tagged_user or tagged_phone_number should have a value.'})
+
+    # def save(self, *args, **kwargs):
+    #     both_tagged_fields = self.tagged_user and self.tagged_phone_number
+    #     no_tagged_fields = not self.tagged_user and not self.tagged_phone_number
+    #     if both_tagged_fields or no_tagged_fields:
+    #         raise serializers.ValidationError(
+    #             {'detail': 'Exactly one of tagged_user or tagged_phone_number should have a value.'})
+    #     super(Tag, self).save(*args, **kwargs)
 
 class CommentVote(models.Model):
     MIN_RATING = 0
