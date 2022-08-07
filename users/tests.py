@@ -337,6 +337,21 @@ class ValidateUsernameViewTest(TestCase):
         self.assertTrue(User.objects.filter(username__iexact=all_lowercased_username))
         return
 
+    def test_post_should_not_accept_special_characters(self):
+        nonexisting_letters_numbers = '@#$$$$$'
+
+        request = APIRequestFactory().post(
+            'api-validate-username/',
+            {
+                'username': nonexisting_letters_numbers,
+            },
+            format='json',
+        )
+        response = ValidateUsernameView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        return
+
 class ValidatePasswordViewTest(TestCase):
     def setUp(self):
         cache.cache.clear()
@@ -1183,7 +1198,7 @@ class UserViewPatchTest(TestCase):
         request = APIRequestFactory().patch(
             'api/users/',
             {
-                'username': "",
+                'username': "$%@#",
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),

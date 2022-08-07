@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+import re
 from django.forms import ValidationError
 from rest_framework import serializers
 from .models import PasswordReset, PhoneNumberAuthentication, User, EmailAuthentication
@@ -65,6 +66,12 @@ class CompleteUserSerializer(serializers.ModelSerializer):
                 }
             )
         return data
+
+    def validate_username(self, username):
+        alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
+        if not re.match(alphanumeric_dash_and_underscores_only, username):
+            raise ValidationError({"username": "Username must contain only letters, numbers, underscores, or hypens."})
+        return username
     
     def validate_date_of_birth(self, date_of_birth):
         today = date.today()
@@ -246,6 +253,10 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
 
         if not username:
             raise ValidationError({"username": "Username was not provided."})
+
+        alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
+        if not re.match(alphanumeric_dash_and_underscores_only, username):
+            raise ValidationError({"username": "Username must contain only letters, numbers, underscores, or hypens."})
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
