@@ -1002,7 +1002,7 @@ class UserViewGetTest(TestCase):
         request = APIRequestFactory().get(
             'api/users/',
             {
-                'phone_number': str(self.valid_user.phone_number),
+                'phone_numbers': str(self.valid_user.phone_number),
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
@@ -1143,7 +1143,7 @@ class UserViewGetTest(TestCase):
         request = APIRequestFactory().get(
             'api/users/',
             {
-                'phone_number': invalid_phone_number,
+                'phone_numbers': invalid_phone_number,
             },
             format='json',
             HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
