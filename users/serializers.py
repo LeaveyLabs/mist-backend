@@ -95,7 +95,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def validate_confirm_picture(self, confirm_picture):
         return self.picture_below_size_limit(confirm_picture, 'confirm_picture')
 
-    def create(self, validated_data):
+    def verify_email_authentication(self, validated_data):
         email = validated_data.get('email').lower()
         validations_with_matching_email = EmailAuthentication.objects.filter(
             email__iexact=email)
@@ -120,25 +120,30 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if len(users_with_matching_email):
             raise serializers.ValidationError({"email": "Email already taken."})
 
-        username = validated_data.get('username').lower()
-        users_with_matching_username = User.objects.filter(username__iexact=username)
-        
-        if len(users_with_matching_username):
-            raise serializers.ValidationError({"username": "Username already taken."})
-        
+    def hash_password(self, validated_data):
         raw_password = validated_data.get('password')
         hashed_password = make_password(raw_password)
         validated_data.update({'password': hashed_password})
 
-        picture = validated_data.get('picture')
-        if not picture:
-            raise serializers.ValidationError({"picture": "Picture is required."})
+    def verify_username(self, validated_data):
+        username = validated_data.get('username').lower()
 
-        confirm_picture = validated_data.get('confirm_picture')
-        if not confirm_picture:
-            raise serializers.ValidationError({"confirm_picture": "Picture is required."})
+        if not username:
+            raise ValidationError({"username": "Username was not provided."})
+
+        alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
+        if not re.match(alphanumeric_dash_period_and_underscores_only, username):
+            raise ValidationError({"username": "Username must contain only letters, numbers, underscores, or periods."})
+
+        users_with_matching_username = User.objects.filter(username__iexact=username)
+        if users_with_matching_username:
+            raise ValidationError({"username": "Username is not unique."})
+
+    def create(self, validated_data):
+        self.verify_email_authentication(validated_data)
+        self.verify_username(validated_data)
+        self.hash_password(validated_data)
         validated_data.pop('confirm_picture')
-
         return User.objects.create(**validated_data)
     
     def update(self, instance, validated_data):
@@ -163,14 +168,6 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         email_or_username = data.get('email_or_username').lower()
         password = data.get('password')
-
-        missing_fields = {}
-        if not email_or_username:
-            missing_fields['email_or_username'] = "Email or username is required."
-        if not password:
-            missing_fields['password'] = "Password is required."
-        if missing_fields: 
-            raise serializers.ValidationError(missing_fields)
 
         users_with_matching_email = User.objects.filter(email__iexact=email_or_username)
         if users_with_matching_email:
@@ -254,9 +251,9 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
         if not username:
             raise ValidationError({"username": "Username was not provided."})
 
-        alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
-        if not re.match(alphanumeric_dash_and_underscores_only, username):
-            raise ValidationError({"username": "Username must contain only letters, numbers, underscores, or hypens."})
+        alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
+        if not re.match(alphanumeric_dash_period_and_underscores_only, username):
+            raise ValidationError({"username": "Username must contain only letters, numbers, underscores, or periods."})
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:

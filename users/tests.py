@@ -351,6 +351,22 @@ class ValidateUsernameViewTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         return
+    
+    def test_post_should_accept_periods_and_underscores(self):
+        period_and_underscore = '._'
+
+        request = APIRequestFactory().post(
+            'api-validate-username/',
+            {
+                'username': period_and_underscore,
+            },
+            format='json',
+        )
+        response = ValidateUsernameView.as_view()(request)
+        print(response.data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return
 
 class ValidatePasswordViewTest(TestCase):
     def setUp(self):
@@ -768,6 +784,52 @@ class APITokenViewPostTest(TestCase):
             {
                 'email_or_username': self.fake_username, 
                 'password': 'ThisPasswordDoesNotExist',
+            },
+            format='json',
+        )
+
+        response = LoginView.as_view()(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn('token', response.data)
+        return
+    
+    def test_post_should_not_obtain_token_given_no_password(self):
+        user = User(
+            email= self.email_auth.email,
+            username= self.fake_username,
+            date_of_birth=date(2000, 1, 1),
+        )
+        user.set_password(self.fake_password)
+        user.save()
+
+        request = APIRequestFactory().post(
+            'api-token/',
+            {
+                'email_or_username': self.fake_username, 
+            },
+            format='json',
+        )
+
+        response = LoginView.as_view()(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn('token', response.data)
+        return
+    
+    def test_post_should_not_obtain_token_given_no_email_or_username(self):
+        user = User(
+            email= self.email_auth.email,
+            username= self.fake_username,
+            date_of_birth=date(2000, 1, 1),
+        )
+        user.set_password(self.fake_password)
+        user.save()
+
+        request = APIRequestFactory().post(
+            'api-token/',
+            {
+                'password': self.fake_password,
             },
             format='json',
         )
