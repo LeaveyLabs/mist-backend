@@ -25,8 +25,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'username', 'password',
-        'first_name', 'last_name', 'picture', 'confirm_picture', 
-        'date_of_birth', 'sex', 'latitude', 'longitude', )
+        'first_name', 'last_name', 'picture', 'confirm_picture',
+        'phone_number', 'date_of_birth', 'sex', 'latitude', 
+        'longitude', )
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
@@ -81,8 +82,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         return date_of_birth
     
     def validate_email(self, email):
-        emailValidator = UserEmailRegistrationSerializer(data={"email":email})
-        emailValidator.is_valid(raise_exception=True)
+        email_validator = UserEmailRegistrationSerializer(data={"email":email})
+        email_validator.is_valid(raise_exception=True)
         return email
     
     def validate_password(self, password):
@@ -119,6 +120,32 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         users_with_matching_email = User.objects.filter(email__iexact=email)
         if len(users_with_matching_email):
             raise serializers.ValidationError({"email": "Email already taken."})
+    
+    def verify_phone_number(self, validated_data):
+        email = validated_data.get('email').lower()
+        phone_number = validated_data.get('phone_number').lower()
+        matching_validations = PhoneNumberAuthentication.objects.filter(
+            phone_number=phone_number,
+            email__iexact=email).order_by('-validation_time')
+
+        if not matching_validations:
+            raise serializers.ValidationError({"phone_number": "Phone number was not registered."})
+
+        most_recent_auth_request = matching_validations[0]
+
+        if not most_recent_auth_request.validated:
+            raise serializers.ValidationError({"phone_number": "Phone number was not validated."})
+
+        current_time = datetime.now().timestamp()
+        time_since_validation = current_time - most_recent_auth_request.validation_time
+        validation_expired = time_since_validation > self.EXPIRATION_TIME
+
+        if validation_expired:
+            raise serializers.ValidationError({"phone_number": "Phone number validation expired."})
+
+        users_with_matching_phone_number = User.objects.filter(phone_number=phone_number)
+        if len(users_with_matching_phone_number):
+            raise serializers.ValidationError({"phone_number": "Phone number already taken."})
 
     def hash_password(self, validated_data):
         raw_password = validated_data.get('password')
@@ -141,6 +168,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         self.verify_email_authentication(validated_data)
+        self.verify_phone_number(validated_data)
         self.verify_username(validated_data)
         self.hash_password(validated_data)
         validated_data.pop('confirm_picture')

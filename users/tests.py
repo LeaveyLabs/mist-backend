@@ -455,6 +455,14 @@ class UserViewPostTest(TestCase):
         self.email_auth.validation_time = datetime.now().timestamp()
         self.email_auth.save()
 
+        self.phone_auth = PhoneNumberAuthentication.objects.create(
+            phone_number='+12134569999',
+            email=self.email_auth.email,
+        )
+        self.phone_auth.validated = True
+        self.phone_auth.validation_time = datetime.now().timestamp()
+        self.phone_auth.save()
+
         self.fake_username = 'FakeTestingUsername'
         self.fake_password = 'FakeTestingPassword@3124587'
         self.fake_first_name = 'FirstNameOfFakeUser'
@@ -473,19 +481,12 @@ class UserViewPostTest(TestCase):
         self.image_file2 = SimpleUploadedFile('test2.jpeg', test_image_io2.getvalue(), content_type='image/jpeg')
 
     def test_post_should_create_user_given_validated_email(self):
-        self.assertFalse(User.objects.filter(
-            email=self.email_auth.email,
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-            date_of_birth=self.fake_date_of_birth,
-        ))
-
         request = APIRequestFactory().post(
             'api/users/',
             encode_multipart(boundary=BOUNDARY, data=
             {
                 'email': self.email_auth.email,
+                'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
                 'password': self.fake_password,
                 'first_name': self.fake_first_name,
@@ -500,29 +501,16 @@ class UserViewPostTest(TestCase):
         print(response.data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(User.objects.filter(
-            email=self.email_auth.email,
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-            date_of_birth=self.fake_date_of_birth,
-        ))
+        self.assertTrue(User.objects.filter(email=self.email_auth.email))
         return
 
     def test_post_should_not_create_user_given_unvalidated_email(self):
-        self.assertFalse(User.objects.filter(
-            email='thisEmailDoesNotExist@usc.edu',
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-            date_of_birth=self.fake_date_of_birth,
-        ))
-
         request = APIRequestFactory().post(
             'api/users/',
             encode_multipart(boundary=BOUNDARY, data=
             {
                 'email': 'thisEmailDoesNotExist@usc.edu',
+                'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
                 'password': self.fake_password,
                 'first_name': self.fake_first_name,
@@ -536,29 +524,41 @@ class UserViewPostTest(TestCase):
         response = UserView.as_view({'post':'create'})(request)
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(User.objects.filter(
-            email='thisEmailDoesNotExist@usc.edu',
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-            date_of_birth=self.fake_date_of_birth,
-        ))
+        self.assertFalse(User.objects.filter(email='thisEmailDoesNotExist@usc.edu'))
         return
     
-    def test_post_should_not_create_user_given_no_picture(self):
-        self.assertFalse(User.objects.filter(
-            email=self.email_auth.email,
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-            date_of_birth=self.fake_date_of_birth,
-        ))
+    def test_post_should_not_create_user_given_unvalidated_phone_number(self):
+        unvalidated_phone_number = "+12345678900"
 
         request = APIRequestFactory().post(
             'api/users/',
             encode_multipart(boundary=BOUNDARY, data=
             {
                 'email': self.email_auth.email,
+                'phone_number': unvalidated_phone_number,
+                'username': self.fake_username,
+                'password': self.fake_password,
+                'first_name': self.fake_first_name,
+                'last_name': self.fake_last_name,
+                'date_of_birth': self.fake_date_of_birth,
+                'picture': self.image_file1,
+                'confirm_picture': self.image_file1,
+            }),
+            content_type=MULTIPART_CONTENT,
+        )
+        response = UserView.as_view({'post':'create'})(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(email='thisEmailDoesNotExist@usc.edu'))
+        return
+    
+    def test_post_should_not_create_user_given_no_picture(self):
+        request = APIRequestFactory().post(
+            'api/users/',
+            encode_multipart(boundary=BOUNDARY, data=
+            {
+                'email': self.email_auth.email,
+                'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
                 'password': self.fake_password,
                 'first_name': self.fake_first_name,
@@ -570,13 +570,7 @@ class UserViewPostTest(TestCase):
         response = UserView.as_view({'post':'create'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(User.objects.filter(
-            email=self.email_auth.email,
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-            date_of_birth=self.fake_date_of_birth,
-        ))
+        self.assertFalse(User.objects.filter(email=self.email_auth.email))
         return
     
     def test_post_should_not_create_user_given_expired_validation(self):
@@ -587,14 +581,6 @@ class UserViewPostTest(TestCase):
         )
         image_file = SimpleUploadedFile('small.gif', small_gif, content_type='image/gif')
 
-        self.assertFalse(User.objects.filter(
-            email='thisEmailDoesNotExist@usc.edu',
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-            date_of_birth=self.fake_date_of_birth,
-        ))
-
         ten_minutes = timedelta(minutes=10).total_seconds()
 
         self.email_auth.validation_time -= ten_minutes
@@ -604,7 +590,8 @@ class UserViewPostTest(TestCase):
             'api/users/',
             encode_multipart(boundary=BOUNDARY, data=
             {
-                'email': 'thisEmailDoesNotExist@usc.edu',
+                'email': self.email_auth.email,
+                'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
                 'password': self.fake_password,
                 'first_name': self.fake_first_name,
@@ -618,28 +605,16 @@ class UserViewPostTest(TestCase):
         response = UserView.as_view({'post':'create'})(request)
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(User.objects.filter(
-            email='thisEmailDoesNotExist@usc.edu',
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-            date_of_birth=self.fake_date_of_birth,
-        ))
+        self.assertFalse(User.objects.filter(email=self.email_auth.email))
         return
     
-    def test_post_should_not_create_user_given_user_under_age_13(self):
-        self.assertFalse(User.objects.filter(
-            email='thisEmailDoesNotExist@usc.edu',
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-        ))
-
+    def test_post_should_not_create_user_given_user_under_age_18(self):
         request = APIRequestFactory().post(
             'api/users/',
             encode_multipart(boundary=BOUNDARY, data=
             {
-                'email': 'thisEmailDoesNotExist@usc.edu',
+                'email': self.email_auth.email,
+                'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
                 'password': self.fake_password,
                 'first_name': self.fake_first_name,
@@ -653,12 +628,7 @@ class UserViewPostTest(TestCase):
         response = UserView.as_view({'post':'create'})(request)
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(User.objects.filter(
-            email='thisEmailDoesNotExist@usc.edu',
-            username=self.fake_username,
-            first_name=self.fake_first_name,
-            last_name=self.fake_last_name,
-        ))
+        self.assertFalse(User.objects.filter(email=self.email_auth.email))
         return
 
 class APITokenViewPostTest(TestCase):
