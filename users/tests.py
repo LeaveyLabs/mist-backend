@@ -819,7 +819,8 @@ class UserViewGetTest(TestCase):
             username="unrelatedUsername",
             first_name="completelyDifferentFirstName",
             last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1))
+            date_of_birth=date(2000, 1, 1),
+            phone_number="+12136778889")
         self.valid_user.set_password('randomPassword')
         self.valid_user.save()
         self.auth_token = Token.objects.create(user=self.valid_user)
@@ -832,7 +833,8 @@ class UserViewGetTest(TestCase):
             username="nonMatchingUsername",
             first_name="thisFirstNameHasNotBeenTaken",
             last_name="thisLastNameHasNotBeenTaken",
-            date_of_birth=date(2000, 1, 1))
+            date_of_birth=date(2000, 1, 1),
+            phone_number="+12345678900")
         non_matching_user.set_password('nonMatchingPassword')
         non_matching_user.save()
         auth_token = Token.objects.create(user=non_matching_user)
@@ -996,6 +998,21 @@ class UserViewGetTest(TestCase):
         self.assertEqual(response.data[0], self.user_serializer.data)
         return
 
+    def test_get_should_return_user_given_valid_phone_number(self):
+        request = APIRequestFactory().get(
+            'api/users/',
+            {
+                'phone_number': str(self.valid_user.phone_number),
+            },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+        )
+        response = UserView.as_view({'get':'list'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data[0], self.user_serializer.data)
+        return
+
     def test_get_should_return_user_given_valid_token(self):
         serialized_users = [self.user_serializer.data]
 
@@ -1118,6 +1135,24 @@ class UserViewGetTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)        
+        return
+    
+    def test_get_should_not_return_user_given_invalid_phone_number(self):
+        invalid_phone_number = "+12345678900"
+
+        request = APIRequestFactory().get(
+            'api/users/',
+            {
+                'phone_number': invalid_phone_number,
+            },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+        )
+        response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_users)
         return
     
     def test_get_should_not_return_user_given_invalid_token(self):

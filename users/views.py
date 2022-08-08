@@ -87,6 +87,7 @@ class UserView(viewsets.ModelViewSet):
         last_name = self.request.query_params.get('last_name')
         words = self.request.query_params.getlist('words')
         token = self.request.query_params.get('token')
+        phone_number = self.request.query_params.get('phone_number')
         requesting_user = get_user_from_request(self.request)
 
         # default is to return all users
@@ -113,6 +114,9 @@ class UserView(viewsets.ModelViewSet):
             if last_name:
                 last_name_set = User.objects.filter(last_name__startswith=last_name)
             queryset = (username_set | first_name_set | last_name_set).distinct()
+        # or phone_number
+        elif phone_number:
+            queryset = User.objects.filter(phone_number=phone_number)
         # or token
         elif token:
             matching_tokens = Token.objects.filter(key=token)
