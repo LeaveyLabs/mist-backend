@@ -473,10 +473,24 @@ class ValidateLoginCodeView(generics.CreateAPIView):
         authentication.save()
 
         user = User.objects.get(phone_number=phone_number)
-        token = Token.objects.get_or_create(user=user)[0]
+        token, created = Token.objects.get_or_create(user=user)
 
         return Response(
             {
                 "token": token.key,
             },
             status=status.HTTP_200_OK)
+
+class RequestResetPhoneNumberView(generics.CreateAPIView):
+    """
+    View to request reset phone number
+    """
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+class ValidateResetPhoneNumberView(generics.CreateAPIView):
+    """
+    View to validate reset phone number
+    """
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
