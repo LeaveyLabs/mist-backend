@@ -39,7 +39,7 @@ class EmailAuthentication(models.Model):
     def get_current_time():
         return datetime.now().timestamp()
         
-    email = models.EmailField()
+    email = models.EmailField(unique=True)
     code = models.CharField(max_length=6, default=get_random_code, editable=False)
     code_time = models.FloatField(default=get_current_time, editable=False)
     validated = models.BooleanField(default=False)
@@ -59,9 +59,9 @@ class PasswordReset(models.Model):
     validation_time = models.FloatField(null=True)
 
 class PhoneNumberAuthentication(models.Model):
-    email = models.EmailField()
-    phone_number = PhoneNumberField()
-    code = models.CharField(max_length=6, default=get_random_code, editable=False)
-    code_time = models.FloatField(default=get_current_time, editable=False)
+    email = models.EmailField(unique=True)
+    phone_number = PhoneNumberField(unique=True)
+    code = models.CharField(max_length=6, default=get_random_code)
+    code_time = models.FloatField(default=get_current_time)
     validated = models.BooleanField(default=False)
     validation_time = models.FloatField(null=True)

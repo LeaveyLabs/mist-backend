@@ -82,8 +82,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         return date_of_birth
     
     def validate_email(self, email):
-        email_validator = UserEmailRegistrationSerializer(data={"email":email})
-        email_validator.is_valid(raise_exception=True)
+        users_with_matching_email = User.objects.filter(email__iexact=email)
+        if users_with_matching_email:
+            raise ValidationError({"email": "Email has already been registered."})
         return email
     
     def validate_password(self, password):

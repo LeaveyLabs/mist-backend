@@ -6,13 +6,14 @@ from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from twilio.rest import Client
-from users.generics import get_user_from_request
+from users.generics import get_current_time, get_user_from_request, get_random_code
 from users.permissions import UserPermissions
 from django.core.mail import send_mail
 from django.db.models import Q
 from django.db.models.expressions import RawSQL
 
 from .serializers import (
+    LoginCodeRequestSerializer,
     LoginSerializer,
     PasswordResetFinalizationSerializer,
     PasswordResetRequestSerializer,
@@ -428,7 +429,29 @@ class RequestLoginCodeView(generics.CreateAPIView):
     """
     
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        login_request = LoginCodeRequestSerializer(data=request.data)
+        login_request.is_valid(raise_exception=True)
+        phone_number = login_request.data.get('phone_number')
+
+        phone_number_authentication = PhoneNumberAuthentication.objects.get(
+            phone_number=phone_number)
+        phone_number_authentication.code = get_random_code()
+        phone_number_authentication.code_time = get_current_time()
+        phone_number_authentication.save()
+
+        twilio_client.messages.create(
+            body=f"Your verification code for Mist is \
+            {phone_number_authentication.code}",
+            from_=twilio_phone_number,
+            to=phone_number_authentication.phone_number,
+        )
+
+        return Response(
+            {
+                "status": "success",
+                "data": login_request.data,
+            },
+            status=status.HTTP_200_OK)
 
 class ValidateLoginCodeView(generics.CreateAPIView):
     """
@@ -436,4 +459,24 @@ class ValidateLoginCodeView(generics.CreateAPIView):
     """
     
     def post(self, request, *args, **kwargs):
-        return super().post(request, *args, **kwargs)
+        validation = PhoneNumberValidationSerializer(data=request.data)
+        validation.is_valid(raise_exception=True)
+        phone_number = validation.data.get('phone_number')
+        code = validation.data.get('code')
+
+        authentication = PhoneNumberAuthentication.objects.filter(
+            phone_number=phone_number,
+            code=code,
+        ).order_by('-code_time')[0]
+        authentication.validated = True
+        authentication.validation_time = get_current_time()
+        authentication.save()
+
+        user = User.objects.get(phone_number=phone_number)
+        token = Token.objects.get_or_create(user=user)[0]
+
+        return Response(
+            {
+                "token": token.key,
+            },
+            status=status.HTTP_200_OK)
