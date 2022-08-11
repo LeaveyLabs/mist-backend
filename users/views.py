@@ -391,7 +391,7 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
         twilio_client.messages.create(
             body=f"Your verification code for Mist is {phone_number_authentication.code}",
             from_=twilio_phone_number,
-            to=phone_number_authentication.phone_number,
+            to=str(phone_number_authentication.phone_number),
         )
 
         return Response(
@@ -446,7 +446,7 @@ class RequestLoginCodeView(generics.CreateAPIView):
         twilio_client.messages.create(
             body=f"Your verification code for Mist is {phone_number_authentication.code}",
             from_=twilio_phone_number,
-            to=phone_number_authentication.phone_number,
+            to=str(phone_number_authentication.phone_number),
         )
 
         return Response(
@@ -546,7 +546,6 @@ class RequestResetTextCodeView(generics.CreateAPIView):
         registration.is_valid(raise_exception=True)
         email = registration.data.get('email').lower()
         phone_number = registration.data.get('phone_number')
-        print(registration.data)
 
         phone_number_reset = PhoneNumberReset.objects.get(
             email__iexact=email,
@@ -559,7 +558,7 @@ class RequestResetTextCodeView(generics.CreateAPIView):
         twilio_client.messages.create(
             body=f"Your verification code for Mist is {phone_number_reset.phone_number_code}",
             from_=twilio_phone_number,
-            to=phone_number_reset.phone_number,
+            to=str(phone_number_reset.phone_number),
         )
 
         return Response(
