@@ -65,3 +65,18 @@ class PhoneNumberAuthentication(models.Model):
     code_time = models.FloatField(default=get_current_time)
     validated = models.BooleanField(default=False)
     validation_time = models.FloatField(null=True)
+
+class PhoneNumberReset(models.Model):
+    email = models.EmailField(unique=True)
+    email_code = models.CharField(max_length=6, default=get_random_code)
+    email_code_time = models.FloatField(default=get_current_time)
+    email_validated = models.BooleanField(default=False)
+    email_validation_time = models.FloatField(null=True)
+
+    reset_token = models.CharField(max_length=6, default=get_random_code)
+
+    phone_number = PhoneNumberField(unique=True, null=True)
+    phone_number_code = models.CharField(max_length=6, default=get_random_code)
+    phone_number_code_time = models.FloatField(default=get_current_time)
+    phone_number_validated = models.BooleanField(default=False)
+    phone_number_validation_time = models.FloatField(null=True)

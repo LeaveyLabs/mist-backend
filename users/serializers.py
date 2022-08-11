@@ -2,7 +2,9 @@ from datetime import date, datetime, timedelta
 import re
 from django.forms import ValidationError
 from rest_framework import serializers
-from .models import PasswordReset, PhoneNumberAuthentication, User, EmailAuthentication
+
+from users.generics import get_current_time
+from .models import PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
@@ -298,14 +300,6 @@ class PasswordValidationRequestSerializer(serializers.Serializer):
         username = data.get('username').lower()
         password = data.get('password')
 
-        missing_fields = {}
-        if not username:
-            missing_fields['username'] = "Username was not provided"
-        if not password:
-             missing_fields['password'] = "Password was not provided"
-        if missing_fields:
-            raise ValidationError(missing_fields)
-
         user = User(username=username)
         validate_password(password=password, user=user)
 
@@ -405,7 +399,7 @@ class PhoneNumberValidationSerializer(serializers.Serializer):
         matching_registration_requests = PhoneNumberAuthentication.objects.filter(
             phone_number=phone_number).order_by('-code_time')
         if not matching_registration_requests:
-            raise ValidationError({"phone_number": "No registration with matching phone number."})
+            raise ValidationError({"phone_number": "No reset request with matching phone number."})
         
         matching_registration_request = matching_registration_requests[0]
         current_time = datetime.now().timestamp()
@@ -424,3 +418,145 @@ class PhoneNumberValidationSerializer(serializers.Serializer):
         if registration_request.code != code:
             raise ValidationError({"code": "Code does not match."})
         return data
+
+# email code
+class ResetEmailRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, email):
+        matching_emails = User.objects.filter(email__iexact=email)
+        if not matching_emails:
+            raise ValidationError({"email": "Email does not exist."})
+        return email
+
+class ResetEmailValidationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField()
+
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
+    def validate(self, data):
+        email = data.get('email').lower()
+        code = data.get('code')
+        reset_request = PhoneNumberReset.objects.get(email__iexact=email)
+        if reset_request.email_code != code:
+            raise ValidationError({"code": "Code does not match."})
+        return data
+
+    def validate_email(self, email):
+        matching_emails = PhoneNumberReset.objects.filter(
+            email__iexact=email).order_by('-email_code_time')
+        if not matching_emails:
+            raise ValidationError({"email": "Email did not request a phone number reset."})
+        
+        matching_email = matching_emails[0]
+
+        current_time = datetime.now().timestamp()
+        time_since_reset_request = current_time - matching_email.email_code_time
+        request_expired = time_since_reset_request > self.EXPIRATION_TIME
+
+        if request_expired:
+            raise ValidationError({"email": "Reset request expired."})
+        
+        return email
+
+class ResetTextRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    phone_number = PhoneNumberField()
+    token = serializers.CharField()
+
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
+    def validate(self, data):
+        email = data.get('email').lower()
+        reset_token = data.get('token')
+        print("hello")
+
+        matching_reset_requests = PhoneNumberReset.objects.filter(
+            email__iexact=email,
+            reset_token=reset_token,
+        )
+        if not matching_reset_requests:
+            raise ValidationError({"token": "Invalid reset token."})
+        
+        return data
+
+    def validate_email(self, email):
+        matching_emails = PhoneNumberReset.objects.filter(
+            email__iexact=email).order_by('-email_code_time')
+        if not matching_emails:
+            raise ValidationError({"email": "Email did not request a phone number reset."})
+        
+        matching_email = matching_emails[0]
+        if not matching_email.email_validated:
+            raise ValidationError({"email": "Email was not validated."})
+
+        current_time = datetime.now().timestamp()
+        time_since_validation = current_time - matching_email.email_validation_time
+        validation_expired = time_since_validation > self.EXPIRATION_TIME
+
+        if validation_expired:
+            raise ValidationError({"email": "Email validation expired."})
+
+        return email
+    
+    def validate_phone_number(self, phone_number):
+        matching_users = User.objects.filter(phone_number=phone_number)
+        if not matching_users:
+            raise ValidationError({"phone_number": "Phone number is already in use."})
+
+        matching_reset_phone_numbers = PhoneNumberReset.objects.filter(
+            phone_number=phone_number).order_by('-phone_number_code_time')
+        
+        if not matching_reset_phone_numbers:
+            return phone_number
+        
+        matching_reset_phone_number = matching_reset_phone_numbers[0]
+        last_request_time = matching_reset_phone_number.phone_number_code_time
+        time_since_last_request = get_current_time() - last_request_time
+        if time_since_last_request < self.EXPIRATION_TIME:
+            raise ValidationError({"phone_number": "Phone number is being registered."})
+        
+        return phone_number
+
+class ResetTextValidationSerializer(serializers.Serializer):
+    phone_number = PhoneNumberField()
+    code = serializers.CharField()
+    token = serializers.CharField()
+
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
+    def validate(self, data):
+        phone_number = data.get('phone_number')
+        code = data.get('code')
+        reset_token = data.get('token')
+
+        matching_reset_requests = PhoneNumberReset.objects.filter(
+            phone_number=phone_number,
+            reset_token=reset_token,
+        )
+        if not matching_reset_requests:
+            raise ValidationError({"token": "Invalid reset token."})
+
+        reset_request = PhoneNumberReset.objects.get(phone_number=phone_number)
+        if reset_request.phone_number_code != code:
+            raise ValidationError({"code": "Code does not match."})
+
+        return data
+
+    def validate_phone_number(self, phone_number):
+        matching_phone_numbers = PhoneNumberReset.objects.filter(
+            phone_number=phone_number).order_by('-phone_number_code_time')
+        if not matching_phone_numbers:
+            raise ValidationError({"phone_number": "No account was reset with the phone number."})
+        
+        matching_phone_number = matching_phone_numbers[0]
+
+        current_time = datetime.now().timestamp()
+        time_since_reset_request = current_time - matching_phone_number.phone_number_code_time
+        request_expired = time_since_reset_request > self.EXPIRATION_TIME
+
+        if request_expired:
+            raise ValidationError({"phone_number": "Phone number reset expired."})
+        
+        return phone_number
