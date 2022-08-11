@@ -33,7 +33,7 @@ from mist.views.post import FavoritedPostsView, FeaturedPostsView, FriendPostsVi
 from mist.views.tag import TagView
 from mist.views.post_vote import PostVoteView
 from mist.views.word import WordView
-from users.views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterUserEmailView, RequestPasswordResetView, ValidatePasswordResetView, ValidatePasswordView, ValidateUserEmailView, UserView, ValidateUsernameView
+from users.views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterPhoneNumberView, RegisterUserEmailView, RequestLoginCodeView, RequestPasswordResetView, RequestResetEmailView, RequestResetTextCodeView, ValidateLoginCodeView, ValidatePasswordResetView, ValidatePasswordView, ValidatePhoneNumberView, ValidateResetEmailView, ValidateResetTextCodeView, ValidateUserEmailView, UserView, ValidateUsernameView
 
 # Models
 router = routers.DefaultRouter()
@@ -66,6 +66,15 @@ urlpatterns = [
     path('api-request-reset-password/', RequestPasswordResetView.as_view()),
     path('api-validate-reset-password/', ValidatePasswordResetView.as_view()),
     path('api-finalize-reset-password/', FinalizePasswordResetView.as_view()),
+    # Phone Numbers
+    path('api-register-phone-number/', RegisterPhoneNumberView.as_view()),
+    path('api-validate-phone-number/', ValidatePhoneNumberView.as_view()),
+    path('api-request-login-code/', RequestLoginCodeView.as_view()),
+    path('api-validate-login-code/', ValidateLoginCodeView.as_view()),
+    path('api-request-reset-email/', RequestResetEmailView.as_view()),
+    path('api-validate-reset-email/', ValidateResetEmailView.as_view()),
+    path('api-request-reset-text/', RequestResetTextCodeView.as_view()),
+    path('api-validate-reset-text/', ValidateResetTextCodeView.as_view()),
     # Database
     path('api/', include(router.urls)),
     path('api/nearby-users/', NearbyUsersView.as_view()),

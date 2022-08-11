@@ -41,7 +41,7 @@ from .models import (
 
 
 # Twilio Initialization
-environment = os.getenv('ENVIRONMENT', 'dev')
+environment = os.getenv('ENVIRONMENT')
 
 class TwilioTestClient:
 
