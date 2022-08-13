@@ -379,6 +379,12 @@ class PhoneNumberRegistrationSerializer(serializers.Serializer):
         if not matching_users:
             raise ValidationError({"email": "User with email does not exist."})
         return email
+    
+    def validate_phone_number(self, phone_number):
+        matching_phone_numbers = User.objects.filter(phone_number=phone_number)
+        if matching_phone_numbers:
+            raise ValidationError({"phone_number": "Phone number is in use."})
+        return phone_number
 
 class LoginCodeRequestSerializer(serializers.Serializer):
     phone_number = PhoneNumberField()

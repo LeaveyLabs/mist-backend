@@ -24,7 +24,7 @@ class User(AbstractUser):
 
     date_of_birth = models.DateField()
     picture = models.ImageField(upload_to=profile_picture_filepath, null=True)
-    phone_number = PhoneNumberField(null=True)
+    phone_number = PhoneNumberField(null=True, unique=True)
     sex = models.CharField(max_length=1, choices=SEXES, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
