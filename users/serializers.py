@@ -374,11 +374,29 @@ class PhoneNumberRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
     phone_number = PhoneNumberField()
 
-    def validate_email(self, email):
-        matching_users = User.objects.filter(email__iexact=email.lower())
-        if not matching_users:
-            raise ValidationError({"email": "User with email does not exist."})
-        return email
+    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+
+    def validate(self, data):
+        email = data.get('email')
+        phone_number = data.get('phone_number')
+
+        matching_regsitrations = PhoneNumberAuthentication.objects.filter(
+            phone_number=phone_number,
+        ).order_by('-code_time')
+
+        if not matching_regsitrations:
+            return data
+        
+        matching_regsitration = matching_regsitrations[0]
+
+        current_time = datetime.now().timestamp()
+        time_since_registration = current_time - matching_regsitration.code_time
+        registration_expired = time_since_registration > self.EXPIRATION_TIME
+
+        if not registration_expired and matching_regsitration.email != email:
+            raise ValidationError({"phone_number": "Phone number is being registered by someone else."})
+
+        return data
     
     def validate_phone_number(self, phone_number):
         matching_phone_numbers = User.objects.filter(phone_number=phone_number)

@@ -385,6 +385,7 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
         email = phone_number_registration.data.get('email').lower()
 
         PhoneNumberAuthentication.objects.filter(email__iexact=email).delete()
+        PhoneNumberAuthentication.objects.filter(phone_number__iexact=phone_number).delete()
         phone_number_authentication = PhoneNumberAuthentication.objects.create(
             email=email, phone_number=phone_number)
 
