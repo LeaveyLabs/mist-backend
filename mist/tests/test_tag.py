@@ -357,6 +357,36 @@ class TagTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         return
+    
+    def test_post_should_not_send_text_given_invalid_phone_number(self):
+        test_phone_number = "invalidPhoneNumber"
+
+        tag = Tag(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_name=self.user2.username,
+            tagged_phone_number=test_phone_number,
+        )
+        serialized_tag = TagSerializer(tag).data
+
+        request = APIRequestFactory().post(
+            '/api/tags',
+            serialized_tag,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = TagView.as_view({'post':'create'})(request)
+
+        messages = TwillioTestClientMessages.created
+        matching_messages = []
+        for message in messages:
+            if message.get('to') == test_phone_number:
+                matching_messages.append(message)
+        
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(matching_messages)
+        return
 
     def test_delete_should_delete_tag(self):
         tag = Tag.objects.create(
