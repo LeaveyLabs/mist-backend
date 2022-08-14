@@ -1,16 +1,18 @@
 from datetime import datetime
-import os
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from twilio.rest import Client
 from users.generics import get_current_time, get_user_from_request, get_random_code
 from users.permissions import UserPermissions
 from django.core.mail import send_mail
 from django.db.models import Q
 from django.db.models.expressions import RawSQL
+
+import sys
+sys.path.append("..")
+from twilio_config import twilio_client, twilio_phone_number
 
 from .serializers import (
     LoginCodeRequestSerializer,
@@ -38,38 +40,6 @@ from .models import (
     User,
     EmailAuthentication,
 )
-
-
-# Twilio Initialization
-environment = os.getenv('ENVIRONMENT')
-
-class TwilioTestClient:
-
-    def __init__(self, sid, token):
-        self.sid = sid
-        self.token = token
-        self.messages = TwillioTestClientMessages()
-
-class TwillioTestClientMessages:
-
-    created = []
-
-    def create(self, to, from_, body):
-        self.created.append({
-            'to': to,
-            'from_': from_,
-            'body': body
-        })
-
-account_sid = os.environ['TWILIO_ACCOUNT_SID']
-auth_token = os.environ['TWILIO_AUTH_TOKEN']
-twilio_phone_number = os.environ['TWILIO_PHONE_NUMBER']
-
-if environment == 'dev':
-    twilio_client = TwilioTestClient(account_sid, auth_token)
-else:
-    twilio_client = Client(account_sid, auth_token)
-
 
 # Views
 class UserView(viewsets.ModelViewSet):

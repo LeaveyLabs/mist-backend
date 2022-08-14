@@ -1,7 +1,6 @@
 from datetime import date, datetime, timedelta
-from io import BytesIO, StringIO
+from io import BytesIO
 from tempfile import TemporaryFile
-import twilio
 from PIL import Image
 from django.core import mail, cache
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -14,8 +13,12 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
-from .views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterPhoneNumberView, RegisterUserEmailView, RequestLoginCodeView, RequestPasswordResetView, RequestResetEmailView, RequestResetTextCodeView, TwillioTestClientMessages, UserView, ValidateLoginCodeView, ValidatePasswordResetView, ValidatePasswordView, ValidatePhoneNumberView, ValidateResetEmailView, ValidateResetTextCodeView, ValidateUserEmailView, ValidateUsernameView
+from .views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterPhoneNumberView, RegisterUserEmailView, RequestLoginCodeView, RequestPasswordResetView, RequestResetEmailView, RequestResetTextCodeView, UserView, ValidateLoginCodeView, ValidatePasswordResetView, ValidatePasswordView, ValidatePhoneNumberView, ValidateResetEmailView, ValidateResetTextCodeView, ValidateUserEmailView, ValidateUsernameView
 from .models import PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
+
+import sys
+sys.path.append("..")
+from twilio_config import TwillioTestClientMessages
 
 # Create your tests here.
 class ThrottleTest(TestCase):
@@ -480,7 +483,7 @@ class UserViewPostTest(TestCase):
         self.image_file1 = SimpleUploadedFile('test1.jpeg', test_image_io1.getvalue(), content_type='image/jpeg')
         self.image_file2 = SimpleUploadedFile('test2.jpeg', test_image_io2.getvalue(), content_type='image/jpeg')
 
-    def test_post_should_create_user_given_validated_email(self):
+    def test_post_should_create_user_given_validated_email_and_validated_phone_number(self):
         request = APIRequestFactory().post(
             'api/users/',
             encode_multipart(boundary=BOUNDARY, data=
@@ -1514,59 +1517,6 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.valid_user.last_name, patched_user.last_name)
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         self.assertEqual(patched_user.longitude, new_longitude)
-        return
-
-    def test_patch_should_update_phone_number_given_validated_phone_number(self):
-        new_phone_number = "+12139998888"
-
-        PhoneNumberAuthentication.objects.create(
-            email=self.valid_user.email,
-            phone_number=self.valid_user.phone_number,
-            validated=True,
-            validation_time=get_current_time(),
-        )
-
-        request = APIRequestFactory().patch(
-            'api/users/',
-            {
-                'phone_number': new_phone_number,
-            },
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
-        )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
-        self.assertEqual(patched_user.phone_number, new_phone_number)
-        return
-    
-    def test_patch_should_not_update_phone_number_given_unvalidated_phone_number(self):
-        new_phone_number = "+12139998888"
-
-        request = APIRequestFactory().patch(
-            'api/users/',
-            {
-                'phone_number': new_phone_number,
-            },
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
-        )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
-        self.assertEqual(self.valid_user.phone_number, patched_user.phone_number)
         return
 
 class NearbyUsersViewTest(TestCase):

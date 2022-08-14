@@ -8,6 +8,10 @@ from mist.models import Comment, Post, Tag
 from mist.serializers import TagSerializer
 from mist.views.tag import TagView
 
+import sys
+sys.path.append("...")
+from twilio_config import TwillioTestClientMessages
+
 from users.models import User
 
 @freeze_time("2020-01-01")
@@ -195,13 +199,6 @@ class TagTest(TestCase):
         )
         serialized_tag = TagSerializer(tag).data
 
-        self.assertFalse(Tag.objects.filter(
-            comment=self.comment,
-            tagging_user=self.user1,
-            tagged_name=self.user2.username,
-            tagged_phone_number=test_phone_number,
-        ))
-
         request = APIRequestFactory().post(
             '/api/tags',
             serialized_tag,
@@ -222,6 +219,36 @@ class TagTest(TestCase):
             tagged_name=self.user2.username,
             tagged_phone_number=test_phone_number,
         ))
+        return
+
+    def test_post_should_send_text_given_valid_tag_with_phone_number(self):
+        test_phone_number = "+12134789920"
+
+        tag = Tag(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_name=self.user2.username,
+            tagged_phone_number=test_phone_number,
+        )
+        serialized_tag = TagSerializer(tag).data
+
+        request = APIRequestFactory().post(
+            '/api/tags',
+            serialized_tag,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = TagView.as_view({'post':'create'})(request)
+
+        messages = TwillioTestClientMessages.created
+        matching_messages = []
+        for message in messages:
+            if message.get('to') == test_phone_number:
+                matching_messages.append(message)
+        
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(matching_messages)
         return
     
     def test_post_should_not_create_tag_given_neither_tagged_user_or_phone_number(self):
