@@ -1217,7 +1217,8 @@ class UserViewPatchTest(TestCase):
             last_name="notTheSameLastName",
             date_of_birth=date(2000, 1, 1),
             latitude=0,
-            longitude=0,)
+            longitude=0,
+            phone_number="+11234567890")
         self.password = "strongPassword@1354689$"
         self.valid_user.set_password(self.password)
         self.valid_user.save()
@@ -1513,6 +1514,59 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.valid_user.last_name, patched_user.last_name)
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         self.assertEqual(patched_user.longitude, new_longitude)
+        return
+
+    def test_patch_should_update_phone_number_given_validated_phone_number(self):
+        new_phone_number = "+12139998888"
+
+        PhoneNumberAuthentication.objects.create(
+            email=self.valid_user.email,
+            phone_number=self.valid_user.phone_number,
+            validated=True,
+            validation_time=get_current_time(),
+        )
+
+        request = APIRequestFactory().patch(
+            'api/users/',
+            {
+                'phone_number': new_phone_number,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(patched_user.phone_number, new_phone_number)
+        return
+    
+    def test_patch_should_not_update_phone_number_given_unvalidated_phone_number(self):
+        new_phone_number = "+12139998888"
+
+        request = APIRequestFactory().patch(
+            'api/users/',
+            {
+                'phone_number': new_phone_number,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.valid_user.phone_number, patched_user.phone_number)
         return
 
 class NearbyUsersViewTest(TestCase):

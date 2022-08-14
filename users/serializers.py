@@ -186,6 +186,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.picture = validated_data.get('picture', instance.picture)
         instance.latitude = validated_data.get('latitude', instance.latitude)
         instance.longitude = validated_data.get('longitude', instance.longitude)
+        instance.phone_number = validated_data.get('phone_number', instance.phone_number)
         instance.save()
         return instance
     
