@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
-from .views import FinalizePasswordResetView, LoginView, NearbyUsersView, RegisterPhoneNumberView, RegisterUserEmailView, RequestLoginCodeView, RequestPasswordResetView, RequestResetEmailView, RequestResetTextCodeView, UserView, ValidateLoginCodeView, ValidatePasswordResetView, ValidatePasswordView, ValidatePhoneNumberView, ValidateResetEmailView, ValidateResetTextCodeView, ValidateUserEmailView, ValidateUsernameView
+from .views import FinalizePasswordResetView, LoginView, MatchingPhoneNumbersView, NearbyUsersView, RegisterPhoneNumberView, RegisterUserEmailView, RequestLoginCodeView, RequestPasswordResetView, RequestResetEmailView, RequestResetTextCodeView, UserView, ValidateLoginCodeView, ValidatePasswordResetView, ValidatePasswordView, ValidatePhoneNumberView, ValidateResetEmailView, ValidateResetTextCodeView, ValidateUserEmailView, ValidateUsernameView
 from .models import PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 
 import sys
@@ -1000,21 +1000,6 @@ class UserViewGetTest(TestCase):
         self.assertEqual(response.data[0], self.user_serializer.data)
         return
 
-    def test_get_should_return_user_given_valid_phone_number(self):
-        request = APIRequestFactory().get(
-            'api/users/',
-            {
-                'phone_numbers': str(self.valid_user.phone_number),
-            },
-            format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
-        )
-        response = UserView.as_view({'get':'list'})(request)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
-        return
-
     def test_get_should_return_user_given_valid_token(self):
         serialized_users = [self.user_serializer.data]
 
@@ -1137,24 +1122,6 @@ class UserViewGetTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data)        
-        return
-    
-    def test_get_should_not_return_user_given_invalid_phone_number(self):
-        invalid_phone_number = "+12345678900"
-
-        request = APIRequestFactory().get(
-            'api/users/',
-            {
-                'phone_numbers': invalid_phone_number,
-            },
-            format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
-        )
-        response = UserView.as_view({'get':'list'})(request)
-        response_users = response.data
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response_users)
         return
     
     def test_get_should_not_return_user_given_invalid_token(self):
@@ -1517,6 +1484,114 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.valid_user.last_name, patched_user.last_name)
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         self.assertEqual(patched_user.longitude, new_longitude)
+        return
+
+class MatchingPhoneNumbersUsersViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create(
+            email="email@usc.edu",
+            username="unrelatedUsername",
+            first_name="completelyDifferentFirstName",
+            last_name="notTheSameLastName",
+            date_of_birth=date(2000, 1, 1),
+            latitude=0,
+            longitude=0,
+            phone_number="+11234567890")
+        self.user1.set_password('randomPassword')
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User.objects.create(
+            email="email2@usc.edu",
+            username="unrelatedUsername2",
+            first_name="completelyDifferentFirstName2",
+            last_name="notTheSameLastName2",
+            date_of_birth=date(2000, 1, 1),
+            latitude=0,
+            longitude=0,
+            phone_number="+11234567891")
+        self.user2.set_password('randomPassword')
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.user3 = User.objects.create(
+            email="email3@usc.edu",
+            username="unrelatedUsername3",
+            first_name="completelyDifferentFirstName3",
+            last_name="notTheSameLastName3",
+            date_of_birth=date(2000, 1, 1),
+            latitude=100,
+            longitude=100,
+            phone_number="+11234567892")
+        self.user3.set_password('randomPassword')
+        self.user3.save()
+        self.auth_token3 = Token.objects.create(user=self.user3)
+        return
+
+    def test_get_should_return_list_of_matching_users_given_valid_phone_number(self):
+        request = APIRequestFactory().get(
+            f'api/matching-phone-numbers-users/?phone_numbers={str(self.user1.phone_number)}',
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        )
+        response = MatchingPhoneNumbersView.as_view()(request)
+        response_phonebook = response.data
+        expected_phonebook = {str(self.user1.phone_number): ReadOnlyUserSerializer(self.user1).data}
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_phonebook, expected_phonebook)
+        return
+    
+    def test_get_should_return_list_of_matching_users_given_valid_phone_numbers(self):
+        request = APIRequestFactory().get(
+            f'api/matching-phone-numbers-users/ \
+            ?phone_numbers={str(self.user1.phone_number)}&phone_numbers={str(self.user2.phone_number)}',
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        )
+        response = MatchingPhoneNumbersView.as_view()(request)
+        response_phonebook = response.data
+        expected_phonebook = {
+            str(self.user1.phone_number): ReadOnlyUserSerializer(self.user1).data,
+            str(self.user2.phone_number): ReadOnlyUserSerializer(self.user2).data
+        }
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_phonebook, expected_phonebook)
+        return
+    
+    def test_get_should_return_list_of_matching_users_given_valid_phone_number_and_invalid_phone_number(self):
+        print(str(self.user1.phone_number))
+        request = APIRequestFactory().get(
+            f'api/matching-phone-numbers-users/ \
+            ?phone_numbers={str(self.user1.phone_number)}&phone_numbers=invalidNumber',
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        )
+        response = MatchingPhoneNumbersView.as_view()(request)
+        response_phonebook = response.data
+        expected_phonebook = {
+            str(self.user1.phone_number): ReadOnlyUserSerializer(self.user1).data,
+        }
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_phonebook, expected_phonebook)
+        return
+    
+    def test_get_should_return_empty_list_given_no_phone_number(self):
+        request = APIRequestFactory().get(
+            'api/matching-phone-numbers-users/',
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        )
+        response = MatchingPhoneNumbersView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return
+    
+    def test_get_should_not_return_list_given_nothing(self):
+        request = APIRequestFactory().get(
+            'api/matching-phone-numbers-users/',
+        )
+        response = MatchingPhoneNumbersView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
 
 class NearbyUsersViewTest(TestCase):

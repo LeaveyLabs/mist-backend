@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from urllib.parse import quote_plus
 from users.generics import get_current_time, get_user_from_request, get_random_code
 from users.permissions import UserPermissions
 from django.core.mail import send_mail
@@ -63,7 +64,6 @@ class UserView(viewsets.ModelViewSet):
         last_name = self.request.query_params.get('last_name')
         words = self.request.query_params.getlist('words')
         token = self.request.query_params.get('token')
-        phone_numbers = self.request.query_params.getlist('phone_numbers')
         requesting_user = get_user_from_request(self.request)
 
         # default is to return all users
@@ -90,9 +90,6 @@ class UserView(viewsets.ModelViewSet):
             if last_name:
                 last_name_set = User.objects.filter(last_name__startswith=last_name)
             queryset = (username_set | first_name_set | last_name_set).distinct()
-        # or phone_number
-        elif phone_numbers:
-            queryset = User.objects.filter(phone_number__in=phone_numbers)
         # or token
         elif token:
             matching_tokens = Token.objects.filter(key=token)
@@ -116,6 +113,21 @@ class UserView(viewsets.ModelViewSet):
                 self.serializer_class = CompleteUserSerializer
 
         return queryset
+
+class MatchingPhoneNumbersView(generics.ListAPIView):
+    permission_classes = (UserPermissions, )
+
+    def list(self, request, *args, **kwargs):
+        phone_numbers = self.request.query_params.getlist('phone_numbers')
+
+        phonebook = {}
+        for phone_number in phone_numbers:
+            plus_sign_phone_number = quote_plus(phone_number)
+            matching_users = User.objects.filter(phone_number=plus_sign_phone_number)
+            if matching_users:
+                phonebook[plus_sign_phone_number] = ReadOnlyUserSerializer(matching_users[0]).data
+            
+        return Response(phonebook, status.HTTP_200_OK)
 
 class NearbyUsersView(generics.ListAPIView):
     permission_classes = (UserPermissions, )
