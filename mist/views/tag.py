@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
 
-from ..models import Tag
+from ..models import Comment, Post, Tag
 from ..serializers import TagSerializer
 
 import sys
@@ -36,11 +36,15 @@ class TagView(viewsets.ModelViewSet):
         tagged_phone_number = tag_response.data.get("tagged_phone_number")
         tagging_user_id = tag_response.data.get("tagging_user")
         if tagged_phone_number:
+            tagged_comment = Comment.objects.get(id=tag_response.data.get('comment'))
+            tagged_post = Post.objects.get(id=tagged_comment.post_id)
+            tagged_post_body = tagged_post.body
+            tagged_post_snippet = tagged_post_body[:min(30, len(tagged_post_body))]
             tagging_user = User.objects.get(id=int(tagging_user_id))
             tagging_first_name = tagging_user.first_name
             tagging_last_name = tagging_user.last_name
             download_link = "https://www.getmist.app/download"
-            text_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist...\n\nSee what your secret admirer has to say about you: {download_link}"
+            text_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist: \"{tagged_post_snippet}\"\n\nSee what your secret admirer has to say about you: {download_link}"
             twilio_client.messages.create(
                 to=tagged_phone_number,
                 from_=twilio_phone_number,
