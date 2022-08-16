@@ -38,8 +38,9 @@ class TagView(viewsets.ModelViewSet):
         if tagged_phone_number:
             tagging_user = User.objects.get(id=int(tagging_user_id))
             tagging_first_name = tagging_user.first_name
+            tagging_last_name = tagging_user.last_name
             download_link = "https://www.getmist.app/download"
-            text_body = f"{tagging_first_name} tagged you in a Mist...\nSee what your secret admirer has to say about you!\nFind Mist on the App Store or download here: {download_link}"
+            text_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist...\nSee what your secret admirer has to say about you: {download_link}"
             twilio_client.messages.create(
                 to=tagged_phone_number,
                 from_=twilio_phone_number,
