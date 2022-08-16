@@ -2033,6 +2033,7 @@ class RegisterPhoneNumberViewTest(TestCase):
         TwillioTestClientMessages.created = []
 
         self.strong_password = 'newPassword@3312$5'
+        self.unused_email = "notUsedEmail@usc.edu"
 
         self.user1 = User.objects.create(
             email="email@usc.edu",
@@ -2052,7 +2053,7 @@ class RegisterPhoneNumberViewTest(TestCase):
         request = APIRequestFactory().post(
             'api/register-phone-number/',
             {
-                'email': self.user1.email,
+                'email': self.unused_email,
                 'phone_number': valid_phone_number,
             },
         )
@@ -2074,12 +2075,13 @@ class RegisterPhoneNumberViewTest(TestCase):
         request = APIRequestFactory().post(
             'api/register-phone-number/',
             {
-                'email': self.user1.email,
+                'email': self.unused_email,
                 'phone_number': valid_phone_number,
             },
         )
         response = RegisterPhoneNumberView.as_view()(request)
         response = RegisterPhoneNumberView.as_view()(request)
+        print(response.data)
 
         messages = TwillioTestClientMessages.created
         matching_messages = [
@@ -2092,13 +2094,34 @@ class RegisterPhoneNumberViewTest(TestCase):
         self.assertTrue(matching_messages)
         return
     
+    def test_post_should_not_send_code_given_used_email(self):
+        valid_phone_number = "+12136569000"
+
+        request = APIRequestFactory().post(
+            'api/register-phone-number/',
+            {
+                'email': self.user1.email,
+                'phone_number': valid_phone_number,
+            },
+        )
+        response = RegisterPhoneNumberView.as_view()(request)
+
+        messages = TwillioTestClientMessages.created
+        matching_messages = [
+            message.get('to') == valid_phone_number
+            for message in messages
+        ]
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(matching_messages)
+    
     def test_post_should_not_send_code_given_invalid_phone_number(self):
         invalid_phone_number = "invalidPhoneNumber"
 
         request = APIRequestFactory().post(
             'api/register-phone-number/',
             {
-                'email': self.user1.email,
+                'email': self.unused_email,
                 'phone_number': invalid_phone_number,
             },
         )
@@ -2118,7 +2141,7 @@ class RegisterPhoneNumberViewTest(TestCase):
         request = APIRequestFactory().post(
             'api/register-phone-number/',
             {
-                'email': self.user1.email,
+                'email': self.unused_email,
                 'phone_number': self.user1.phone_number,
             },
         )
