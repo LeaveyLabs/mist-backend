@@ -39,7 +39,7 @@ class TagView(viewsets.ModelViewSet):
             tagged_comment = Comment.objects.get(id=tag_response.data.get('comment'))
             tagged_post = Post.objects.get(id=tagged_comment.post_id)
             tagged_post_body = tagged_post.body
-            tagged_post_snippet = tagged_post_body[:min(30, len(tagged_post_body))]
+            tagged_post_snippet = tagged_post_body[:min(50, len(tagged_post_body))]
             tagging_user = User.objects.get(id=int(tagging_user_id))
             tagging_first_name = tagging_user.first_name
             tagging_last_name = tagging_user.last_name
