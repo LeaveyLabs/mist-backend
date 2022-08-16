@@ -1,3 +1,4 @@
+import string
 from rest_framework import viewsets
 from mist.permissions import TagPermission
 from rest_framework.permissions import IsAuthenticated
@@ -35,7 +36,10 @@ class TagView(viewsets.ModelViewSet):
         tagged_post = Post.objects.get(id=post_id)
         tagged_post_body = tagged_post.body
         tagged_post_words = tagged_post_body.split()
-        first_fifty_words = tagged_post_words[:min(50, len(tagged_post_words))]
+        first_fifty_words = tagged_post_words[:min(40, len(tagged_post_words))]
+        last_word_with_punctuation = first_fifty_words[-1]
+        first_fifty_words[-1] = last_word_with_punctuation.translate(
+            str.maketrans('', '', string.punctuation))
         return first_fifty_words
 
     def create(self, request, *args, **kwargs):
