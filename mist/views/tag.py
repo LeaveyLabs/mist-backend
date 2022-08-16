@@ -49,7 +49,7 @@ class TagView(viewsets.ModelViewSet):
             tagging_first_name = tagging_user.first_name
             tagging_last_name = tagging_user.last_name
             tagged_comment = Comment.objects.get(id=tagged_comment_id)
-            tagged_post_snippet = self.get_first_fifty_words(tagged_comment.post_id)
+            tagged_post_snippet = self.get_first_fifty_or_less_words(tagged_comment.post_id)
             download_link = "https://www.getmist.app/download"
             text_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist: \"{tagged_post_snippet}...\"\n\nSee what your secret admirer has to say about you: {download_link}"
             twilio_client.messages.create(
