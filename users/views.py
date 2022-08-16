@@ -388,7 +388,7 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
         email = phone_number_registration.data.get('email').lower()
 
         PhoneNumberAuthentication.objects.filter(email__iexact=email).delete()
-        PhoneNumberAuthentication.objects.filter(phone_number__iexact=phone_number).delete()
+        PhoneNumberAuthentication.objects.filter(phone_number=phone_number).delete()
         phone_number_authentication = PhoneNumberAuthentication.objects.create(
             email=email, phone_number=phone_number)
 
@@ -441,8 +441,13 @@ class RequestLoginCodeView(generics.CreateAPIView):
         login_request.is_valid(raise_exception=True)
         phone_number = login_request.data.get('phone_number')
 
-        phone_number_authentication = PhoneNumberAuthentication.objects.get(
+        phone_number_authentications = PhoneNumberAuthentication.objects.filter(
             phone_number=phone_number)
+        if not phone_number_authentications:
+            phone_number_authentications = [
+                PhoneNumberAuthentication.objects.create(phone_number=phone_number)
+            ]
+        phone_number_authentication = phone_number_authentications[0]
         phone_number_authentication.code = get_random_code()
         phone_number_authentication.code_time = get_current_time()
         phone_number_authentication.save()
@@ -475,6 +480,8 @@ class ValidateLoginCodeView(generics.CreateAPIView):
             phone_number=phone_number,
             code=code,
         ).order_by('-code_time')[0]
+        authentication.code = get_random_code()
+        authentication.code_time = 0
         authentication.validated = True
         authentication.validation_time = get_current_time()
         authentication.save()
