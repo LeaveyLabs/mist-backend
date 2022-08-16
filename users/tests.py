@@ -2567,6 +2567,7 @@ class RequestResetTextCodeViewTest(TestCase):
 
         self.unvalidated_email = "unvalidatedEmail@usc.edu"
         self.invalid_phone_number = "not-a-valid-phone-number"
+        self.valid_phone_number = "+12345678997"
         return
 
     def test_post_should_send_code_given_validated_email_and_valid_phone_number(self):
@@ -2574,7 +2575,7 @@ class RequestResetTextCodeViewTest(TestCase):
             'api/request-phone-number/',
             {
                 'email': self.reset.email,
-                'phone_number': str(self.user1.phone_number),
+                'phone_number': self.valid_phone_number,
                 'token': self.reset.reset_token,
             },
         )
@@ -2582,11 +2583,31 @@ class RequestResetTextCodeViewTest(TestCase):
         messages = TwillioTestClientMessages.created
         matching_messages = []
         for message in messages:
-            if message.get('to') == str(self.user1.phone_number):
+            if message.get('to') == self.valid_phone_number:
                 matching_messages.append(message)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(matching_messages)
+        return
+    
+    def test_post_should_not_send_code_given_used_phone_number(self):
+        request = APIRequestFactory().post(
+            'api/request-phone-number/',
+            {
+                'email': self.reset.email,
+                'phone_number': self.user1.phone_number,
+                'token': self.reset.reset_token,
+            },
+        )
+        response = RequestResetTextCodeView.as_view()(request)
+        messages = TwillioTestClientMessages.created
+        matching_messages = []
+        for message in messages:
+            if message.get('to') == self.valid_phone_number:
+                matching_messages.append(message)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(matching_messages)
         return
     
     def test_post_should_not_send_code_without_token(self):
@@ -2594,14 +2615,14 @@ class RequestResetTextCodeViewTest(TestCase):
             'api/request-phone-number/',
             {
                 'email': self.reset.email,
-                'phone_number': str(self.user1.phone_number)
+                'phone_number': self.valid_phone_number,
             },
         )
         response = RequestResetTextCodeView.as_view()(request)
         messages = TwillioTestClientMessages.created
         matching_messages = []
         for message in messages:
-            if message.get('to') == self.user1.phone_number:
+            if message.get('to') == self.valid_phone_number:
                 matching_messages.append(message)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2615,7 +2636,7 @@ class RequestResetTextCodeViewTest(TestCase):
             'api/request-phone-number/',
             {
                 'email': self.reset.email,
-                'phone_number': str(self.user1.phone_number),
+                'phone_number': self.valid_phone_number,
                 'token': invalid_token,
             },
         )
@@ -2623,7 +2644,7 @@ class RequestResetTextCodeViewTest(TestCase):
         messages = TwillioTestClientMessages.created
         matching_messages = []
         for message in messages:
-            if message.get('to') == self.user1.phone_number:
+            if message.get('to') == self.valid_phone_number:
                 matching_messages.append(message)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2635,7 +2656,7 @@ class RequestResetTextCodeViewTest(TestCase):
             'api/request-phone-number/',
             {
                 'email': self.unvalidated_email,
-                'phone_number': str(self.user1.phone_number),
+                'phone_number': self.valid_phone_number,
                 'token': self.reset.reset_token,
             },
         )
@@ -2643,7 +2664,7 @@ class RequestResetTextCodeViewTest(TestCase):
         messages = TwillioTestClientMessages.created
         matching_messages = []
         for message in messages:
-            if message.get('to') == str(self.user1.phone_number):
+            if message.get('to') == self.valid_phone_number:
                 matching_messages.append(message)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
