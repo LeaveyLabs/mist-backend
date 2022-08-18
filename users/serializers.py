@@ -309,7 +309,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
     def validate_email(self, email):
-        if not User.objects.filter(email=email):
+        if not User.objects.filter(email__iexact=email):
             raise ValidationError({"email": "Email does not exist."})
         return email
 
@@ -320,7 +320,7 @@ class PasswordResetValidationSerializer(serializers.Serializer):
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
 
     def validate_email(self, email):
-        matching_password_reset_requests = PasswordReset.objects.filter(email=email)
+        matching_password_reset_requests = PasswordReset.objects.filter(email__iexact=email)
         if not matching_password_reset_requests:
             raise ValidationError({"email": "Email did not request a password reset."})
 
@@ -338,7 +338,7 @@ class PasswordResetValidationSerializer(serializers.Serializer):
     def validate(self, data):
         email = data.get('email')
         code = data.get('code')
-        password_reset_request = PasswordReset.objects.get(email=email)
+        password_reset_request = PasswordReset.objects.get(email__iexact=email)
         if password_reset_request.code != code:
             raise ValidationError({"code": "Code does not match."})
         return data
@@ -350,7 +350,7 @@ class PasswordResetFinalizationSerializer(serializers.Serializer):
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
 
     def validate_email(self, email):
-        matching_password_reset_requests = PasswordReset.objects.filter(email=email)
+        matching_password_reset_requests = PasswordReset.objects.filter(email__iexact=email)
         if not matching_password_reset_requests:
             raise ValidationError({"email": "Email did not request a password reset."})
         
