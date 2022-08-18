@@ -19,6 +19,8 @@ class NotificationServiceMock:
         NotificationServiceMock.sent_notifications.append(message)
 
 @freeze_time("2020-01-01")
+@patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
+    NotificationServiceMock.send_fake_notification)
 class MessageTest(TestCase):
     def setUp(self):
         self.user1 = User(
@@ -222,9 +224,7 @@ class MessageTest(TestCase):
             body=message.body,
         ))
         return
-    
-    @patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
-    NotificationServiceMock.send_fake_notification)
+
     def test_post_should_send_notification_given_valid_message(self):
         message = Message(
             sender=self.user1,
