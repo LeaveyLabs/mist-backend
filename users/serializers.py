@@ -171,7 +171,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         self.verify_email_authentication(validated_data)
-        self.verify_phone_number(validated_data)
+        # self.verify_phone_number(validated_data)
         self.verify_username(validated_data)
         self.hash_password(validated_data)
         validated_data.pop('confirm_picture')
