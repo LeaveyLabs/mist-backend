@@ -1,9 +1,10 @@
 from datetime import datetime
+import json
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from urllib.parse import quote_plus
 from users.generics import get_current_time, get_user_from_request, get_random_code
 from users.permissions import UserPermissions
@@ -18,6 +19,7 @@ from twilio_config import twilio_client, twilio_phone_number
 from .serializers import (
     LoginCodeRequestSerializer,
     LoginSerializer,
+    MatchingPhoneNumberRequestSerializer,
     PasswordResetFinalizationSerializer,
     PasswordResetRequestSerializer,
     PasswordResetValidationSerializer,
@@ -114,20 +116,24 @@ class UserView(viewsets.ModelViewSet):
 
         return queryset
 
-class MatchingPhoneNumbersView(generics.ListAPIView):
-    permission_classes = (UserPermissions, )
+class MatchingPhoneNumbersView(generics.CreateAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = MatchingPhoneNumberRequestSerializer
 
-    def list(self, request, *args, **kwargs):
-        phone_numbers = self.request.query_params.getlist('phone_numbers')
+    def create(self, request, *args, **kwargs):
+        search_request = MatchingPhoneNumberRequestSerializer(data=request.data)
+        search_request.is_valid(raise_exception=True)
+
+        phone_numbers = request.data.getlist('phone_numbers')
 
         phonebook = {}
         for phone_number in phone_numbers:
-            plus_sign_phone_number = quote_plus(phone_number)
-            matching_users = User.objects.filter(phone_number=plus_sign_phone_number)
+            matching_users = User.objects.filter(phone_number=phone_number)
             if matching_users:
-                phonebook[plus_sign_phone_number] = ReadOnlyUserSerializer(matching_users[0]).data
+                phonebook[phone_number] = ReadOnlyUserSerializer(matching_users[0]).data
             
         return Response(phonebook, status.HTTP_200_OK)
+        
 
 class NearbyUsersView(generics.ListAPIView):
     permission_classes = (UserPermissions, )

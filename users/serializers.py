@@ -588,3 +588,8 @@ class ResetTextValidationSerializer(serializers.Serializer):
             raise ValidationError({"phone_number": "Phone number reset expired."})
         
         return phone_number
+
+class MatchingPhoneNumberRequestSerializer(serializers.Serializer):
+    phone_numbers = serializers.ListField(
+        child = serializers.CharField()
+    )

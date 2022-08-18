@@ -1546,8 +1546,11 @@ class MatchingPhoneNumbersViewTest(TestCase):
         return
             
     def test_get_should_return_list_of_matching_users_given_valid_phone_number(self):
-        request = APIRequestFactory().get(
-            f'api/matching-phone-numbers-users/?phone_numbers={str(self.user1.phone_number)}',
+        request = APIRequestFactory().post(
+            f'api/matching-phone-numbers/',
+            {
+                'phone_numbers': [str(self.user1.phone_number)]
+            },
             HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
         )
         response = MatchingPhoneNumbersView.as_view()(request)
@@ -1559,10 +1562,15 @@ class MatchingPhoneNumbersViewTest(TestCase):
         return
     
     def test_get_should_return_list_of_matching_users_given_valid_phone_numbers(self):
-        request = APIRequestFactory().get(
-            f'api/matching-phone-numbers-users/ \
-            ?phone_numbers={str(self.user1.phone_number)}&phone_numbers={str(self.user2.phone_number)}',
-            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        request = APIRequestFactory().post(
+            f'api/matching-phone-numbers/',
+            {
+                'phone_numbers': [
+                    str(self.user1.phone_number),
+                    str(self.user2.phone_number),
+                ]
+            },
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}",
         )
         response = MatchingPhoneNumbersView.as_view()(request)
         response_phonebook = response.data
@@ -1576,9 +1584,14 @@ class MatchingPhoneNumbersViewTest(TestCase):
         return
     
     def test_get_should_return_list_of_matching_users_given_valid_phone_number_and_invalid_phone_number(self):
-        request = APIRequestFactory().get(
-            f'api/matching-phone-numbers-users/ \
-            ?phone_numbers={str(self.user1.phone_number)}&phone_numbers=invalidNumber',
+        request = APIRequestFactory().post(
+            f'api/matching-phone-numbers/',
+            {
+                'phone_numbers': [
+                    str(self.user1.phone_number),
+                    'invalidNumber',
+                ]
+            },
             HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
         )
         response = MatchingPhoneNumbersView.as_view()(request)
@@ -1591,19 +1604,32 @@ class MatchingPhoneNumbersViewTest(TestCase):
         self.assertEqual(response_phonebook, expected_phonebook)
         return
     
-    def test_get_should_return_empty_list_given_no_phone_number(self):
-        request = APIRequestFactory().get(
-            'api/matching-phone-numbers-users/',
+    def test_get_should_not_return_list_given_no_phone_number(self):
+        request = APIRequestFactory().post(
+            'api/matching-phone-numbers/',
+            {
+                'phone_numbers': [],
+            },
             HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
         )
         response = MatchingPhoneNumbersView.as_view()(request)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        return
+    
+    def test_get_should_not_return_list_given_no_parameters(self):
+        request = APIRequestFactory().post(
+            'api/matching-phone-numbers/',
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        )
+        response = MatchingPhoneNumbersView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         return
     
     def test_get_should_not_return_list_given_nothing(self):
-        request = APIRequestFactory().get(
-            'api/matching-phone-numbers-users/',
+        request = APIRequestFactory().post(
+            'api/matching-phone-numbers/',
         )
         response = MatchingPhoneNumbersView.as_view()(request)
 
