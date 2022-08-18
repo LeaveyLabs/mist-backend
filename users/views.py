@@ -177,7 +177,7 @@ class RegisterUserEmailView(generics.CreateAPIView):
         registration_request.is_valid(raise_exception=True)
 
         email = registration_request.data.get('email').lower()
-        EmailAuthentication.objects.filter(email=email).delete()
+        EmailAuthentication.objects.filter(email__iexact=email).delete()
         email_auth = EmailAuthentication.objects.create(email=email)
 
         send_mail(

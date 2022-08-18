@@ -184,6 +184,23 @@ class RegisterUserEmailViewTest(TestCase):
         self.assertFalse(mail.outbox)
         return
 
+    def test_post_should_delete_existing_email_auth_given_existing_email(self):
+        valid_email = "thisIsAValidEmail@usc.edu"
+        old_email_auth = EmailAuthentication.objects.create(email=valid_email)
+
+        request = APIRequestFactory().post(
+            'api-register/',
+            {
+                'email': valid_email,
+            },
+            format='json',
+        )
+        response = RegisterUserEmailView.as_view()(request)
+        new_email_auth = EmailAuthentication.objects.get(email__iexact=valid_email)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(new_email_auth.code_time, old_email_auth.code_time)
+
 class ValidateUserEmailViewTest(TestCase):
     def test_post_should_accept_valid_code(self):
         email_to_validate = 'ValidateThisFakeEmail@usc.edu'
