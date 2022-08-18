@@ -124,7 +124,7 @@ class MatchingPhoneNumbersView(generics.CreateAPIView):
         search_request = MatchingPhoneNumberRequestSerializer(data=request.data)
         search_request.is_valid(raise_exception=True)
 
-        phone_numbers = search_request.data.getlist('phone_numbers')
+        phone_numbers = search_request.data.get('phone_numbers')
 
         phonebook = {}
         for phone_number in phone_numbers:
