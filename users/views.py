@@ -1,11 +1,9 @@
 from datetime import datetime
-import json
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from urllib.parse import quote_plus
 from users.generics import get_current_time, get_user_from_request, get_random_code
 from users.permissions import UserPermissions
 from django.core.mail import send_mail
