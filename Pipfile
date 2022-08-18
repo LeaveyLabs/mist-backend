@@ -28,6 +28,8 @@ freezegun = "*"
 websocket-client = "*"
 django = "*"
 twilio = "*"
+django-push-notifications = "*"
+apns2 = "*"
 
 [dev-packages]
 

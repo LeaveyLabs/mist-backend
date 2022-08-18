@@ -17,8 +17,8 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import path, include
+from push_notifications.api.rest_framework import APNSDeviceAuthorizedViewSet
 from rest_framework import routers
-from rest_framework.authtoken.views import obtain_auth_token
 from mist.views.block import BlockView
 from mist.views.comment import CommentView
 from mist.views.comment_flag import CommentFlagView
@@ -54,6 +54,7 @@ router.register(r'blocks', BlockView, 'block')
 router.register(r'favorites', FavoriteView, 'favorite')
 router.register(r'match-requests', MatchRequestView, 'match_request')
 router.register(r'friend-requests', FriendRequestView, 'friend_request')
+router.register(r'devices', APNSDeviceAuthorizedViewSet, 'device')
 
 urlpatterns = [
     # Authentication

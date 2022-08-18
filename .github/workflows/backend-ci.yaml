@@ -25,6 +25,9 @@ jobs:
         TWILIO_AUTH_TOKEN: ${{secrets.TWILIO_AUTH_TOKEN}}
         TWILIO_PHONE_NUMBER: ${{secrets.TWILIO_PHONE_NUMBER}}
         ENVIRONMENT: ${{secrets.ENVIRONMENT}}
+        APNS_AUTH_KEY_ID: ${{secrets.APNS_AUTH_KEY_ID}}
+        APNS_TEAM_ID: ${{secrets.APNS_TEAM_ID}}
+        APNS_AUTH_KEY_FILE_TEXT: ${{secrets.APNS_AUTH_KEY_FILE_TEXT}}
 
     services:
       postgres:

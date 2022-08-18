@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 import os
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     'django_nose',
     'mist',
     'phonenumber_field',
+    'push_notifications',
     'rest_framework',
     'rest_framework.authtoken',
     'storages',
@@ -166,3 +168,14 @@ if TESTING:
     PASSWORD_HASHERS = [
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
+
+auth_key_file = NamedTemporaryFile(mode='w+')
+auth_key_file.write(os.environ['APNS_AUTH_KEY_FILE_TEXT'])
+auth_key_file.seek(0)
+
+PUSH_NOTIFICATIONS_SETTINGS = {
+        "APNS_AUTH_KEY_PATH": auth_key_file.name,
+        "APNS_AUTH_KEY_ID": os.environ['APNS_AUTH_KEY_ID'],
+        "APNS_TEAM_ID": os.environ['APNS_TEAM_ID'],
+        "APNS_TOPIC": "app.getmist.mist-ios",
+}

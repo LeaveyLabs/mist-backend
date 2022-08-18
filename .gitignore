@@ -7,3 +7,4 @@ test_images
 media
 *.pkg
 staticfiles
+*.p8

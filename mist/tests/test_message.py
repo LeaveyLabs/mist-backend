@@ -1,4 +1,6 @@
 from datetime import date
+from unittest.mock import patch
+from push_notifications.models import APNSDevice
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
@@ -9,6 +11,12 @@ from mist.serializers import MessageSerializer
 from mist.views.message import ConversationView, MessageView
 
 from users.models import User
+
+class NotificationServiceMock:
+    sent_notifications = []
+
+    def send_fake_notification(self, message):
+        NotificationServiceMock.sent_notifications.append(message)
 
 @freeze_time("2020-01-01")
 class MessageTest(TestCase):
@@ -21,6 +29,10 @@ class MessageTest(TestCase):
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
         self.auth_token1 = Token.objects.create(user=self.user1)
+        APNSDevice.objects.create(
+            user=self.user1,
+            registration_id="randomRegistrationId1"
+        )
 
         self.user2 = User(
             email='TestUser2@usc.edu',
@@ -30,6 +42,10 @@ class MessageTest(TestCase):
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
         self.auth_token2 = Token.objects.create(user=self.user2)
+        APNSDevice.objects.create(
+            user=self.user2,
+            registration_id="randomRegistrationId2"
+        )
 
         self.user3 = User(
             email='TestUser3@usc.edu',
@@ -39,6 +55,10 @@ class MessageTest(TestCase):
         self.user3.set_password("TestPassword3@98374")
         self.user3.save()
         self.auth_token3 = Token.objects.create(user=self.user3)
+        APNSDevice.objects.create(
+            user=self.user3,
+            registration_id="randomRegistrationId3"
+        )
 
         self.post1 = Post.objects.create(
             title='FakeTitleForFirstPost',
@@ -201,6 +221,37 @@ class MessageTest(TestCase):
             receiver=self.user2,
             body=message.body,
         ))
+        return
+    
+    @patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
+    NotificationServiceMock.send_fake_notification)
+    def test_post_should_send_notification_given_valid_message(self):
+        message = Message(
+            sender=self.user1,
+            receiver=self.user2,
+            body="TestMessageOne",
+            timestamp=0,
+        )
+        serialized_message = MessageSerializer(message).data
+
+        self.assertFalse(Message.objects.filter(
+            sender=message.sender,
+            receiver=message.receiver,
+            body=message.body,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/messages/',
+            serialized_message,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MessageView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
+            f"{message.sender.username}: {message.body}" 
+            in NotificationServiceMock.sent_notifications)
         return
     
     def test_post_should_not_create_message_given_invalid_message(self):
