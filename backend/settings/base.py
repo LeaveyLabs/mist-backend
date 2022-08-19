@@ -169,7 +169,7 @@ if TESTING:
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
 
-auth_key_file = NamedTemporaryFile(mode='w+')
+auth_key_file = open('auth_key.p8', 'w+')
 auth_key_file.write(os.environ['APNS_AUTH_KEY_FILE_TEXT'])
 auth_key_file.seek(0)
 
