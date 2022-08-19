@@ -184,14 +184,6 @@ if os.environ.get('APNS_AUTH_KEY_FILE_TEXT'):
         os.unlink(apns_file_name)
     atexit.register(unlink_apns_file)  # remove auth key file on exit
 
-# PUSH_NOTIFICATIONS_SETTINGS = {
-#         'APNS_CERTIFICATE': apns_file_name
-# }
-
-# auth_key_file = open('auth_key.p8', 'w+')
-# auth_key_file.write(os.environ['APNS_AUTH_KEY_FILE_TEXT'])
-# auth_key_file.seek(0)
-
 PUSH_NOTIFICATIONS_SETTINGS = {
         "APNS_AUTH_KEY_PATH": apns_file_name,
         "APNS_AUTH_KEY_ID": os.environ['APNS_AUTH_KEY_ID'],
