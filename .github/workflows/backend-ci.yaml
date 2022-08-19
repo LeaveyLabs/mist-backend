@@ -28,6 +28,7 @@ jobs:
         APNS_AUTH_KEY_ID: ${{secrets.APNS_AUTH_KEY_ID}}
         APNS_TEAM_ID: ${{secrets.APNS_TEAM_ID}}
         APNS_AUTH_KEY_FILE_TEXT: ${{secrets.APNS_AUTH_KEY_FILE_TEXT}}
+        APNS_TOPIC: ${{secrets.APNS_TOPIC}}
 
     services:
       postgres:

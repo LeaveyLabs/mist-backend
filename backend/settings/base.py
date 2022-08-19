@@ -169,13 +169,32 @@ if TESTING:
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
 
-auth_key_file = open('auth_key.p8', 'w+')
-auth_key_file.write(os.environ['APNS_AUTH_KEY_FILE_TEXT'])
-auth_key_file.seek(0)
+# PUSH NOTIFICATIONS
+apns_file_name = os.path.join(BASE_DIR, 'auth_key.p8')
+if os.environ.get('APNS_AUTH_KEY_FILE_TEXT'):
+    # create auth key file from ENV var
+    from tempfile import NamedTemporaryFile
+    import atexit
+    apns_file = NamedTemporaryFile(delete=False)
+    apns_file.write(bytes(os.environ.get('APNS_AUTH_KEY_FILE_TEXT'), 'UTF-8'))
+    apns_file.close()
+    apns_file_name = apns_file.name
+
+    def unlink_apns_file():
+        os.unlink(apns_file_name)
+    atexit.register(unlink_apns_file)  # remove auth key file on exit
+
+# PUSH_NOTIFICATIONS_SETTINGS = {
+#         'APNS_CERTIFICATE': apns_file_name
+# }
+
+# auth_key_file = open('auth_key.p8', 'w+')
+# auth_key_file.write(os.environ['APNS_AUTH_KEY_FILE_TEXT'])
+# auth_key_file.seek(0)
 
 PUSH_NOTIFICATIONS_SETTINGS = {
-        "APNS_AUTH_KEY_PATH": auth_key_file.name,
+        "APNS_AUTH_KEY_PATH": apns_file_name,
         "APNS_AUTH_KEY_ID": os.environ['APNS_AUTH_KEY_ID'],
         "APNS_TEAM_ID": os.environ['APNS_TEAM_ID'],
-        "APNS_TOPIC": "app.getmist.mist-ios",
+        "APNS_TOPIC": os.environ['APNS_TOPIC'],
 }

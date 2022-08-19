@@ -40,3 +40,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 # TODO: Pictures
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
 MEDIA_URL = '/media/'
+
+auth_key_file = open('auth_key.p8', 'w+')
+auth_key_file.write(os.environ['APNS_AUTH_KEY_FILE_TEXT'])
+auth_key_file.seek(0)
