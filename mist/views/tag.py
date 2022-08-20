@@ -1,4 +1,5 @@
 import string
+from push_notifications.models import APNSDevice
 from rest_framework import viewsets
 from mist.permissions import TagPermission
 from rest_framework.permissions import IsAuthenticated
@@ -45,13 +46,19 @@ class TagView(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         tag_response = super().create(request, *args, **kwargs)
         tagged_phone_number = tag_response.data.get("tagged_phone_number")
-        tagging_user_id = tag_response.data.get("tagging_user")
+        tagged_user_id = tag_response.data.get("tagged_user")
         tagged_comment_id = tag_response.data.get('comment')
+        tagging_user_id = tag_response.data.get("tagging_user")
+        tagging_user = User.objects.get(id=int(tagging_user_id))
+        tagging_first_name = tagging_user.first_name
+        tagging_last_name = tagging_user.last_name
 
-        if tagged_phone_number:
-            tagging_user = User.objects.get(id=int(tagging_user_id))
-            tagging_first_name = tagging_user.first_name
-            tagging_last_name = tagging_user.last_name
+        if tagged_user_id:
+            notifications_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist."
+            receiving_devices = APNSDevice.objects.filter(user=tagged_user_id)
+            receiving_devices.send_message(notifications_body)
+        
+        elif tagged_phone_number:
             tagged_comment = Comment.objects.get(id=tagged_comment_id)
             tagged_post_snippet = " ".join(self.get_first_fifty_or_less_words(tagged_comment.post_id))
             download_link = "https://www.getmist.app/download"
@@ -61,4 +68,5 @@ class TagView(viewsets.ModelViewSet):
                 from_=twilio_phone_number,
                 body=text_body,
             )
+        
         return tag_response

@@ -1,4 +1,5 @@
 from datetime import date
+from unittest.mock import patch
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
@@ -14,7 +15,15 @@ from twilio_config import TwillioTestClientMessages
 
 from users.models import User
 
+class NotificationServiceMock:
+    sent_notifications = []
+
+    def send_fake_notification(self, message):
+        NotificationServiceMock.sent_notifications.append(message)
+
 @freeze_time("2020-01-01")
+@patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
+    NotificationServiceMock.send_fake_notification)
 class TagTest(TestCase):
     def setUp(self):
         self.user1 = User(
@@ -154,7 +163,7 @@ class TagTest(TestCase):
         self.assertFalse(response_tags)
         return
 
-    def test_post_should_create_tag_given_valid_tag_with_tagging_user(self):
+    def test_post_should_create_tag_given_valid_tag_with_tagged_user(self):
         tag = Tag(
             comment=self.comment,
             tagging_user=self.user1,
@@ -219,6 +228,34 @@ class TagTest(TestCase):
             tagged_name=self.user2.username,
             tagged_phone_number=test_phone_number,
         ))
+        return
+    
+    def test_post_should_send_notification_given_valid_tag_with_tagged_user(self):
+        NotificationServiceMock.sent_notifications = []
+
+        tag = Tag(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
+        )
+        serialized_tag = TagSerializer(tag).data
+
+        self.assertFalse(Tag.objects.filter(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/tags',
+            serialized_tag,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = TagView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(NotificationServiceMock.sent_notifications)
         return
 
     def test_post_should_send_text_given_valid_tag_with_phone_number(self):
@@ -356,6 +393,30 @@ class TagTest(TestCase):
         response = TagView.as_view({'post':'create'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        return
+    
+    def test_post_should_not_send_notification_given_invalid_tagged_user(self):
+        NotificationServiceMock.sent_notifications = []
+
+        tag = Tag(
+            comment=self.comment,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
+        )
+        self.user2.delete()
+        
+        serialized_tag = TagSerializer(tag).data
+
+        request = APIRequestFactory().post(
+            '/api/tags',
+            serialized_tag,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = TagView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(NotificationServiceMock.sent_notifications)
         return
     
     def test_post_should_not_send_text_given_invalid_phone_number(self):
