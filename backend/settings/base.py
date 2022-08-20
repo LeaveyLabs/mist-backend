@@ -189,4 +189,6 @@ PUSH_NOTIFICATIONS_SETTINGS = {
         "APNS_AUTH_KEY_ID": os.environ['APNS_AUTH_KEY_ID'],
         "APNS_TEAM_ID": os.environ['APNS_TEAM_ID'],
         "APNS_TOPIC": os.environ['APNS_TOPIC'],
+        "UPDATE_ON_DUPLICATE_REG_ID": True,
+        "UNIQUE_REG_ID": True,
 }
