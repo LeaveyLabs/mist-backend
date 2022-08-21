@@ -58,7 +58,7 @@ class CommentTest(TestCase):
             author=self.user1,
         )
 
-        self.comment = Comment.objects.create(
+        self.comment1 = Comment.objects.create(
             body='FakeTextForComment',
             post=self.post,
             author=self.user1,
@@ -69,7 +69,7 @@ class CommentTest(TestCase):
         return
         
     def test_get_should_return_comment_given_post_pk(self):
-        serialized_comment = CommentSerializer(self.comment).data
+        serialized_comment = CommentSerializer(self.comment1).data
 
         request = APIRequestFactory().get(
             '/api/comments',
@@ -90,7 +90,7 @@ class CommentTest(TestCase):
         return
     
     def test_get_should_return_comment_with_tags(self):
-        tag = Tag.objects.create(comment=self.comment, tagging_user=self.user1, tagged_user=self.user2)
+        tag = Tag.objects.create(comment=self.comment1, tagging_user=self.user1, tagged_user=self.user2)
         serialized_tag = TagSerializer(tag).data
 
         request = APIRequestFactory().get(
@@ -126,11 +126,11 @@ class CommentTest(TestCase):
     
     
     def test_get_should_not_return_comments_with_excessive_flags(self):
-        CommentFlag.objects.create(flagger=self.user1, comment=self.comment)
-        CommentFlag.objects.create(flagger=self.user2, comment=self.comment)
-        CommentFlag.objects.create(flagger=self.user3, comment=self.comment)
+        CommentFlag.objects.create(flagger=self.user1, comment=self.comment1)
+        CommentFlag.objects.create(flagger=self.user2, comment=self.comment1)
+        CommentFlag.objects.create(flagger=self.user3, comment=self.comment1)
 
-        serialized_comment = CommentSerializer(self.comment).data
+        serialized_comment = CommentSerializer(self.comment1).data
 
         request = APIRequestFactory().get(
             '/api/comments',
@@ -145,6 +145,33 @@ class CommentTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(serialized_comment not in response_comments)
+        return
+
+    def test_get_should_return_comments_in_reverse_time_order(self):
+        comment2 = Comment.objects.create(
+            body='FakeTextForComment',
+            post=self.post,
+            author=self.user2,
+            timestamp=self.comment1.timestamp+1,
+        )
+
+        serialized_comment1 = CommentSerializer(self.comment1).data
+        serialized_comment2 = CommentSerializer(comment2).data
+        serialized_ordered_comments = [serialized_comment2, serialized_comment1]
+
+        request = APIRequestFactory().get(
+            '/api/comments',
+            {
+                'post': self.post.pk,
+            },
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = CommentView.as_view({'get':'list'})(request)
+        response_comments = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_comments, serialized_ordered_comments)
         return
 
     def test_post_should_create_comment_given_valid_comment(self):
@@ -180,11 +207,11 @@ class CommentTest(TestCase):
         return
 
     def test_delete_should_delete_comment(self):
-        self.assertTrue(Comment.objects.filter(pk=self.comment.pk))
+        self.assertTrue(Comment.objects.filter(pk=self.comment1.pk))
 
         request = APIRequestFactory().delete('/api/comment/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}')
-        response = CommentView.as_view({'delete':'destroy'})(request, pk=self.comment.pk)
+        response = CommentView.as_view({'delete':'destroy'})(request, pk=self.comment1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Comment.objects.filter(pk=self.comment.pk))
+        self.assertFalse(Comment.objects.filter(pk=self.comment1.pk))
         return
