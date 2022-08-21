@@ -26,8 +26,8 @@ class CommentView(viewsets.ModelViewSet):
             below_min_flag_count = flagcount < self.LOWER_FLAG_BOUND
             if below_min_flag_count or flagcount <= math.sqrt(votecount):
                 filtered_comments.append(serialized_comment)
-        votes_minus_flags = lambda post: post.get('votecount') - post.get('flagcount')
-        ordered_comments = sorted(filtered_comments, key=votes_minus_flags, reverse=True)
+        timestamp = lambda comment: comment.get('timestamp')
+        ordered_comments = sorted(filtered_comments, key=timestamp, reverse=True)
         return ordered_comments
     
     def get_queryset(self):
