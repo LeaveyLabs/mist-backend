@@ -33,11 +33,11 @@ class TagView(viewsets.ModelViewSet):
             queryset = queryset.filter(comment=comment)
         return queryset
     
-    def get_first_fifty_or_less_words(self, post_id):
+    def get_first_twenty_or_less_words(self, post_id):
         tagged_post = Post.objects.get(id=post_id)
         tagged_post_body = tagged_post.body
         tagged_post_words = tagged_post_body.split()
-        first_fifty_words = tagged_post_words[:min(30, len(tagged_post_words))]
+        first_fifty_words = tagged_post_words[:min(20, len(tagged_post_words))]
         last_word_with_punctuation = first_fifty_words[-1]
         first_fifty_words[-1] = last_word_with_punctuation.translate(
             str.maketrans('', '', string.punctuation))
@@ -60,7 +60,7 @@ class TagView(viewsets.ModelViewSet):
         
         elif tagged_phone_number:
             tagged_comment = Comment.objects.get(id=tagged_comment_id)
-            tagged_post_snippet = " ".join(self.get_first_fifty_or_less_words(tagged_comment.post_id))
+            tagged_post_snippet = " ".join(self.get_first_twenty_or_less_words(tagged_comment.post_id))
             download_link = "https://www.getmist.app/download"
             text_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist: \"{tagged_post_snippet}...\"\n\nSee what your secret admirer has to say about you: {download_link}"
             twilio_client.messages.create(
