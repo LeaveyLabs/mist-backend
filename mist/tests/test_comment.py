@@ -147,7 +147,7 @@ class CommentTest(TestCase):
         self.assertTrue(serialized_comment not in response_comments)
         return
 
-    def test_get_should_return_comments_in_reverse_time_order(self):
+    def test_get_should_return_comments_in_time_order(self):
         comment2 = Comment.objects.create(
             body='FakeTextForComment',
             post=self.post,
@@ -157,7 +157,7 @@ class CommentTest(TestCase):
 
         serialized_comment1 = CommentSerializer(self.comment1).data
         serialized_comment2 = CommentSerializer(comment2).data
-        serialized_ordered_comments = [serialized_comment2, serialized_comment1]
+        serialized_ordered_comments = [serialized_comment1, serialized_comment2]
 
         request = APIRequestFactory().get(
             '/api/comments',
