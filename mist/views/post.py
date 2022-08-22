@@ -176,4 +176,14 @@ class SubmittedPostsView(generics.ListAPIView):
 class KeywordPostsView(generics.ListAPIView):
     permission_classes = (IsAuthenticated, )
     serializer_class = PostSerializer
-    pass
+    
+    def get_queryset(self):
+        user = get_user_from_request(self.request)
+        queryset = Post.objects.none()
+        for keyword in user.keywords:
+            word_in_title = Post.objects.filter(title__icontains=keyword)
+            word_in_body = Post.objects.filter(body__icontains=keyword)
+            queryset = (word_in_title | word_in_body | queryset)
+            queryset = queryset.exclude(author=user)
+        queryset = queryset.distinct()
+        return queryset

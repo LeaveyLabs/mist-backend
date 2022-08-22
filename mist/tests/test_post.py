@@ -7,7 +7,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from mist.models import Comment, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Word
 from mist.serializers import PostSerializer, PostVoteSerializer
-from mist.views.post import FavoritedPostsView, FeaturedPostsView, MatchedPostsView, PostView, SubmittedPostsView
+from mist.views.post import FavoritedPostsView, FeaturedPostsView, KeywordPostsView, MatchedPostsView, PostView, SubmittedPostsView
 
 from users.models import User
 
@@ -967,6 +967,87 @@ class SubmittedPostsViewTest(TestCase):
             format='json',
         )
         response = SubmittedPostsView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+class KeywordPostsViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
+            keywords=['first', 'only', 'appears', 'in', 'post1']
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.post1 = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            body='FakeTextForFirstPost',
+            author=self.user2,
+            timestamp=0,
+        )
+
+        self.post2 = Post.objects.create(
+            title='FakeTitleForSecondPost',
+            body='FakeTextForSecondPost',
+            author=self.user2,
+            timestamp=0,
+        )
+
+        self.post3 = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            body='FakeTextForFirstPost',
+            author=self.user1,
+            timestamp=0,
+        )
+        
+    def test_get_should_return_all_posts_with_keywords_given_no_parameters(self):
+        serialized_post = PostSerializer(self.post1).data
+        
+        request = APIRequestFactory().get(
+            '/api/keyword-posts/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = KeywordPostsView.as_view()(request)
+        response_posts = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_posts, [serialized_post])
+        return
+
+    def test_get_should_not_return_posts_submitted_by_user(self):
+        current_user_post = PostSerializer(self.post3).data
+        
+        request = APIRequestFactory().get(
+            '/api/keyword-posts/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = KeywordPostsView.as_view()(request)
+        response_posts = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(current_user_post not in response_posts)
+        return
+
+    def test_get_should_not_return_anything_given_stranger(self):
+        request = APIRequestFactory().get(
+            '/api/keyword-posts/',
+        )
+        response = KeywordPostsView.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return

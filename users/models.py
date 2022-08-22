@@ -1,5 +1,6 @@
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from .generics import get_current_time, get_random_code
 import os
@@ -21,6 +22,7 @@ class User(AbstractUser):
         (female, female),
         (other, other),
     )
+    NUMBER_OF_KEYWORDS = 5
 
     date_of_birth = models.DateField()
     picture = models.ImageField(upload_to=profile_picture_filepath, null=True)
@@ -28,6 +30,7 @@ class User(AbstractUser):
     sex = models.CharField(max_length=1, choices=SEXES, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
+    keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, null=True)
 
     class Meta:
         db_table = 'auth_user'

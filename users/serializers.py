@@ -29,7 +29,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username', 'password',
         'first_name', 'last_name', 'picture', 'confirm_picture',
         'phone_number', 'date_of_birth', 'sex', 'latitude', 
-        'longitude', )
+        'longitude', 'keywords')
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
@@ -98,6 +98,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     
     def validate_confirm_picture(self, confirm_picture):
         return self.picture_below_size_limit(confirm_picture, 'confirm_picture')
+    
+    def validate_keywords(self, keywords):
+        return [keyword.lower() for keyword in keywords]
 
     def verify_email_authentication(self, validated_data):
         email = validated_data.get('email').lower()
@@ -186,6 +189,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.picture = validated_data.get('picture', instance.picture)
         instance.latitude = validated_data.get('latitude', instance.latitude)
         instance.longitude = validated_data.get('longitude', instance.longitude)
+        instance.keywords = validated_data.get('keywords', instance.keywords)
         instance.save()
         return instance
     
