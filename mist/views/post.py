@@ -180,6 +180,7 @@ class KeywordPostsView(generics.ListAPIView):
     def get_queryset(self):
         user = get_user_from_request(self.request)
         queryset = Post.objects.none()
+        if not user.keywords: return queryset
         for keyword in user.keywords:
             word_in_title = Post.objects.filter(title__icontains=keyword)
             word_in_body = Post.objects.filter(body__icontains=keyword)

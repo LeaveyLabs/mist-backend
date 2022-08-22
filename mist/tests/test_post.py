@@ -1042,6 +1042,19 @@ class KeywordPostsViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(current_user_post not in response_posts)
         return
+    
+    def test_get_should_empty_list_for_user_without_keywords(self):        
+        request = APIRequestFactory().get(
+            '/api/keyword-posts/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = KeywordPostsView.as_view()(request)
+        response_posts = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_posts)
+        return
 
     def test_get_should_not_return_anything_given_stranger(self):
         request = APIRequestFactory().get(
