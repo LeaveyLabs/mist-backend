@@ -24,6 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 INSTALLED_APPS = [
     'corsheaders',
+    'django_celery_beat',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'django_nose',
     'mist',
+    'notifications',
     'phonenumber_field',
     'push_notifications',
     'rest_framework',
@@ -192,3 +194,5 @@ PUSH_NOTIFICATIONS_SETTINGS = {
     "UPDATE_ON_DUPLICATE_REG_ID": True,
     "UNIQUE_REG_ID": True,
 }
+
+TIME_ZONE = 'US/Pacific'

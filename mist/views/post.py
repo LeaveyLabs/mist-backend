@@ -13,7 +13,7 @@ from ..models import Favorite, Feature, FriendRequest, MatchRequest, Post
 
 class Order(Enum):
     VOTE = 0
-    TIME = 1    
+    TIME = 1
 
 class PostView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, PostPermission,)
@@ -172,3 +172,8 @@ class SubmittedPostsView(generics.ListAPIView):
     def get_queryset(self):
         user = get_user_from_request(self.request)
         return Post.objects.filter(author=user)
+
+class KeywordPostsView(generics.ListAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = PostSerializer
+    pass
