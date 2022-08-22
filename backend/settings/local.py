@@ -40,6 +40,3 @@ EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 # TODO: Pictures
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
 MEDIA_URL = '/media/'
-
-CELERY_BROKER_URL = "redis://localhost:6379"
-CELERY_RESULT_BACKEND = "redis://localhost:6379"

@@ -8,3 +8,5 @@ media
 *.pkg
 staticfiles
 *.p8
+*.db
+*.rdb
