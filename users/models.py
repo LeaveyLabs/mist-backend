@@ -2,7 +2,7 @@ from datetime import datetime
 from django.contrib.auth.models import AbstractUser
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from .generics import get_current_time, get_random_code
+from .generics import get_current_time, get_empty_keywords, get_random_code
 import os
 from phonenumber_field.modelfields import PhoneNumberField
 import random
@@ -30,7 +30,7 @@ class User(AbstractUser):
     sex = models.CharField(max_length=1, choices=SEXES, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
-    keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, null=True)
+    keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords)
 
     class Meta:
         db_table = 'auth_user'

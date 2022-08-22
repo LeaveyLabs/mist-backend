@@ -14,3 +14,6 @@ def get_random_code():
 
 def get_current_time():
     return datetime.now().timestamp()
+
+def get_empty_keywords():
+    return []
