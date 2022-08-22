@@ -30,6 +30,11 @@ django = "*"
 twilio = "*"
 django-push-notifications = "*"
 apns2 = "*"
+"backports.zoneinfo" = "*"
+celery = "*"
+redis = "*"
+django-redis = "*"
+django-celery-beat = "*"
 
 [dev-packages]
 
