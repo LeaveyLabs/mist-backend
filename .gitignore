@@ -10,3 +10,4 @@ staticfiles
 *.p8
 *.db
 *.rdb
+__pycache__
