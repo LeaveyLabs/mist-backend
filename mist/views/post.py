@@ -15,13 +15,16 @@ class Order(Enum):
     VOTE = 0
     TIME = 1
 
+def is_impermissible_post(votecount, flagcount):
+    LOWER_FLAG_BOUND = 2
+    return flagcount > LOWER_FLAG_BOUND and flagcount > math.sqrt(votecount)
+
 class PostView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, PostPermission,)
     serializer_class = PostSerializer
 
     # Max distance around post is 5 kilometers
     MAX_DISTANCE = Decimal(5)
-    LOWER_FLAG_BOUND = 3
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
@@ -33,8 +36,7 @@ class PostView(viewsets.ModelViewSet):
         for serialized_post in serialized_posts:
             flagcount = serialized_post.get('flagcount')
             votecount = serialized_post.get('votecount')
-            below_min_flag_count = flagcount < self.LOWER_FLAG_BOUND
-            if below_min_flag_count or flagcount <= math.sqrt(votecount):
+            if not is_impermissible_post(votecount, flagcount):
                 filtered_posts.append(serialized_post)
         votes_minus_flags = lambda post: post.get('votecount') - post.get('flagcount')
         ordered_posts = sorted(filtered_posts, key=votes_minus_flags, reverse=True)

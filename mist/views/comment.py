@@ -7,11 +7,13 @@ from ..serializers import CommentSerializer
 
 from ..models import Comment
 
+def is_impermissible_comment(votecount, flagcount):
+    LOWER_FLAG_BOUND = 2
+    return flagcount > LOWER_FLAG_BOUND and flagcount > math.sqrt(votecount)
+
 class CommentView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, CommentPermission)
     serializer_class = CommentSerializer
-
-    LOWER_FLAG_BOUND = 3
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
@@ -23,8 +25,7 @@ class CommentView(viewsets.ModelViewSet):
         for serialized_comment in serialized_comments:
             flagcount = serialized_comment.get('flagcount')
             votecount = serialized_comment.get('votecount')
-            below_min_flag_count = flagcount < self.LOWER_FLAG_BOUND
-            if below_min_flag_count or flagcount <= math.sqrt(votecount):
+            if not is_impermissible_comment(votecount, flagcount):
                 filtered_comments.append(serialized_comment)
         timestamp = lambda comment: comment.get('timestamp')
         ordered_comments = sorted(filtered_comments, key=timestamp)

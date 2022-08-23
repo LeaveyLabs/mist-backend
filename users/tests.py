@@ -14,7 +14,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from .serializers import CompleteUserSerializer, ReadOnlyUserSerializer
 from .views import FinalizePasswordResetView, LoginView, MatchingPhoneNumbersView, NearbyUsersView, RegisterPhoneNumberView, RegisterUserEmailView, RequestLoginCodeView, RequestPasswordResetView, RequestResetEmailView, RequestResetTextCodeView, UserView, ValidateLoginCodeView, ValidatePasswordResetView, ValidatePasswordView, ValidatePhoneNumberView, ValidateResetEmailView, ValidateResetTextCodeView, ValidateUserEmailView, ValidateUsernameView
-from .models import PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
+from .models import Ban, PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 
 import sys
 sys.path.append("..")
@@ -181,6 +181,24 @@ class RegisterUserEmailViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(EmailAuthentication.objects.filter(
             email__iexact='ThisIsAnInvalidEmail'))
+        self.assertFalse(mail.outbox)
+        return
+
+    def test_post_should_not_register_banned_email(self):
+        fake_email = 'RegisterThisFakeEmail@usc.edu'
+        Ban.objects.create(email=fake_email.lower())
+
+        request = APIRequestFactory().post(
+            'api-register/',
+            {
+                'email': fake_email,
+            },
+            format='json',
+        )
+        response = RegisterUserEmailView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(EmailAuthentication.objects.filter(email__iexact=fake_email))
         self.assertFalse(mail.outbox)
         return
 
@@ -629,6 +647,31 @@ class UserViewPostTest(TestCase):
         return
     
     def test_post_should_not_create_user_given_user_under_age_18(self):
+        request = APIRequestFactory().post(
+            'api/users/',
+            encode_multipart(boundary=BOUNDARY, data=
+            {
+                'email': self.email_auth.email,
+                'phone_number': self.phone_auth.phone_number,
+                'username': self.fake_username,
+                'password': self.fake_password,
+                'first_name': self.fake_first_name,
+                'last_name': self.fake_last_name,
+                'date_of_birth': date.today(),
+                'picture': self.image_file1,
+                'confirm_picture': self.image_file1,
+            }),
+            content_type=MULTIPART_CONTENT,
+        )
+        response = UserView.as_view({'post':'create'})(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(User.objects.filter(email=self.email_auth.email))
+        return
+
+    def test_post_should_not_create_user_given_banned_email(self):
+        Ban.objects.create(email=self.email_auth.email.lower())
+
         request = APIRequestFactory().post(
             'api/users/',
             encode_multipart(boundary=BOUNDARY, data=

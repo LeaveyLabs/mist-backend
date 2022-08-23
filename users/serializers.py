@@ -4,7 +4,7 @@ from django.forms import ValidationError
 from rest_framework import serializers
 
 from users.generics import get_current_time
-from .models import PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
+from .models import Ban, PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
@@ -86,7 +86,10 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def validate_email(self, email):
         users_with_matching_email = User.objects.filter(email__iexact=email)
         if users_with_matching_email:
-            raise ValidationError("Email has already been registered.")
+            raise ValidationError("Email's already been registered.")
+        email_is_banned = Ban.objects.filter(email__iexact=email)
+        if email_is_banned:
+             raise ValidationError("Email's been banned.")
         return email
     
     def validate_password(self, password):
@@ -238,9 +241,12 @@ class UserEmailRegistrationSerializer(serializers.Serializer):
         lowercased_email = email.lower()
 
         users_with_matching_email = User.objects.filter(email__iexact=lowercased_email)
-        
         if users_with_matching_email:
             raise ValidationError("Email's already registered.")
+
+        email_is_banned = Ban.objects.filter(email__iexact=lowercased_email)
+        if email_is_banned:
+            raise ValidationError("Email's been banned.")
 
         # domain = email.split('@')[1]
         # if domain not in self.ACCEPTABLE_DOMAINS:

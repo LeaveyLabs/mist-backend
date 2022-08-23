@@ -83,3 +83,11 @@ class PhoneNumberReset(models.Model):
     phone_number_code_time = models.FloatField(default=get_current_time)
     phone_number_validated = models.BooleanField(default=False)
     phone_number_validation_time = models.FloatField(null=True)
+
+class Ban(models.Model):
+    email = models.EmailField(unique=True)
+    timestamp = models.FloatField(default=get_current_time)
+
+    def save(self, *args, **kwargs):
+        super(Ban, self).save(*args, **kwargs)
+        User.objects.filter(email__iexact=self.email).delete()
