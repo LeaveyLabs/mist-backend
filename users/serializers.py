@@ -260,19 +260,19 @@ class UserEmailValidationRequestSerializer(serializers.Serializer):
                 email__iexact=email).order_by('-code_time')
 
         if not registrations_with_matching_email:
-            raise ValidationError({"email": "Email was not registered."})
+            raise ValidationError({"email": "Email's not registered."})
 
         code = data.get('code')
         registration = registrations_with_matching_email[0]
         if code != registration.code:
-            raise ValidationError({"code": "Code does not match."})
+            raise ValidationError({"code": "Code doesn't match."})
 
         current_time = datetime.now().timestamp()
         time_since_registration = current_time - registration.code_time 
         registration_expired = time_since_registration > self.EXPIRATION_TIME
 
         if registration_expired:
-            raise ValidationError({"code": "Code expired (10 minutes)."})
+            raise ValidationError({"code": "Expired code."})
 
         return data
 
@@ -291,7 +291,7 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
-            raise ValidationError({"username": "Username is not unique."})
+            raise ValidationError({"username": "Username's taken."})
 
         return data
 
@@ -325,7 +325,7 @@ class PasswordResetValidationSerializer(serializers.Serializer):
     def validate_email(self, email):
         matching_password_reset_requests = PasswordReset.objects.filter(email__iexact=email)
         if not matching_password_reset_requests:
-            raise ValidationError("Email did not request a password reset.")
+            raise ValidationError("Email didn't request a reset.")
         return email
 
     def validate(self, data):
@@ -341,7 +341,7 @@ class PasswordResetValidationSerializer(serializers.Serializer):
             raise ValidationError({"code": "Code expired."})
 
         if password_reset_request.code != code:
-            raise ValidationError({"code": "Code does not match."})
+            raise ValidationError({"code": "Code doesn't match."})
         return data
 
 class PasswordResetFinalizationSerializer(serializers.Serializer):
@@ -357,13 +357,13 @@ class PasswordResetFinalizationSerializer(serializers.Serializer):
         
         password_reset_request = matching_password_reset_requests[0]
         if not password_reset_request.validated:
-            raise ValidationError("Reset request has not been validated.")
+            raise ValidationError("Request has not been validated.")
         
         current_time = datetime.now().timestamp()
         time_since_reset_request = current_time - password_reset_request.validation_time
         request_expired = time_since_reset_request > self.EXPIRATION_TIME
         if request_expired:
-            raise ValidationError("Request validation has expired.")
+            raise ValidationError("Request has expired.")
         
         return email
 
@@ -395,7 +395,7 @@ class PhoneNumberRegistrationSerializer(serializers.Serializer):
         registration_expired = time_since_registration > self.EXPIRATION_TIME
 
         if not registration_expired and matching_regsitration.email != email:
-            raise ValidationError({"phone_number": "Phone number is being registered by someone else."})
+            raise ValidationError({"phone_number": "Phone's being registered by someone else."})
 
         return data
 
