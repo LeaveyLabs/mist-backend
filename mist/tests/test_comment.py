@@ -86,6 +86,8 @@ class CommentTest(TestCase):
         self.assertEqual(serialized_comment, response_comment)
         self.assertIn('author', response_comment)
         self.assertIn('read_only_author', response_comment)
+        self.assertIn('votecount', response_comment)
+        self.assertIn('flagcount', response_comment)
         self.assertEqual(self.read_only_user1.data, response_comment.get('read_only_author'))
         return
     
