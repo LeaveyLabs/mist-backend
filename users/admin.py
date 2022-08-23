@@ -33,4 +33,4 @@ class PhoneNumberResetAdmin(admin.ModelAdmin):
 admin.site.register(User, UserAdmin)
 admin.site.register(EmailAuthentication, EmailAuthenticationAdmin)
 admin.site.register(PhoneNumberAuthentication, PhoneNumberAuthenticationAdmin)
-admin.site.register(PhoneNumberReset)
+admin.site.register(PhoneNumberReset, PhoneNumberResetAdmin)
