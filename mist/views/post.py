@@ -3,6 +3,7 @@ from enum import Enum
 import math
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
+from mist.generics import is_impermissible_post
 from mist.permissions import PostPermission
 from rest_framework.permissions import IsAuthenticated
 
@@ -14,10 +15,6 @@ from ..models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Po
 class Order(Enum):
     VOTE = 0
     TIME = 1
-
-def is_impermissible_post(votecount, flagcount):
-    LOWER_FLAG_BOUND = 2
-    return flagcount > LOWER_FLAG_BOUND and flagcount > math.sqrt(votecount)
 
 class PostView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, PostPermission,)

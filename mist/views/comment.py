@@ -1,15 +1,11 @@
 from rest_framework import viewsets
-import math
+from mist.generics import is_impermissible_comment
 from mist.permissions import CommentPermission
 from rest_framework.permissions import IsAuthenticated
 
 from ..serializers import CommentSerializer
 
 from ..models import Comment
-
-def is_impermissible_comment(votecount, flagcount):
-    LOWER_FLAG_BOUND = 2
-    return flagcount > LOWER_FLAG_BOUND and flagcount > math.sqrt(votecount)
 
 class CommentView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, CommentPermission)

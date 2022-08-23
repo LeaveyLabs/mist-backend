@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from mist.generics import is_beyond_impermissible_post_limit
 from mist.permissions import FlagPermission
 from rest_framework.permissions import IsAuthenticated
 from mist.views.post import is_impermissible_post
@@ -7,14 +8,6 @@ from users.models import Ban
 
 from ..serializers import PostFlagSerializer, PostSerializer
 from ..models import Post, PostFlag
-
-def is_beyond_impermissible_post_limit(posts):
-    IMPERMISSIBLE_POST_LIMIT = 10
-    impermissible_posts = 0
-    for post in posts:
-        if is_impermissible_post(post.get('votecount'), post.get('flagcount')):
-            impermissible_posts += 1
-    return impermissible_posts > IMPERMISSIBLE_POST_LIMIT
 
 class PostFlagView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, FlagPermission)

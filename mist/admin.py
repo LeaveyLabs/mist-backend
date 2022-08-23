@@ -52,11 +52,11 @@ class CommentFlagAdmin(admin.ModelAdmin):
 # Register your models here.
 admin.site.register(Post, PostAdmin)
 admin.site.register(Comment, CommentAdmin)
-admin.site.register(Message)
 admin.site.register(PostVote, PostVoteAdmin)
 admin.site.register(PostFlag, PostFlagAdmin)
 admin.site.register(CommentVote, CommentVoteAdmin)
 admin.site.register(CommentFlag, CommentFlagAdmin)
+admin.site.register(Message)
 admin.site.register(Tag)
 admin.site.register(Block)
 admin.site.register(Word)

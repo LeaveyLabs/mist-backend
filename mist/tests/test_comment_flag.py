@@ -8,7 +8,7 @@ from mist.models import Comment, CommentFlag, Post
 from mist.serializers import CommentFlagSerializer
 from mist.views.comment_flag import CommentFlagView
 
-from users.models import User
+from users.models import Ban, User
 
 @freeze_time("2020-01-01")
 class CommentFlagTest(TestCase):
@@ -144,6 +144,58 @@ class CommentFlagTest(TestCase):
             timestamp=flag.timestamp,
         ))
         return
+    
+    def test_post_should_ban_user_given_many_impermissble_posts(self):
+
+        MANY_IMPERMISSIBLE_COMMENTS = 11
+        MANY_FLAGS = 11
+        
+        # Generalized functions
+        def create_dummy_user_with_token(id):
+            username_handle = f'testUser{id}'
+            user = User.objects.create(
+                email=f'{username_handle}@usc.edu',
+                username=username_handle,
+                date_of_birth=date(2000, 1, 1),
+            )
+            token = Token.objects.create(
+                user=user
+            )
+            return (user, token)
+
+        def post_flag(comment, user, token):
+            flag = CommentFlag(
+                comment=comment,
+                flagger=user,
+            )
+            serialized_flag = CommentFlagSerializer(flag).data
+            request = APIRequestFactory().post(
+                '/api/flags/',
+                serialized_flag,
+                format='json',
+                HTTP_AUTHORIZATION=f'Token {token}',
+            )
+            CommentFlagView.as_view({'post':'create'})(request)
+
+        def post_flags_to_many_impermissible_comments():
+            for _ in range(MANY_IMPERMISSIBLE_COMMENTS):
+                impermissible_comment = Comment.objects.create(
+                    post=self.post,
+                    body='impermissible comment',
+                    author=self.user)
+                for (user, token) in test_users:
+                    post_flag(impermissible_comment, user, token)
+
+        # Configured test
+        test_users = [create_dummy_user_with_token(i) for i in range(MANY_FLAGS)]
+
+        self.assertTrue(User.objects.filter(id=self.user.id))
+        self.assertFalse(Ban.objects.filter(email=self.user.email))
+
+        post_flags_to_many_impermissible_comments()
+
+        self.assertFalse(User.objects.filter(id=self.user.id))
+        self.assertTrue(Ban.objects.filter(email=self.user.email))
     
     def test_delete_should_delete_flag(self):
         flag = CommentFlag.objects.create(
