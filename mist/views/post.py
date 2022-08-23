@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
 
 from ..serializers import PostSerializer
-from ..models import Favorite, Feature, FriendRequest, MatchRequest, Post
+from ..models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Post, Tag
 
 class Order(Enum):
     VOTE = 0
@@ -188,3 +188,14 @@ class KeywordPostsView(generics.ListAPIView):
             queryset = queryset.exclude(author=user)
         queryset = queryset.distinct()
         return queryset
+
+class TaggedPostsView(generics.ListAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = PostSerializer
+
+    def get_queryset(self):
+        user = get_user_from_request(self.request)
+        tags = Tag.objects.filter(tagged_user=user)
+        tagged_comments = Comment.objects.filter(id__in=tags.values_list('comment_id'))
+        tagged_posts = Post.objects.filter(id__in=tagged_comments.values_list('post_id'))
+        return tagged_posts

@@ -5,9 +5,9 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import Comment, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Word
+from mist.models import Comment, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, Word
 from mist.serializers import PostSerializer, PostVoteSerializer
-from mist.views.post import FavoritedPostsView, FeaturedPostsView, KeywordPostsView, MatchedPostsView, PostView, SubmittedPostsView
+from mist.views.post import FavoritedPostsView, FeaturedPostsView, KeywordPostsView, MatchedPostsView, PostView, SubmittedPostsView, TaggedPostsView
 
 from users.models import User
 
@@ -1061,6 +1061,115 @@ class KeywordPostsViewTest(TestCase):
             '/api/keyword-posts/',
         )
         response = KeywordPostsView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+class TaggedPostsViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
+            keywords=['first', 'only', 'appears', 'in', 'post1']
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        self.user3 = User(
+            email='TestUser3@usc.edu',
+            username='TestUser3',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user3.set_password("TestPassword2@98374")
+        self.user3.save()
+        self.auth_token3 = Token.objects.create(user=self.user3)
+
+        self.post1 = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            body='FakeTextForFirstPost',
+            author=self.user2,
+            timestamp=0,
+        )
+
+        self.post2 = Post.objects.create(
+            title='FakeTitleForSecondPost',
+            body='FakeTextForSecondPost',
+            author=self.user2,
+            timestamp=0,
+        )
+
+        self.post3 = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            body='FakeTextForFirstPost',
+            author=self.user1,
+            timestamp=0,
+        )
+
+        self.comment1 = Comment.objects.create(
+            post=self.post1,
+            body="@testUser2 this is a fake comment",
+            author=self.user1,
+        )
+
+        self.comment2 = Comment.objects.create(
+            post=self.post2,
+            body="@testUser2 this is a fake comment",
+            author=self.user1,
+        )
+
+        self.comment3 = Comment.objects.create(
+            post=self.post1,
+            body="@testUser3 this is a fake comment",
+            author=self.user1,
+        )
+
+        Tag.objects.create(
+            comment=self.comment1,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
+        )
+        Tag.objects.create(
+            comment=self.comment2,
+            tagging_user=self.user1,
+            tagged_user=self.user2,
+        )
+        Tag.objects.create(
+            comment=self.comment3,
+            tagging_user=self.user1,
+            tagged_user=self.user3,
+        )
+        return
+    
+    def test_get_should_return_posts_with_user_in_tagged_comment_given_auth_token(self):
+        expected_posts = [PostSerializer(self.post1).data, PostSerializer(self.post2).data]
+
+        request = APIRequestFactory().get(
+            '/api/tagged-posts/',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = TaggedPostsView.as_view()(request)
+        response_posts = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertCountEqual(response_posts, expected_posts)
+        return
+    
+    def test_get_should_not_return_anything_given_stranger(self):
+        request = APIRequestFactory().get(
+            '/api/tagged-posts/',
+        )
+        response = TaggedPostsView.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
