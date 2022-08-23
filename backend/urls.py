@@ -90,7 +90,7 @@ urlpatterns = [
     path('api/favorited-posts/', FavoritedPostsView.as_view()),
     path('api/submitted-posts/', SubmittedPostsView.as_view()),
     path('api/keyword-posts/', KeywordPostsView.as_view()),
-    path('api/tagged-posts', TaggedPostsView.as_view()),
+    path('api/tagged-posts/', TaggedPostsView.as_view()),
     path('api/matching-phone-numbers/', MatchingPhoneNumbersView.as_view()),
     # Patch Requests
     path('api/patch-post-vote/', PostVoteView.as_view({'patch':'partial_update'})),
