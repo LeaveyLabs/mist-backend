@@ -22,7 +22,15 @@ class EmailAuthenticationAdmin(admin.ModelAdmin):
     model = EmailAuthentication
     list_display = ("email", "code", "code_time", "validated", "validation_time")
 
+class PhoneNumberAuthenticationAdmin(admin.ModelAdmin):
+    model = PhoneNumberAuthentication
+    list_display = ("email", "phone_number", "code", "code_time", "validated", "validation_time")
+
+class PhoneNumberResetAdmin(admin.ModelAdmin):
+    model = PhoneNumberReset
+    list_display = ("email", "email_code", "email_code_time", "phone_number", "phone_number_code", "phone_number_code_time", "phone_number_validated")
+
 admin.site.register(User, UserAdmin)
 admin.site.register(EmailAuthentication, EmailAuthenticationAdmin)
-admin.site.register(PhoneNumberAuthentication)
+admin.site.register(PhoneNumberAuthentication, PhoneNumberAuthenticationAdmin)
 admin.site.register(PhoneNumberReset)
