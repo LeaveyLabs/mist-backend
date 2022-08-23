@@ -232,7 +232,7 @@ class LoginSerializer(serializers.Serializer):
 class UserEmailRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
-    # ACCEPTABLE_DOMAINS = ('usc.edu', 'gmail.com', 'protonmail.com', 'yahoo.com', 'icloud.com')
+    # ACCEPTABLE_DOMAINS = ('usc.edu', )
     
     def validate_email(self, email):
         lowercased_email = email.lower()
@@ -240,11 +240,11 @@ class UserEmailRegistrationSerializer(serializers.Serializer):
         users_with_matching_email = User.objects.filter(email__iexact=lowercased_email)
         
         if users_with_matching_email:
-            raise ValidationError({"email": "Email has already been registered."})
+            raise ValidationError("Email has already been registered.")
 
         # domain = email.split('@')[1]
         # if domain not in self.ACCEPTABLE_DOMAINS:
-        #     raise ValidationError({"email": "Email has an invalid domain."})
+        #     raise ValidationError("Email has an invalid domain.")
 
         return lowercased_email
 
