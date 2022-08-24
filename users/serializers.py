@@ -196,6 +196,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.latitude = validated_data.get('latitude', instance.latitude)
         instance.longitude = validated_data.get('longitude', instance.longitude)
         instance.keywords = validated_data.get('keywords', instance.keywords)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.save()
         return instance
     

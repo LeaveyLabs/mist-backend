@@ -1429,7 +1429,7 @@ class UserViewPatchTest(TestCase):
         self.assertFalse(patched_user.picture)
         return
 
-    def test_patch_should_not_update_first_name_given_first_name(self):
+    def test_patch_should_update_first_name_given_first_name(self):
         fake_first_name = 'heyMyRealFirstName'
 
         self.assertEqual(self.valid_user.first_name, User.objects.get(pk=self.valid_user.pk).first_name)
@@ -1448,13 +1448,13 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.valid_user.email, patched_user.email)
         self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(patched_user.first_name, fake_first_name)
         self.assertEqual(self.valid_user.last_name, patched_user.last_name)
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
     
-    def test_patch_should_not_update_last_name_given_last_name(self):
+    def test_patch_should_update_last_name_given_last_name(self):
         fake_last_name = 'heyMyRealLastName'
 
         self.assertEqual(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
@@ -1474,7 +1474,7 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.valid_user.email, patched_user.email)
         self.assertEqual(self.valid_user.username, patched_user.username)
         self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(patched_user.last_name, fake_last_name)
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
