@@ -1,6 +1,5 @@
 from decimal import Decimal
 from enum import Enum
-import math
 from django.db.models.expressions import RawSQL
 from rest_framework import viewsets, generics
 from mist.generics import is_impermissible_post
@@ -31,9 +30,7 @@ class PostView(viewsets.ModelViewSet):
     def filter_and_order_serialized_posts(self, serialized_posts):
         filtered_posts = []
         for serialized_post in serialized_posts:
-            flagcount = serialized_post.get('flagcount')
-            votecount = serialized_post.get('votecount')
-            if not is_impermissible_post(votecount, flagcount):
+            if not is_impermissible_post(serialized_post):
                 filtered_posts.append(serialized_post)
         votes_minus_flags = lambda post: post.get('votecount') - post.get('flagcount')
         ordered_posts = sorted(filtered_posts, key=votes_minus_flags, reverse=True)

@@ -3,10 +3,11 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from django.forms import ValidationError
-from rest_framework import serializers
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
+
+from users.models import User
 
 def get_current_time():
     return datetime.now().timestamp()
@@ -40,7 +41,10 @@ class Post(models.Model):
         return Comment.objects.filter(post=self.pk).count()
     
     def calculate_flagcount(self):
-        return PostFlag.objects.filter(post=self.pk).count()
+        superusers = User.objects.filter(is_superuser=True)
+        if PostFlag.objects.filter(flagger__in=superusers):
+            return float('inf')
+        return PostFlag.objects.filter(post_id=self.pk).count()
     
     def save(self, *args, **kwargs):
         # check if the post is new
@@ -127,6 +131,9 @@ class Comment(models.Model):
         return CommentVote.objects.filter(comment_id=self.pk).count()
     
     def calculate_flagcount(self):
+        superusers = User.objects.filter(is_superuser=True)
+        if CommentFlag.objects.filter(flagger__in=superusers):
+            return float('inf')
         return CommentFlag.objects.filter(comment_id=self.pk).count()
 
 class Tag(models.Model):

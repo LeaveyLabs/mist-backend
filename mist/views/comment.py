@@ -19,9 +19,7 @@ class CommentView(viewsets.ModelViewSet):
     def filter_and_order_serialized_comments(self, serialized_comments):
         filtered_comments = []
         for serialized_comment in serialized_comments:
-            flagcount = serialized_comment.get('flagcount')
-            votecount = serialized_comment.get('votecount')
-            if not is_impermissible_comment(votecount, flagcount):
+            if not is_impermissible_comment(serialized_comment):
                 filtered_comments.append(serialized_comment)
         timestamp = lambda comment: comment.get('timestamp')
         ordered_comments = sorted(filtered_comments, key=timestamp)

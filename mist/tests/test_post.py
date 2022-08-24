@@ -280,6 +280,28 @@ class PostTest(TestCase):
         self.assertCountEqual(serialized_posts, response_posts)
         return
     
+    def test_get_should_not_return_posts_with_superuser_flags(self):
+        superuser = User.objects.create(
+            email="superuser@usc.edu",
+            username="superuser",
+            date_of_birth=date(2000, 1, 1),
+            is_superuser=True,
+        )
+        serialized_post = PostSerializer(self.post1).data
+        PostFlag.objects.create(flagger=superuser, post=self.post1)
+
+        request = APIRequestFactory().get(
+            '/api/posts',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(serialized_post not in response.data)
+        return
+    
     def test_get_should_return_post_with_matching_id_given_id(self):
         serialized_posts = [
             PostSerializer(self.post1).data,

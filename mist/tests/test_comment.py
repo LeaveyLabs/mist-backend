@@ -148,6 +148,28 @@ class CommentTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(serialized_comment not in response_comments)
         return
+    
+    def test_get_should_not_return_comments_with_superuser_flags(self):
+        superuser = User.objects.create(
+            email="superuser@usc.edu",
+            username="superuser",
+            date_of_birth=date(2000, 1, 1),
+            is_superuser=True,
+        )
+        serialized_comment = CommentSerializer(self.comment1).data
+        CommentFlag.objects.create(flagger=superuser, comment=self.comment1)
+
+        request = APIRequestFactory().get(
+            '/api/comments',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = CommentView.as_view({'get':'list'})(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(serialized_comment not in response.data)
+        return
 
     def test_get_should_return_comments_in_time_order(self):
         comment2 = Comment.objects.create(
