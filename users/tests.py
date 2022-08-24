@@ -422,12 +422,12 @@ class ValidateUsernameViewTest(TestCase):
         return
 
     def test_post_should_not_accept_hate_speech(self):
-        profanity = 'nigger'
+        hate_speech = 'nigger'
 
         request = APIRequestFactory().post(
             'api-validate-username/',
             {
-                'username': profanity,
+                'username': hate_speech,
             },
             format='json',
         )
