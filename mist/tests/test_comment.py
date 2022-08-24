@@ -230,6 +230,48 @@ class CommentTest(TestCase):
             author=test_comment.author))
         return
 
+    def test_post_should_not_create_given_profanity(self):
+        test_comment = Comment(
+            body='fuck shit ass',
+            post=self.post,
+            author=self.user1
+        )
+        serialized_comment = CommentSerializer(test_comment).data
+
+        request = APIRequestFactory().post(
+            '/api/comments/',
+            serialized_comment,
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = CommentView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Comment.objects.filter(
+            body=test_comment.body))
+        return
+
+    def test_post_should_not_create_given_hate_speech(self):
+        test_comment = Comment(
+            body='nigger nigga',
+            post=self.post,
+            author=self.user1
+        )
+        serialized_comment = CommentSerializer(test_comment).data
+
+        request = APIRequestFactory().post(
+            '/api/comments/',
+            serialized_comment,
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = CommentView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Comment.objects.filter(
+            body=test_comment.body))
+        return
+
     def test_delete_should_delete_comment(self):
         self.assertTrue(Comment.objects.filter(pk=self.comment1.pk))
 

@@ -406,6 +406,36 @@ class ValidateUsernameViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         return
 
+    def test_post_should_not_accept_profanity(self):
+        profanity = 'fuck'
+
+        request = APIRequestFactory().post(
+            'api-validate-username/',
+            {
+                'username': profanity,
+            },
+            format='json',
+        )
+        response = ValidateUsernameView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        return
+
+    def test_post_should_not_accept_hate_speech(self):
+        profanity = 'nigger'
+
+        request = APIRequestFactory().post(
+            'api-validate-username/',
+            {
+                'username': profanity,
+            },
+            format='json',
+        )
+        response = ValidateUsernameView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        return
+
 class ValidatePasswordViewTest(TestCase):
     def setUp(self):
         cache.cache.clear()

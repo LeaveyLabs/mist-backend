@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 import re
 from django.forms import ValidationError
+from profanity_check import predict
 from rest_framework import serializers
 
 from users.generics import get_current_time
@@ -8,7 +9,6 @@ from .models import Ban, PasswordReset, PhoneNumberAuthentication, PhoneNumberRe
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.hashers import make_password
-from django.core.validators import validate_email
 from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
@@ -74,6 +74,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
         if not re.match(alphanumeric_dash_and_underscores_only, username):
             raise ValidationError("Username must contain only letters, numbers, underscores, or hypens.")
+        [is_offensive] = predict([username])
+        if is_offensive:
+            raise serializers.ValidationError("Avoid offensive language.")
         return username
     
     def validate_date_of_birth(self, date_of_birth):
@@ -285,21 +288,20 @@ class UserEmailValidationRequestSerializer(serializers.Serializer):
 class UsernameValidationRequestSerializer(serializers.Serializer):
     username = serializers.CharField()
 
-    def validate(self, data):
-        username = data.get('username').lower()
-
-        if not username:
-            raise ValidationError({"username": "Username was not provided."})
-
+    def validate_username(self, username):
         alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
         if not re.match(alphanumeric_dash_period_and_underscores_only, username):
-            raise ValidationError({"username": "Username must contain only letters, numbers, underscores, or periods."})
+            raise ValidationError("Username must contain only letters, numbers, underscores, or periods.")
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
-            raise ValidationError({"username": "Username's taken."})
+            raise ValidationError("Username's taken.")
+        
+        [is_offensive] = predict([username])
+        if is_offensive:
+            raise serializers.ValidationError("Avoid offensive language.")
 
-        return data
+        return username
 
 class PasswordValidationRequestSerializer(serializers.Serializer):
     username = serializers.CharField()
