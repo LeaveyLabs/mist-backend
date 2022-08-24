@@ -1,4 +1,6 @@
 from datetime import date
+import os
+from unittest import skipIf
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
@@ -145,6 +147,7 @@ class CommentFlagTest(TestCase):
         ))
         return
     
+    @skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
     def test_post_should_ban_user_given_many_impermissble_posts(self):
 
         MANY_IMPERMISSIBLE_COMMENTS = 11

@@ -1,4 +1,6 @@
 from datetime import date
+import os
+from unittest import skipIf
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
@@ -7,7 +9,6 @@ from rest_framework.test import APIRequestFactory
 from mist.models import PostFlag, Post
 from mist.serializers import PostFlagSerializer
 from mist.views.post_flag import PostFlagView
-from users.generics import get_random_code
 
 from users.models import Ban, User
 
@@ -150,6 +151,7 @@ class PostFlagTest(TestCase):
         ))
         return
     
+    @skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
     def test_post_should_ban_user_given_many_impermissble_posts(self):
 
         MANY_IMPERMISSIBLE_POSTS = 11
