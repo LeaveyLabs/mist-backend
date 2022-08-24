@@ -42,9 +42,10 @@ class Post(models.Model):
     
     def calculate_flagcount(self):
         superusers = User.objects.filter(is_superuser=True)
-        if PostFlag.objects.filter(flagger__in=superusers):
+        flags = PostFlag.objects.filter(post_id=self.pk)
+        if flags.filter(flagger__in=superusers):
             return float('inf')
-        return PostFlag.objects.filter(post_id=self.pk).count()
+        return flags.count()
     
     def save(self, *args, **kwargs):
         # check if the post is new
@@ -132,9 +133,10 @@ class Comment(models.Model):
     
     def calculate_flagcount(self):
         superusers = User.objects.filter(is_superuser=True)
-        if CommentFlag.objects.filter(flagger__in=superusers):
+        flags = CommentFlag.objects.filter(comment_id=self.pk)
+        if flags.filter(flagger__in=superusers):
             return float('inf')
-        return CommentFlag.objects.filter(comment_id=self.pk).count()
+        return flags.count()
 
 class Tag(models.Model):
     DEFAULT_NAME = "anonymous"

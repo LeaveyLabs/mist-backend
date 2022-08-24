@@ -192,6 +192,9 @@ class TaggedPostsView(generics.ListAPIView):
     def get_queryset(self):
         user = get_user_from_request(self.request)
         tags = Tag.objects.filter(tagged_user=user)
+        if user.phone_number:
+            tagged_numbers = Tag.objects.filter(tagged_phone_number=user.phone_number)
+            tags = (tags | tagged_numbers).distinct()
         tagged_comments = Comment.objects.filter(id__in=tags.values_list('comment_id'))
         tagged_posts = Post.objects.filter(id__in=tagged_comments.values_list('post_id'))
         return tagged_posts
