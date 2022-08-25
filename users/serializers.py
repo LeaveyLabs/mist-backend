@@ -129,8 +129,18 @@ class CompleteUserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"email": "Email already taken."})
     
     def verify_phone_number(self, validated_data):
-        email = validated_data.get('email').lower()
-        phone_number = validated_data.get('phone_number').lower()
+        email = validated_data.get('email')
+        phone_number = validated_data.get('phone_number')
+
+        if not email:
+            raise serializers.ValidationError({"email": "Email was not registered."})
+
+        if not phone_number:
+            raise serializers.ValidationError({"phone_number": "Phone number was not registered."})
+        
+        email = email.lower()
+        phone_number = phone_number.lower()
+        
         matching_validations = PhoneNumberAuthentication.objects.filter(
             phone_number=phone_number,
             email__iexact=email).order_by('-validation_time')
