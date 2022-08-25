@@ -18,7 +18,6 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', )
 
 class CompleteUserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(max_length=50, write_only=True)
     confirm_picture = serializers.ImageField(write_only=True)
 
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
@@ -26,7 +25,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'username', 'password',
+        fields = ('id', 'email', 'username',
         'first_name', 'last_name', 'picture', 'confirm_picture',
         'phone_number', 'date_of_birth', 'sex', 'latitude', 
         'longitude', 'keywords')
@@ -94,11 +93,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if email_is_banned:
              raise ValidationError("Email's been banned.")
         return email
-    
-    def validate_password(self, password):
-        validate_password(password)
-        return password
-    
+
     def validate_picture(self, picture):
         return self.picture_below_size_limit(picture, 'picture')
     
@@ -159,11 +154,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if len(users_with_matching_phone_number):
             raise serializers.ValidationError({"phone_number": "Phone number already taken."})
 
-    def hash_password(self, validated_data):
-        raw_password = validated_data.get('password')
-        hashed_password = make_password(raw_password)
-        validated_data.update({'password': hashed_password})
-
     def verify_username(self, validated_data):
         username = validated_data.get('username').lower()
 
@@ -180,15 +170,15 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         self.verify_email_authentication(validated_data)
-        # self.verify_phone_number(validated_data)
+        self.verify_phone_number(validated_data)
         self.verify_username(validated_data)
-        self.hash_password(validated_data)
         validated_data.pop('confirm_picture')
-        return User.objects.create(**validated_data)
+        user = User.objects.create(**validated_data)
+        user.set_unusable_password()
+        user.save()
+        return user
     
     def update(self, instance, validated_data):
-        if validated_data.get('password'):
-            instance.set_password(validated_data.get('password'))
         instance.email = validated_data.get('email', instance.email).lower()
         instance.username = validated_data.get('username', instance.username).lower()
         instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)

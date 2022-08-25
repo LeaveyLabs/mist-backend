@@ -114,6 +114,15 @@ class UserView(viewsets.ModelViewSet):
 
         return queryset
 
+    def create(self, request, *args, **kwargs):
+        user_response = super().create(request, *args, **kwargs)
+        user_id = user_response.data.get('id')
+        token, _ = Token.objects.get_or_create(user_id=user_id)
+        content = {
+            'token': token.key,
+        }
+        return Response(content, status.HTTP_201_CREATED)
+
 class MatchingPhoneNumbersView(generics.CreateAPIView):
     permission_classes = (IsAuthenticated, )
     serializer_class = MatchingPhoneNumberRequestSerializer

@@ -532,7 +532,6 @@ class UserViewPostTest(TestCase):
         self.phone_auth.save()
 
         self.fake_username = 'FakeTestingUsername'
-        self.fake_password = 'FakeTestingPassword@3124587'
         self.fake_first_name = 'FirstNameOfFakeUser'
         self.fake_last_name = 'LastNameOfFakeUser'
         self.fake_date_of_birth = date(2000, 1, 1)
@@ -557,7 +556,6 @@ class UserViewPostTest(TestCase):
                 'email': self.email_auth.email,
                 'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
-                'password': self.fake_password,
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
@@ -570,6 +568,7 @@ class UserViewPostTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(email=self.email_auth.email))
+        self.assertTrue('token' in response.data)
         return
 
     def test_post_should_not_create_user_given_unvalidated_email(self):
@@ -580,7 +579,6 @@ class UserViewPostTest(TestCase):
                 'email': 'thisEmailDoesNotExist@usc.edu',
                 'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
-                'password': self.fake_password,
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
@@ -605,7 +603,6 @@ class UserViewPostTest(TestCase):
                 'email': self.email_auth.email,
                 'phone_number': unvalidated_phone_number,
                 'username': self.fake_username,
-                'password': self.fake_password,
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
@@ -628,7 +625,6 @@ class UserViewPostTest(TestCase):
                 'email': self.email_auth.email,
                 'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
-                'password': self.fake_password,
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
@@ -661,7 +657,6 @@ class UserViewPostTest(TestCase):
                 'email': self.email_auth.email,
                 'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
-                'password': self.fake_password,
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
@@ -684,7 +679,6 @@ class UserViewPostTest(TestCase):
                 'email': self.email_auth.email,
                 'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
-                'password': self.fake_password,
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': date.today(),
@@ -709,7 +703,6 @@ class UserViewPostTest(TestCase):
                 'email': self.email_auth.email,
                 'phone_number': self.phone_auth.phone_number,
                 'username': self.fake_username,
-                'password': self.fake_password,
                 'first_name': self.fake_first_name,
                 'last_name': self.fake_last_name,
                 'date_of_birth': date.today(),
@@ -1350,79 +1343,6 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.valid_user.username, patched_user.username)
         self.assertTrue(patched_user.check_password(self.password))
         self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
-        self.assertFalse(patched_user.picture)
-        return
-    
-    def test_patch_should_update_password_given_valid_password(self):
-        fake_new_password = 'anotherStrongPass@9703$'
-
-        self.assertIsNone(
-            authenticate(username=self.valid_user.username, 
-                        password=fake_new_password))
-        self.assertIsNotNone(
-            authenticate(username=self.valid_user.username, 
-                        password=self.password))
-        
-        request = APIRequestFactory().patch(
-            'api/users/',
-            {
-                'password': fake_new_password,
-            },
-            format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
-        )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIsNone(
-            authenticate(username=self.valid_user.username, 
-                        password=self.password))
-        self.assertIsNotNone(
-            authenticate(username=self.valid_user.username, 
-                        password=fake_new_password))
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
-        self.assertFalse(patched_user.picture)
-        return
-    
-    def test_patch_should_not_update_password_given_weak_password(self):
-        weak_password = '123'
-
-        self.assertIsNone(
-            authenticate(username=self.valid_user.username, 
-                        password=weak_password))
-        self.assertIsNotNone(
-            authenticate(username=self.valid_user.username, 
-                        password=self.password))
-
-        request = APIRequestFactory().patch(
-            'api/users/',
-            {
-                'password': weak_password,
-            },
-            format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
-        )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIsNone(
-            authenticate(username=self.valid_user.username, 
-                        password=weak_password))
-        self.assertIsNotNone(
-            authenticate(username=self.valid_user.username, 
-                        password=self.password))
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertTrue(patched_user.check_password(self.password))
         self.assertEqual(self.valid_user.first_name, patched_user.first_name)
         self.assertEqual(self.valid_user.last_name, patched_user.last_name)
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
