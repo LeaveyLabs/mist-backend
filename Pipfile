@@ -36,7 +36,6 @@ redis = "*"
 django-redis = "*"
 django-celery-beat = "*"
 alt-profanity-check = "*"
-django-cachalot = "*"
 
 [dev-packages]
 

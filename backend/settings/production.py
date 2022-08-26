@@ -1,6 +1,6 @@
 from backend.settings.base import *
 
-DEBUG = False
+DEBUG = True
 
 # No cache for local version
 INSTALLED_APPS.append('cachalot')
