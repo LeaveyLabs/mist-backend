@@ -88,7 +88,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def validate_email(self, email):
         users_with_matching_email = User.objects.filter(email__iexact=email)
         if users_with_matching_email:
-            raise ValidationError("Email's already been registered.")
+            raise ValidationError("Email is already registered")
         email_is_banned = Ban.objects.filter(email__iexact=email)
         if email_is_banned:
              raise ValidationError("Email's been banned.")
@@ -247,7 +247,7 @@ class UserEmailRegistrationSerializer(serializers.Serializer):
 
         users_with_matching_email = User.objects.filter(email__iexact=lowercased_email)
         if users_with_matching_email:
-            raise ValidationError("Email's already registered.")
+            raise ValidationError("Email is already registered.")
 
         email_is_banned = Ban.objects.filter(email__iexact=lowercased_email)
         if email_is_banned:
