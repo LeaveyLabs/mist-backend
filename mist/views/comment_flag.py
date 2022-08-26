@@ -1,3 +1,4 @@
+from django.db.models import Count
 from rest_framework import viewsets
 from mist.generics import is_beyond_impermissible_comment_limit
 from mist.permissions import FlagPermission
@@ -26,7 +27,11 @@ class CommentFlagView(viewsets.ModelViewSet):
         comment_flag_response = super().create(request, *args, **kwargs)
         comment_id = comment_flag_response.data.get("comment")
         comment_author = Comment.objects.get(id=comment_id).author
-        comments_by_author = Comment.objects.filter(author=comment_author)
+        comments_by_author = Comment.objects.filter(
+            author=comment_author).annotate(
+                votecount=Count('commentvote'),
+                flagcount=Count('commentflag'),
+            )
         serialized_comments_by_author = [
             CommentSerializer(comment).data for comment in comments_by_author
         ]

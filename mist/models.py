@@ -141,7 +141,7 @@ class Comment(models.Model):
 class Tag(models.Model):
     DEFAULT_NAME = "anonymous"
 
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='tags')
     tagged_name = models.CharField(max_length=50, default=DEFAULT_NAME)
     tagging_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='tagging_user', on_delete=models.CASCADE)
     tagged_phone_number = PhoneNumberField(null=True)

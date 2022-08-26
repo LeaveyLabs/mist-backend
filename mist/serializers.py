@@ -33,9 +33,7 @@ class PostSerializer(serializers.ModelSerializer):
         'read_only_author', 'votes', )
     
     def get_read_only_author(self, obj):
-        author_pk = obj.author.pk
-        author_instance = User.objects.get(pk=author_pk)
-        return ReadOnlyUserSerializer(author_instance).data
+        return ReadOnlyUserSerializer(obj.author).data
     
     def get_votes(self, obj):
         vote_instances = PostVote.objects.filter(post_id=obj.id)
@@ -139,8 +137,8 @@ class MatchRequestSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     read_only_author = serializers.SerializerMethodField()
-    votecount = serializers.ReadOnlyField(source='calculate_votecount')
-    flagcount = serializers.ReadOnlyField(source='calculate_flagcount')
+    votecount = serializers.SerializerMethodField()
+    flagcount = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
 
     class Meta:
@@ -150,13 +148,21 @@ class CommentSerializer(serializers.ModelSerializer):
         'votecount', 'flagcount', 'tags')
 
     def get_read_only_author(self, obj):
-        author_pk = obj.author.pk
-        author_instance = User.objects.get(pk=author_pk)
-        return ReadOnlyUserSerializer(author_instance).data
+        return ReadOnlyUserSerializer(obj.author).data
     
     def get_tags(self, obj):
-        tags = Tag.objects.filter(comment_id=obj.id)
+        tags = []
+        try: tags = obj.tags.all()
+        except: tags = Tag.objects.filter(comment_id=obj.id)
         return [TagSerializer(tag).data for tag in tags]
+    
+    def get_votecount(self, obj):
+        try: return obj.votecount
+        except: return obj.calculate_votecount()
+    
+    def get_flagcount(self, obj):
+        try: return obj.flagcount
+        except: return obj.calculate_flagcount()
     
     def validate_body(self, body):
         [is_offensive] = predict([body])

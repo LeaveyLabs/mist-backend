@@ -76,7 +76,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         [is_offensive] = predict([username])
         if is_offensive:
             raise serializers.ValidationError("Avoid offensive language.")
-        return username
+        return username.lower()
     
     def validate_date_of_birth(self, date_of_birth):
         today = date.today()

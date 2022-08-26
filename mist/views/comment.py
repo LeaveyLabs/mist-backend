@@ -1,3 +1,4 @@
+from django.db.models import Count
 from rest_framework import viewsets
 from mist.generics import is_impermissible_comment
 from mist.permissions import CommentPermission
@@ -13,24 +14,25 @@ class CommentView(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-        response.data = self.filter_and_order_serialized_comments(response.data)
+        response.data = self.filter_serialized_comments(response.data)
         return response
     
-    def filter_and_order_serialized_comments(self, serialized_comments):
+    def filter_serialized_comments(self, serialized_comments):
         filtered_comments = []
         for serialized_comment in serialized_comments:
             if not is_impermissible_comment(serialized_comment):
                 filtered_comments.append(serialized_comment)
-        timestamp = lambda comment: comment.get('timestamp')
-        ordered_comments = sorted(filtered_comments, key=timestamp)
-        return ordered_comments
+        return filtered_comments
     
     def get_queryset(self):
         """
         Returns comments matching the post.
         """
         post = self.request.query_params.get('post')
-        if post != None:
-            return Comment.objects.filter(post=post)
-        else:
-            return Comment.objects.all()
+        queryset = Comment.objects.all()
+        if post: queryset = queryset.filter(post=post)
+        queryset = queryset.annotate(votecount=Count('commentvote'))
+        queryset = queryset.annotate(flagcount=Count('commentflag'))
+        queryset = queryset.prefetch_related('tags')
+        queryset = queryset.order_by('timestamp')
+        return queryset
