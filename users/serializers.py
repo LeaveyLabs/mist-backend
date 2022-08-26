@@ -385,7 +385,7 @@ class PhoneNumberRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
     phone_number = PhoneNumberField()
 
-    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+    EXPIRATION_TIME = timedelta(minutes=0).total_seconds()
 
     def validate(self, data):
         email = data.get('email').lower()
