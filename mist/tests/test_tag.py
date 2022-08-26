@@ -1,5 +1,6 @@
 from datetime import date
 from unittest.mock import patch
+from django.core import cache
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
@@ -26,6 +27,8 @@ class NotificationServiceMock:
     NotificationServiceMock.send_fake_notification)
 class TagTest(TestCase):
     def setUp(self):
+        cache.cache.clear()
+
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',

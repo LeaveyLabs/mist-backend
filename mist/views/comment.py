@@ -29,8 +29,9 @@ class CommentView(viewsets.ModelViewSet):
         Returns comments matching the post.
         """
         post = self.request.query_params.get('post')
-        queryset = Comment.objects.all()
-        if post: queryset = queryset.filter(post=post)
+        queryset = None
+        if post: queryset = Comment.objects.filter(post=post)
+        else: queryset = Comment.objects.all()
         queryset = queryset.annotate(votecount=Count('commentvote'))
         queryset = queryset.annotate(flagcount=Count('commentflag'))
         queryset = queryset.prefetch_related('tags')
