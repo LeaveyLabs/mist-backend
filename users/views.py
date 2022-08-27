@@ -434,8 +434,8 @@ class RequestLoginCodeView(generics.CreateAPIView):
     def is_testing_admin(self, phone_number):
         users_with_matching_phone_number = User.objects.filter(phone_number=phone_number)
         testing_admin_users = User.objects.filter(username=self.TESTING_ADMIN_USERNAME)
-        if not users_with_matching_phone_number: return False
-        if not testing_admin_users: return False
+        if not users_with_matching_phone_number.exists(): return False
+        if not testing_admin_users.exists(): return False
         return users_with_matching_phone_number[0] == testing_admin_users[0]
 
     def login_backdoor_enabled(self):
