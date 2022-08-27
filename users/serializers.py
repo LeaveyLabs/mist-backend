@@ -8,7 +8,6 @@ from users.generics import get_current_time
 from .models import Ban, PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
-from django.contrib.auth.hashers import make_password
 from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
@@ -18,16 +17,14 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_validated')
 
 class CompleteUserSerializer(serializers.ModelSerializer):
-    confirm_picture = serializers.ImageField(write_only=True)
-
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
     MEGABYTE_LIMIT = 10
 
     class Meta:
         model = User
         fields = ('id', 'email', 'username',
-        'first_name', 'last_name', 'picture', 'confirm_picture',
-        'phone_number', 'date_of_birth', 'sex', 'latitude', 
+        'first_name', 'last_name', 'picture', 'phone_number', 
+        'date_of_birth', 'sex', 'latitude', 
         'longitude', 'keywords', 'is_validated')
     
     def email_matches_name(email, first_name, last_name):
@@ -40,34 +37,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if filesize > self.MEGABYTE_LIMIT * 1024 * 1024:
             raise ValidationError({f"{field_name}": f"Max file size is {self.MEGABYTE_LIMIT}MB"})
         return picture
-
-    def is_match(self, picture, confirm_picture):
-        return True
-        # processed_picture = face_recognition.load_image_file(picture)
-        # processed_confirm = face_recognition.load_image_file(confirm_picture)
-        # picture_encodings = face_recognition.face_encodings(processed_picture)
-        # confirm_encodings = face_recognition.face_encodings(processed_confirm)
-        # results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
-        # return results[0]
-
-    def validate(self, data):
-        picture = data.get('picture')
-        confirm_picture = data.get('confirm_picture')
-        if not picture and not confirm_picture: return data
-        if picture and not confirm_picture: 
-            raise ValidationError(
-                {
-                    "picture": "Picture must be validated, input confirm_picture",
-                }
-            )
-        if not self.is_match(picture, confirm_picture):
-            raise ValidationError(
-                {
-                    "picture": "Does not contain the same person as confirm_picture",
-                    "confirm_picture": "Does not contain the same person as picture"
-                }
-            )
-        return data
 
     def validate_username(self, username):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
@@ -96,9 +65,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
     def validate_picture(self, picture):
         return self.picture_below_size_limit(picture, 'picture')
-    
-    def validate_confirm_picture(self, confirm_picture):
-        return self.picture_below_size_limit(confirm_picture, 'confirm_picture')
     
     def validate_keywords(self, keywords):
         return [keyword.lower() for keyword in keywords]
@@ -203,6 +169,35 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     
     def partial_update(self, instance, validated_data):
         return self.update(self, instance, validated_data)
+
+class ProfilePictureValidationSerializer(serializers.Serializer):
+    def is_match(self, picture, confirm_picture):
+        return True
+        # processed_picture = face_recognition.load_image_file(picture)
+        # processed_confirm = face_recognition.load_image_file(confirm_picture)
+        # picture_encodings = face_recognition.face_encodings(processed_picture)
+        # confirm_encodings = face_recognition.face_encodings(processed_confirm)
+        # results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
+        # return results[0]
+
+    def validate(self, data):
+        picture = data.get('picture')
+        confirm_picture = data.get('confirm_picture')
+        if not picture and not confirm_picture: return data
+        if picture and not confirm_picture: 
+            raise ValidationError(
+                {
+                    "picture": "Picture must be validated, input confirm_picture",
+                }
+            )
+        if not self.is_match(picture, confirm_picture):
+            raise ValidationError(
+                {
+                    "picture": "Does not contain the same person as confirm_picture",
+                    "confirm_picture": "Does not contain the same person as picture"
+                }
+            )
+        return data
 
 class LoginSerializer(serializers.Serializer):
     email_or_username = serializers.CharField()
