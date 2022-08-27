@@ -429,7 +429,7 @@ class RequestLoginCodeView(generics.CreateAPIView):
     View to request login code to phone number
     """
     TESTING_ADMIN_USERNAME = "testingadmin"
-    DEFAULT_CODE = "111111"
+    DEFAULT_CODE = "123456"
 
     def is_testing_admin(self, phone_number):
         users_with_matching_phone_number = User.objects.filter(phone_number=phone_number)
