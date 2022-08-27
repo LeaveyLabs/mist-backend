@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -427,6 +428,18 @@ class RequestLoginCodeView(generics.CreateAPIView):
     """
     View to request login code to phone number
     """
+    TESTING_ADMIN_USERNAME = "testingadmin"
+    DEFAULT_CODE = "111111"
+
+    def is_testing_admin(self, phone_number):
+        users_with_matching_phone_number = User.objects.filter(phone_number=phone_number)
+        testing_admin_users = User.objects.filter(username=self.TESTING_ADMIN_USERNAME)
+        if not users_with_matching_phone_number.exists(): return False
+        if not testing_admin_users.exists(): return False
+        return users_with_matching_phone_number[0] == testing_admin_users[0]
+
+    def login_backdoor_enabled(self):
+        return os.environ['ENVIRONMENT'] == 'dev' or os.environ['ENVIRONMENT'] == 'local'
     
     def post(self, request, *args, **kwargs):
         login_request = LoginCodeRequestSerializer(data=request.data)
@@ -443,6 +456,10 @@ class RequestLoginCodeView(generics.CreateAPIView):
         phone_number_authentication.code = get_random_code()
         phone_number_authentication.code_time = get_current_time()
         phone_number_authentication.save()
+
+        if self.login_backdoor_enabled() and self.is_testing_admin(phone_number):
+            phone_number_authentication.code = self.DEFAULT_CODE
+            phone_number_authentication.save()
 
         twilio_client.messages.create(
             body=f"Your verification code for Mist is {phone_number_authentication.code}",

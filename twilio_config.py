@@ -25,7 +25,7 @@ account_sid = os.environ['TWILIO_ACCOUNT_SID']
 auth_token = os.environ['TWILIO_AUTH_TOKEN']
 twilio_phone_number = os.environ['TWILIO_PHONE_NUMBER']
 
-if environment == 'dev':
+if environment == 'local':
     twilio_client = TwilioTestClient(account_sid, auth_token)
 else:
     twilio_client = Client(account_sid, auth_token)
