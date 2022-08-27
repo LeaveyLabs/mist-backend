@@ -14,8 +14,8 @@ from phonenumber_field.serializerfields import PhoneNumberField
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'picture', )
-        read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', )
+        fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_validated')
+        read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_validated')
 
 class CompleteUserSerializer(serializers.ModelSerializer):
     confirm_picture = serializers.ImageField(write_only=True)
@@ -28,7 +28,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username',
         'first_name', 'last_name', 'picture', 'confirm_picture',
         'phone_number', 'date_of_birth', 'sex', 'latitude', 
-        'longitude', 'keywords')
+        'longitude', 'keywords', 'is_validated')
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1

@@ -31,6 +31,7 @@ class User(AbstractUser):
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
     keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords)
+    is_validated = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'auth_user'
