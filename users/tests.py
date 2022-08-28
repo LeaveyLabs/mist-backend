@@ -1373,6 +1373,29 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
+
+    def test_patch_should_not_update_first_name_given_invalid_first_name(self):
+        fake_first_name = '+++**&&&'
+
+        request = APIRequestFactory().patch(
+            'api/users/',
+            {
+                'first_name': fake_first_name,
+            },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertNotEqual(patched_user.first_name, fake_first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
+        return
     
     def test_patch_should_update_last_name_given_last_name(self):
         fake_last_name = 'heyMyRealLastName'
@@ -1395,6 +1418,31 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.valid_user.username, patched_user.username)
         self.assertEqual(self.valid_user.first_name, patched_user.first_name)
         self.assertEqual(patched_user.last_name, fake_last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
+        return
+
+    def test_patch_should_update_last_name_given_last_name(self):
+        fake_last_name = '++**&&'
+
+        self.assertEqual(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+
+        request = APIRequestFactory().patch(
+            'api/users/',
+            {
+                'last_name': fake_last_name,
+            },
+            format='json',
+            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertNotEqual(patched_user.last_name, fake_last_name)
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return

@@ -72,11 +72,29 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def validate_username(self, username):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
         if not re.match(alphanumeric_dash_and_underscores_only, username):
-            raise ValidationError("Username must contain only letters, numbers, underscores, or hypens.")
+            raise ValidationError("Letters, numbers, underscores, or hypens.")
         [is_offensive] = predict([username])
         if is_offensive:
             raise serializers.ValidationError("Avoid offensive language.")
         return username.lower()
+
+    def validate_first_name(self, first_name):
+        alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
+        if not re.match(alphanumeric_dash_and_underscores_only, first_name):
+            raise ValidationError("Letters, numbers, underscores, or hypens.")
+        [is_offensive] = predict([first_name])
+        if is_offensive:
+            raise serializers.ValidationError("Avoid offensive language.")
+        return first_name
+
+    def validate_last_name(self, last_name):
+        alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
+        if not re.match(alphanumeric_dash_and_underscores_only, last_name):
+            raise ValidationError("Letters, numbers, underscores, or hypens.")
+        [is_offensive] = predict([last_name])
+        if is_offensive:
+            raise serializers.ValidationError("Avoid offensive language.")
+        return last_name
     
     def validate_date_of_birth(self, date_of_birth):
         today = date.today()
