@@ -412,7 +412,7 @@ class PhoneNumberRegistrationSerializer(serializers.Serializer):
     def validate_email(self, email):
         matching_emails = User.objects.filter(email__iexact=email)
         if matching_emails:
-            raise ValidationError("Email is in use, try the reset phone number API.")
+            raise ValidationError("Email is already in use.")
         return email
     
     def validate_phone_number(self, phone_number):
@@ -427,7 +427,7 @@ class LoginCodeRequestSerializer(serializers.Serializer):
     def validate_phone_number(self, phone_number):
         matching_users = User.objects.filter(phone_number=phone_number)
         if not matching_users:
-            raise ValidationError("User with phone number does not exist.")
+            raise ValidationError("User does not exist.")
         return phone_number
 
 class PhoneNumberValidationSerializer(serializers.Serializer):
