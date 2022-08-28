@@ -560,7 +560,6 @@ class UserViewPostTest(TestCase):
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
                 'picture': self.image_file1,
-                'confirm_picture': self.image_file2,
             }),
             content_type=MULTIPART_CONTENT,
         )
@@ -583,7 +582,6 @@ class UserViewPostTest(TestCase):
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
                 'picture': self.image_file1,
-                'confirm_picture': self.image_file1,
             }),
             content_type=MULTIPART_CONTENT,
         )
@@ -607,7 +605,6 @@ class UserViewPostTest(TestCase):
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
                 'picture': self.image_file1,
-                'confirm_picture': self.image_file1,
             }),
             content_type=MULTIPART_CONTENT,
         )

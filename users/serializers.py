@@ -26,17 +26,19 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         'first_name', 'last_name', 'picture', 'phone_number', 
         'date_of_birth', 'sex', 'latitude', 
         'longitude', 'keywords', 'is_validated')
+        extra_kwargs = {
+            'picture': {'required': True},
+            'phone_number': {'required': True},
+        } 
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
         last_name_in_email = email.find(last_name) != -1
         return first_name_in_email or last_name_in_email
 
-    def picture_below_size_limit(self, picture, field_name):
+    def picture_below_size_limit(self, picture):
         filesize = picture.size
-        if filesize > self.MEGABYTE_LIMIT * 1024 * 1024:
-            raise ValidationError({f"{field_name}": f"Max file size is {self.MEGABYTE_LIMIT}MB"})
-        return picture
+        return filesize > self.MEGABYTE_LIMIT * 1024 * 1024
 
     def validate_username(self, username):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
@@ -64,7 +66,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         return email
 
     def validate_picture(self, picture):
-        return self.picture_below_size_limit(picture, 'picture')
+        if self.picture_below_size_limit(picture):
+            raise ValidationError(f"Max file size is {self.MEGABYTE_LIMIT}MB")
+        return picture
     
     def validate_keywords(self, keywords):
         return [keyword.lower() for keyword in keywords]
@@ -148,7 +152,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         self.verify_email_authentication(validated_data)
         self.verify_phone_number(validated_data)
         self.verify_username(validated_data)
-        validated_data.pop('confirm_picture')
         user = User.objects.create(**validated_data)
         user.set_unusable_password()
         user.save()

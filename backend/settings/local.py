@@ -2,7 +2,7 @@ from backend.settings.base import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
 from decouple import config
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -16,10 +16,10 @@ if os.getenv('GITHUB_WORKFLOW'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('POSTGRES_DB'),
-            'USER': config('POSTGRES_USER'),
-            'PASSWORD': config('POSTGRES_PASSWORD'),
-            'HOST': config('HOST'),
+            'NAME': os.environ['POSTGRES_DB'],
+            'USER': os.environ['POSTGRES_USER'],
+            'PASSWORD': os.environ['POSTGRES_PASSWORD'],
+            'HOST': os.environ['HOST'],
             'PORT': '5432'
         }
     }
@@ -30,7 +30,7 @@ else:
             'NAME': 'postgres',
             'USER': 'postgres',
             'PASSWORD': '',
-            'HOST': config('HOST'),
+            'HOST': os.environ['HOST'],
             'PORT': '5432'
         }
     }

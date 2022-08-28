@@ -86,7 +86,9 @@ jobs:
       - name: Test
         run: |
           docker-compose down
-          docker-compose run web ./manage.py test
+          docker-compose run web ./manage.py makemigrations --settings=backend.settings.local
+          docker-compose run web ./manage.py migrate --settings=backend.settings.local
+          docker-compose run web ./manage.py test --settings=backend.settings.local
       # - name: Install dependencies
       #   run: |
       #     pip install --user pipenv
