@@ -85,6 +85,7 @@ jobs:
           docker compose build
       - name: Test
         run: |
+          docker-compose down
           docker-compose run web ./manage.py test
       # - name: Install dependencies
       #   run: |
