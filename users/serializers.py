@@ -79,18 +79,18 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         return username.lower()
 
     def validate_first_name(self, first_name):
-        alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
-        if not re.match(alphanumeric_dash_and_underscores_only, first_name):
-            raise ValidationError("Letters, numbers, underscores, or hypens.")
+        letters_only = "^[A-Za-z]*$"
+        if not re.match(letters_only, first_name):
+            raise ValidationError("Letters only")
         [is_offensive] = predict([first_name])
         if is_offensive:
             raise serializers.ValidationError("Avoid offensive language.")
         return first_name
 
     def validate_last_name(self, last_name):
-        alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
-        if not re.match(alphanumeric_dash_and_underscores_only, last_name):
-            raise ValidationError("Letters, numbers, underscores, or hypens.")
+        letters_only = "^[A-Za-z]*$"
+        if not re.match(letters_only, last_name):
+            raise ValidationError("Letters only")
         [is_offensive] = predict([last_name])
         if is_offensive:
             raise serializers.ValidationError("Avoid offensive language.")
