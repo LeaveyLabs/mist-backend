@@ -14,8 +14,8 @@ from phonenumber_field.serializerfields import PhoneNumberField
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'picture', )
-        read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', )
+        fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_validated')
+        read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_validated')
 
 class CompleteUserSerializer(serializers.ModelSerializer):
     confirm_picture = serializers.ImageField(write_only=True)
@@ -28,7 +28,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username',
         'first_name', 'last_name', 'picture', 'confirm_picture',
         'phone_number', 'date_of_birth', 'sex', 'latitude', 
-        'longitude', 'keywords')
+        'longitude', 'keywords', 'is_validated')
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
@@ -412,7 +412,7 @@ class PhoneNumberRegistrationSerializer(serializers.Serializer):
     def validate_email(self, email):
         matching_emails = User.objects.filter(email__iexact=email)
         if matching_emails:
-            raise ValidationError("Email is in use, try the reset phone number API.")
+            raise ValidationError("Email is already in use.")
         return email
     
     def validate_phone_number(self, phone_number):
@@ -427,7 +427,7 @@ class LoginCodeRequestSerializer(serializers.Serializer):
     def validate_phone_number(self, phone_number):
         matching_users = User.objects.filter(phone_number=phone_number)
         if not matching_users:
-            raise ValidationError("User with phone number does not exist.")
+            raise ValidationError("User does not exist.")
         return phone_number
 
 class PhoneNumberValidationSerializer(serializers.Serializer):

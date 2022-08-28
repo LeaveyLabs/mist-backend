@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from rest_framework import viewsets, generics
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -194,8 +195,8 @@ class RegisterUserEmailView(generics.CreateAPIView):
         email_auth = EmailAuthentication.objects.create(email=email)
 
         send_mail(
-            "Your code awaits!",
-            "Here's your validation code: {}".format(email_auth.code),
+            "Your code awaits",
+            f"Your email verification code for Mist is {email_auth.code}",
             "getmist.app@gmail.com",
             [email],
             fail_silently=False,
@@ -302,8 +303,8 @@ class RequestPasswordResetView(generics.CreateAPIView):
         password_reset = PasswordReset.objects.create(email=email)
 
         send_mail(
-            "Reset your password!",
-            "Here's your code: {}".format(password_reset.code),
+            "Reset your password",
+            f"Your email verification code for Mist is {password_reset.code}",
             "getmist.app@gmail.com",
             [email],
             fail_silently=False,
@@ -385,7 +386,7 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
             email=email, phone_number=phone_number)
 
         twilio_client.messages.create(
-            body=f"Your verification code for Mist is {phone_number_authentication.code}",
+            body=f"Your phone number verification code for Mist is {phone_number_authentication.code}",
             from_=twilio_phone_number,
             to=str(phone_number_authentication.phone_number),
         )
@@ -427,6 +428,18 @@ class RequestLoginCodeView(generics.CreateAPIView):
     """
     View to request login code to phone number
     """
+    TESTING_ADMIN_USERNAME = "testingadmin"
+    DEFAULT_CODE = "123456"
+
+    def is_testing_admin(self, phone_number):
+        users_with_matching_phone_number = User.objects.filter(phone_number=phone_number)
+        testing_admin_users = User.objects.filter(username=self.TESTING_ADMIN_USERNAME)
+        if not users_with_matching_phone_number.exists(): return False
+        if not testing_admin_users.exists(): return False
+        return users_with_matching_phone_number[0] == testing_admin_users[0]
+
+    def login_backdoor_enabled(self):
+        return os.environ['ENVIRONMENT'] == 'dev' or os.environ['ENVIRONMENT'] == 'local'
     
     def post(self, request, *args, **kwargs):
         login_request = LoginCodeRequestSerializer(data=request.data)
@@ -443,6 +456,10 @@ class RequestLoginCodeView(generics.CreateAPIView):
         phone_number_authentication.code = get_random_code()
         phone_number_authentication.code_time = get_current_time()
         phone_number_authentication.save()
+
+        if self.login_backdoor_enabled() and self.is_testing_admin(phone_number):
+            phone_number_authentication.code = self.DEFAULT_CODE
+            phone_number_authentication.save()
 
         twilio_client.messages.create(
             body=f"Your verification code for Mist is {phone_number_authentication.code}",
@@ -500,8 +517,8 @@ class RequestResetEmailView(generics.CreateAPIView):
         phone_number_reset = PhoneNumberReset.objects.create(email=email)
 
         send_mail(
-            "Reset your phone number!",
-            f"Here's your code: {phone_number_reset.email_code}",
+            "Reset your phone number",
+            f"Your email verification code for Mist is {phone_number_reset.email_code}",
             "getmist.app@gmail.com",
             [email],
             fail_silently=False,
