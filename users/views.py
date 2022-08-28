@@ -304,7 +304,7 @@ class RequestPasswordResetView(generics.CreateAPIView):
 
         send_mail(
             "Reset your password",
-            "Your email verification code for Mist is {}".format(password_reset.code),
+            f"Your email verification code for Mist is {password_reset.code}",
             "getmist.app@gmail.com",
             [email],
             fail_silently=False,
