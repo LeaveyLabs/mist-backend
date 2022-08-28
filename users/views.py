@@ -195,8 +195,8 @@ class RegisterUserEmailView(generics.CreateAPIView):
         email_auth = EmailAuthentication.objects.create(email=email)
 
         send_mail(
-            "Your code awaits!",
-            "Here's your validation code: {}".format(email_auth.code),
+            "Your code awaits",
+            f"Your email verification code for Mist is {email_auth.code}",
             "getmist.app@gmail.com",
             [email],
             fail_silently=False,
@@ -303,8 +303,8 @@ class RequestPasswordResetView(generics.CreateAPIView):
         password_reset = PasswordReset.objects.create(email=email)
 
         send_mail(
-            "Reset your password!",
-            "Here's your code: {}".format(password_reset.code),
+            "Reset your password",
+            "Your email verification code for Mist is {}".format(password_reset.code),
             "getmist.app@gmail.com",
             [email],
             fail_silently=False,
@@ -386,7 +386,7 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
             email=email, phone_number=phone_number)
 
         twilio_client.messages.create(
-            body=f"Your verification code for Mist is {phone_number_authentication.code}",
+            body=f"Your phone number verification code for Mist is {phone_number_authentication.code}",
             from_=twilio_phone_number,
             to=str(phone_number_authentication.phone_number),
         )
@@ -517,8 +517,8 @@ class RequestResetEmailView(generics.CreateAPIView):
         phone_number_reset = PhoneNumberReset.objects.create(email=email)
 
         send_mail(
-            "Reset your phone number!",
-            f"Here's your code: {phone_number_reset.email_code}",
+            "Reset your phone number",
+            f"Your email verification code for Mist is {phone_number_reset.email_code}",
             "getmist.app@gmail.com",
             [email],
             fail_silently=False,
