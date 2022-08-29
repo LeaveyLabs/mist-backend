@@ -7,3 +7,4 @@ release:
     - python3 manage.py migrate
 run:
   web: gunicorn backend.wsgi
+  celery: python3 -m celery -A backend worker -l info -B
