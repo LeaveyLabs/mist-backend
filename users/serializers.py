@@ -191,33 +191,46 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def partial_update(self, instance, validated_data):
         return self.update(self, instance, validated_data)
 
-class ProfilePictureValidationSerializer(serializers.Serializer):
+class ProfilePictureVerificationSerializer(serializers.Serializer):
+    picture = serializers.ImageField()
+    confirm_picture = serializers.ImageField()
+
     def is_match(self, picture, confirm_picture):
-        return True
-        # processed_picture = face_recognition.load_image_file(picture)
-        # processed_confirm = face_recognition.load_image_file(confirm_picture)
-        # picture_encodings = face_recognition.face_encodings(processed_picture)
-        # confirm_encodings = face_recognition.face_encodings(processed_confirm)
-        # results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
-        # return results[0]
+        import face_recognition
+
+        processed_picture = face_recognition.load_image_file(picture)
+        processed_confirm = face_recognition.load_image_file(confirm_picture)
+        picture_encodings = face_recognition.face_encodings(processed_picture)
+        confirm_encodings = face_recognition.face_encodings(processed_confirm)
+
+        if not picture_encodings:
+            raise ValidationError(
+                {
+                    "picture": "No face deteced in picture"
+                }
+            )
+        if not confirm_encodings:
+            raise ValidationError(
+                {
+                    "confirm_picture": "No face deteced in confirm picture"
+                }
+            )
+        
+        results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
+        return results[0]
 
     def validate(self, data):
         picture = data.get('picture')
         confirm_picture = data.get('confirm_picture')
-        if not picture and not confirm_picture: return data
-        if picture and not confirm_picture: 
-            raise ValidationError(
-                {
-                    "picture": "Picture must be validated, input confirm_picture",
-                }
-            )
+
         if not self.is_match(picture, confirm_picture):
             raise ValidationError(
                 {
-                    "picture": "Does not contain the same person as confirm_picture",
-                    "confirm_picture": "Does not contain the same person as picture"
+                    "picture": "Does not match",
+                    "confirm_picture": "Does not match"
                 }
             )
+        
         return data
 
 class LoginSerializer(serializers.Serializer):

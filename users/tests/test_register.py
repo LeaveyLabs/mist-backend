@@ -5,6 +5,7 @@ from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
+from users.tests.generics import create_dummy_user_and_token_given_id
 
 from users.views.register import RegisterPhoneNumberView, RegisterUserEmailView, ValidatePhoneNumberView, ValidateUserEmailView, ValidateUsernameView
 from users.models import Ban, EmailAuthentication, PhoneNumberAuthentication, User
@@ -174,14 +175,7 @@ class ValidateUserEmailViewTest(TestCase):
 
 class ValidateUsernameViewTest(TestCase):
     def setUp(self):
-        self.valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="takenUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1))
-        self.valid_user.set_password('randomPassword')
-        self.valid_user.save()
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         return
     
     def test_post_should_accept_untaken_username(self):
@@ -202,7 +196,7 @@ class ValidateUsernameViewTest(TestCase):
         return
     
     def test_post_should_not_accept_taken_username(self):
-        taken_username = 'takenUsername'
+        taken_username = self.user1.username
 
         self.assertTrue(User.objects.filter(username=taken_username))
 
@@ -220,7 +214,7 @@ class ValidateUsernameViewTest(TestCase):
         return
     
     def test_post_should_not_accept_identical_but_lowercase_username(self):
-        all_lowercased_username = 'takenusername'
+        all_lowercased_username = self.user1.username.lower()
 
         request = APIRequestFactory().post(
             'api-validate-username/',
@@ -236,7 +230,7 @@ class ValidateUsernameViewTest(TestCase):
         return
     
     def test_post_should_not_accept_identical_but_uppercase_username(self):
-        all_lowercased_username = 'TAKENUSERNAME'
+        all_lowercased_username = self.user1.username.upper()
 
         request = APIRequestFactory().post(
             'api-validate-username/',
@@ -318,16 +312,7 @@ class RegisterPhoneNumberViewTest(TestCase):
         self.strong_password = 'newPassword@3312$5'
         self.unused_email = "notUsedEmail@usc.edu"
 
-        self.user1 = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1), 
-            phone_number="+1234567899")
-        self.user1.set_password(self.strong_password)
-        self.user1.save()
-        self.auth_token1 = Token.objects.create(user=self.user1)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         return
 
     def test_post_should_send_code_given_unused_and_valid_phone_number(self):
