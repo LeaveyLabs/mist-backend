@@ -21,11 +21,11 @@ class TwillioTestClientMessages:
             'body': body
         })
 
-account_sid = os.environ['TWILIO_ACCOUNT_SID']
-auth_token = os.environ['TWILIO_AUTH_TOKEN']
-twilio_phone_number = os.environ['TWILIO_PHONE_NUMBER']
+account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+twilio_phone_number = os.environ.get('TWILIO_PHONE_NUMBER')
 
-if environment == 'local':
+if environment == 'local' or not account_sid or not auth_token:
     twilio_client = TwilioTestClient(account_sid, auth_token)
 else:
     twilio_client = Client(account_sid, auth_token)

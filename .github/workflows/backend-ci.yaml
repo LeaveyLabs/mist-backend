@@ -36,10 +36,11 @@ jobs:
 
     services:
       postgres:
-        image: postgres:11
+        image: postgres
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -51,44 +52,50 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9"]
+        python-version: ["3.9"]
 
     steps:
       - uses: actions/checkout@v3
-      # - name: local-fix
-      #   run: |
-      #     # Hack to get setup-python to work on act
-      #     # (see https://github.com/nektos/act/issues/251)
-      #     if [ ! -f "/etc/lsb-release" ] ; then
-      #       echo "DISTRIB_RELEASE=18.04" > /etc/lsb-release
-      #     fi
-      # - name: Set up Python ${{ matrix.python-version }}
-      #   uses: actions/setup-python@v3
-      #   with:
-      #     python-version: ${{ matrix.python-version }}
-      # - name: Create env file
-      #   run: |
-      #     touch .env
-      #     echo DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE} > .env
-      #     echo SECRET_KEY=${SECRET_KEY} > .env
-      #     echo EMAIL_HOST_USER=${EMAIL_HOST_USER} > .env
-      #     echo EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD} > .env
-      #     echo HOST=${HOST} > .env
-      #     echo POSTGRES_USER=${POSTGRES_USER} > .env
-      #     echo POSTGRES_PASSWORD=${POSTGRES_PASSWORD} > .env
-      #     echo POSTGRES_DB=${POSTGRES_DB} > .env
-      #     cat .env
-      # - name: Install dependencies
-      #   run: |
-      #     docker-compose build
-      # - name: Test
-      #   run: |
-      #     docker-compose run web ./manage.py test
+      - name: local-fix
+        run: |
+          # Hack to get setup-python to work on act
+          # (see https://github.com/nektos/act/issues/251)
+          if [ ! -f "/etc/lsb-release" ] ; then
+            echo "DISTRIB_RELEASE=18.04" > /etc/lsb-release
+          fi
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Create env file
+        run: |
+          touch .env
+          echo DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE} > .env
+          echo SECRET_KEY=${SECRET_KEY} > .env
+          echo EMAIL_HOST_USER=${EMAIL_HOST_USER} > .env
+          echo EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD} > .env
+          echo HOST=${HOST} > .env
+          echo POSTGRES_USER=${POSTGRES_USER} > .env
+          echo POSTGRES_PASSWORD=${POSTGRES_PASSWORD} > .env
+          echo POSTGRES_DB=${POSTGRES_DB} > .env
+          echo ENVIRONMENT=${ENVIRONMENT} > .env
+          cat .env
       - name: Install dependencies
         run: |
-          pip install --user pipenv
-          pipenv install
+          sudo curl -L https://github.com/docker/compose/releases/download/1.16.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker compose build
       - name: Test
         run: |
-          pipenv run python3 manage.py migrate
-          pipenv run python3 manage.py test
+          docker compose down
+          docker compose run web ./manage.py makemigrations --settings=backend.settings.local
+          docker compose run web ./manage.py migrate --settings=backend.settings.local
+          docker compose run web ./manage.py test --keepdb --settings=backend.settings.local
+      # - name: Install dependencies
+      #   run: |
+      #     pip install --user pipenv
+      #     pipenv install
+      # - name: Test
+      #   run: |
+      #     pipenv run python3 manage.py migrate
+      #     pipenv run python3 manage.py test

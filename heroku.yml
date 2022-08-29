@@ -1,9 +1,17 @@
 build:
   docker:
     web: Dockerfile
+    worker: Dockerfile
 release:
   image: worker
   command:
     - python3 manage.py migrate
 run:
-  web: gunicorn backend.wsgi
+  web: 
+    command:
+      - gunicorn backend.wsgi
+    image: web
+  worker:
+    command:
+      - python3 -m celery -A backend worker -l info -B
+    image: worker
