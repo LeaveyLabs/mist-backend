@@ -121,8 +121,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ["EMAIL_HOST_USER"]
-EMAIL_HOST_PASSWORD = os.environ["EMAIL_HOST_PASSWORD"]
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
@@ -188,12 +188,12 @@ if os.environ.get('APNS_AUTH_KEY_FILE_TEXT'):
 
 PUSH_NOTIFICATIONS_SETTINGS = {
     "APNS_AUTH_KEY_PATH": apns_file_name,
-    "APNS_AUTH_KEY_ID": os.environ['APNS_AUTH_KEY_ID'],
-    "APNS_TEAM_ID": os.environ['APNS_TEAM_ID'],
-    "APNS_TOPIC": os.environ['APNS_TOPIC'],
+    "APNS_AUTH_KEY_ID": os.environ.get('APNS_AUTH_KEY_ID'),
+    "APNS_TEAM_ID": os.environ.get('APNS_TEAM_ID'),
+    "APNS_TOPIC": os.environ.get('APNS_TOPIC'),
     "UPDATE_ON_DUPLICATE_REG_ID": True,
     "UNIQUE_REG_ID": True,
 }
 
-CELERY_BROKER_URL = os.environ["REDIS_URL"]
-CELERY_RESULT_BACKEND = os.environ["REDIS_URL"]
+CELERY_BROKER_URL = os.environ.get("REDIS_URL")
+CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL")
