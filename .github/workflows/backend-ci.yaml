@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9"]
+        python-version: ["3.9"]
 
     steps:
       - uses: actions/checkout@v3
@@ -77,6 +77,7 @@ jobs:
           echo POSTGRES_USER=${POSTGRES_USER} > .env
           echo POSTGRES_PASSWORD=${POSTGRES_PASSWORD} > .env
           echo POSTGRES_DB=${POSTGRES_DB} > .env
+          echo ENVIRONMENT=${ENVIRONMENT} > .env
           cat .env
       - name: Install dependencies
         run: |
@@ -85,10 +86,10 @@ jobs:
           docker compose build
       - name: Test
         run: |
-          docker-compose down
-          docker-compose run web ./manage.py makemigrations --settings=backend.settings.local
-          docker-compose run web ./manage.py migrate --settings=backend.settings.local
-          docker-compose run web ./manage.py test --settings=backend.settings.local
+          docker compose down
+          docker compose run web ./manage.py makemigrations --settings=backend.settings.local
+          docker compose run web ./manage.py migrate --settings=backend.settings.local
+          docker compose run web ./manage.py test --keepdb --settings=backend.settings.local
       # - name: Install dependencies
       #   run: |
       #     pip install --user pipenv
