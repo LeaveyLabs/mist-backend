@@ -2,9 +2,6 @@ from backend.settings.base import *
 
 DEBUG = True
 
-# No cache for local version
-INSTALLED_APPS.append('cachalot')
-
 ALLOWED_HOSTS = ['https://mist-backend.herokuapp.com']
 
 CORS_ALLOWED_ORIGINS = [
