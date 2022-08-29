@@ -47,6 +47,8 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+        extra_hosts:
+          - "host.docker.internal:host-gateway"
 
     runs-on: ubuntu-latest
     strategy:
