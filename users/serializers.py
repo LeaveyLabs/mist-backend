@@ -309,7 +309,7 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
     def validate_username(self, username):
         alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
         if not re.match(alphanumeric_dash_period_and_underscores_only, username):
-            raise ValidationError("Username must contain only letters, numbers, underscores, or periods")
+            raise ValidationError("Letters, numbers, underscores, or periods only")
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
@@ -504,7 +504,7 @@ class ResetEmailValidationSerializer(serializers.Serializer):
         matching_emails = PhoneNumberReset.objects.filter(
             email__iexact=email).order_by('-email_code_time')
         if not matching_emails:
-            raise ValidationError("Email did not request a phone number reset")
+            raise ValidationError("No reset request")
         
         matching_email = matching_emails[0]
 
@@ -541,7 +541,7 @@ class ResetTextRequestSerializer(serializers.Serializer):
         matching_emails = PhoneNumberReset.objects.filter(
             email__iexact=email).order_by('-email_code_time')
         if not matching_emails:
-            raise ValidationError("Email did not request a phone number reset")
+            raise ValidationError("Email did not request reset")
         
         matching_email = matching_emails[0]
         if not matching_email.email_validated:
