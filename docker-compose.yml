@@ -12,8 +12,12 @@ services:
       - db
     volumes:
       - ./webapp:/opt/webapp
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   db:
     image: postgres:latest
     env_file: .env
     environment:
       HOST: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
