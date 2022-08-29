@@ -6,5 +6,11 @@ release:
   command:
     - python3 manage.py migrate
 run:
-  web: gunicorn backend.wsgi
-  celery: python3 -m celery -A backend worker -l info -B
+  web: 
+    command:
+      - gunicorn backend.wsgi
+    image: web
+  worker:
+    command:
+      - python3 -m celery -A backend worker -l info -B
+    image: worker
