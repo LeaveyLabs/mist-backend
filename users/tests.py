@@ -87,7 +87,7 @@ class ThrottleTest(TestCase):
                 'email': 'validEmail@usc.edu',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = RegisterUserEmailView.as_view()(request)
 
@@ -107,7 +107,7 @@ class ThrottleTest(TestCase):
                 'email': 'validEmail@usc.edu',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = RegisterUserEmailView.as_view()(request)
 
@@ -133,7 +133,7 @@ class ThrottleTest(TestCase):
                     'email': 'validEmail@usc.edu',
                 },
                 format='json',
-                HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+                HTTP_AUTHORIZATION=f'Token {self.auth_token}',
             )
             fake_response = RegisterUserEmailView.as_view()(fake_request)
         
@@ -560,7 +560,6 @@ class UserViewPostTest(TestCase):
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
                 'picture': self.image_file1,
-                'confirm_picture': self.image_file2,
             }),
             content_type=MULTIPART_CONTENT,
         )
@@ -583,7 +582,6 @@ class UserViewPostTest(TestCase):
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
                 'picture': self.image_file1,
-                'confirm_picture': self.image_file1,
             }),
             content_type=MULTIPART_CONTENT,
         )
@@ -607,7 +605,6 @@ class UserViewPostTest(TestCase):
                 'last_name': self.fake_last_name,
                 'date_of_birth': self.fake_date_of_birth,
                 'picture': self.image_file1,
-                'confirm_picture': self.image_file1,
             }),
             content_type=MULTIPART_CONTENT,
         )
@@ -930,7 +927,7 @@ class UserViewGetTest(TestCase):
         request = APIRequestFactory().get(
             'api/users/',
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'retrieve'})(request, pk=non_matching_user.id)
         
@@ -942,7 +939,7 @@ class UserViewGetTest(TestCase):
         request = APIRequestFactory().get(
             'api/users/',
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
         response_user = response.data
@@ -959,7 +956,7 @@ class UserViewGetTest(TestCase):
                 'words': 'name',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -974,7 +971,7 @@ class UserViewGetTest(TestCase):
                 'words': 'NAME',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -986,7 +983,7 @@ class UserViewGetTest(TestCase):
         request = APIRequestFactory().get(
             'api/users/?words=name&words=not',
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1001,7 +998,7 @@ class UserViewGetTest(TestCase):
                 'username': 'unrelatedUsername',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1016,7 +1013,7 @@ class UserViewGetTest(TestCase):
                 'username': 'unrelated',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1031,7 +1028,7 @@ class UserViewGetTest(TestCase):
                 'first_name': 'completelyDifferentFirstName',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1046,7 +1043,7 @@ class UserViewGetTest(TestCase):
                 'first_name': 'completely',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1061,7 +1058,7 @@ class UserViewGetTest(TestCase):
                 'last_name': 'notTheSameLastName',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1076,7 +1073,7 @@ class UserViewGetTest(TestCase):
                 'last_name': 'notTheSame',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1093,7 +1090,7 @@ class UserViewGetTest(TestCase):
                 'token': self.auth_token,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
         response_users = response.data
@@ -1110,7 +1107,7 @@ class UserViewGetTest(TestCase):
                 'words': 'notInTheTextAtAll',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1125,7 +1122,7 @@ class UserViewGetTest(TestCase):
                 'username': 'thisUsernameDoesNotExist',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1140,7 +1137,7 @@ class UserViewGetTest(TestCase):
                 'username': 'sername',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1155,7 +1152,7 @@ class UserViewGetTest(TestCase):
                 'first_name': 'thisFirstNameDoesNotExist',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1170,7 +1167,7 @@ class UserViewGetTest(TestCase):
                 'first_name': 'DifferentFirstName',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1185,7 +1182,7 @@ class UserViewGetTest(TestCase):
                 'last_name': 'thisLastNameDoesNotExist',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1200,7 +1197,7 @@ class UserViewGetTest(TestCase):
                 'last_name': 'astName',
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
 
@@ -1216,7 +1213,7 @@ class UserViewGetTest(TestCase):
                 'token': invalid_token,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'get':'list'})(request)
         response_users = response.data
@@ -1243,7 +1240,7 @@ class UserViewDeleteTest(TestCase):
     def test_delete_should_delete_valid_user(self):
         self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
 
-        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
+        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION=f'Token {self.auth_token}',)
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.valid_user.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
@@ -1253,7 +1250,7 @@ class UserViewDeleteTest(TestCase):
     def test_delete_should_not_delete_nonexistent_user(self):
         self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
 
-        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
+        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION=f'Token {self.auth_token}',)
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.unused_pk)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -1293,7 +1290,7 @@ class UserViewPatchTest(TestCase):
     def test_patch_should_not_update_given_invalid_user(self):
         self.assertFalse(User.objects.filter(pk=self.unused_pk))
 
-        request = APIRequestFactory().patch('api/users/', HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),)
+        request = APIRequestFactory().patch('api/users/', HTTP_AUTHORIZATION=f'Token {self.auth_token}',)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.unused_pk)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -1310,7 +1307,7 @@ class UserViewPatchTest(TestCase):
                 'username': fake_new_username,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         patched_user = User.objects.get(pk=self.valid_user.pk)
@@ -1334,7 +1331,7 @@ class UserViewPatchTest(TestCase):
                 'username': "$%@#",
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         patched_user = User.objects.get(pk=self.valid_user.pk)
@@ -1360,7 +1357,7 @@ class UserViewPatchTest(TestCase):
                 'first_name': fake_first_name,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         patched_user = User.objects.get(pk=self.valid_user.pk)
@@ -1369,6 +1366,29 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.valid_user.email, patched_user.email)
         self.assertEqual(self.valid_user.username, patched_user.username)
         self.assertEqual(patched_user.first_name, fake_first_name)
+        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
+        return
+
+    def test_patch_should_not_update_first_name_given_invalid_first_name(self):
+        fake_first_name = '+++**&&&'
+
+        request = APIRequestFactory().patch(
+            'api/users/',
+            {
+                'first_name': fake_first_name,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertNotEqual(patched_user.first_name, fake_first_name)
         self.assertEqual(self.valid_user.last_name, patched_user.last_name)
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
@@ -1385,7 +1405,7 @@ class UserViewPatchTest(TestCase):
                 'last_name': fake_last_name,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         patched_user = User.objects.get(pk=self.valid_user.pk)
@@ -1395,6 +1415,31 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.valid_user.username, patched_user.username)
         self.assertEqual(self.valid_user.first_name, patched_user.first_name)
         self.assertEqual(patched_user.last_name, fake_last_name)
+        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.picture)
+        return
+
+    def test_patch_should_not_update_last_name_given_invalid_last_name(self):
+        fake_last_name = '++**&&'
+
+        self.assertEqual(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+
+        request = APIRequestFactory().patch(
+            'api/users/',
+            {
+                'last_name': fake_last_name,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
+        patched_user = User.objects.get(pk=self.valid_user.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.valid_user.email, patched_user.email)
+        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertNotEqual(patched_user.last_name, fake_last_name)
         self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
@@ -1460,7 +1505,7 @@ class UserViewPatchTest(TestCase):
                 'latitude': new_latitude,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         patched_user = User.objects.get(pk=self.valid_user.pk)
@@ -1483,7 +1528,7 @@ class UserViewPatchTest(TestCase):
                 'longitude': new_longitude,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         patched_user = User.objects.get(pk=self.valid_user.pk)
@@ -1507,7 +1552,7 @@ class UserViewPatchTest(TestCase):
                 'keywords': new_keywords,
             },
             format='json',
-            HTTP_AUTHORIZATION='Token {}'.format(self.auth_token),
+            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
         )
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
         patched_user = User.objects.get(pk=self.valid_user.pk)

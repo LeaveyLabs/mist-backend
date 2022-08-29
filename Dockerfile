@@ -34,7 +34,7 @@ RUN cd ~ && \
     
 RUN pip3 install face_recognition
 RUN pip3 install pipenv
-COPY Pipfile Pipfile.lock ./
+COPY Pipfile* ./
 RUN pipenv install --deploy --system
 COPY . ./
 # The rest of this file just runs an example script.
