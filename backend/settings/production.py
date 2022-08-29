@@ -26,12 +26,12 @@ from decouple import config
 
 # os.environ.setdefault('AWS_ACCESS_KEY_ID', config('AWS_ACCESS_KEY_ID'))
 # os.environ.setdefault('AWS_SECRET_ACCESS_KEY', config('AWS_SECRET_ACCESS_KEY'))
-SECRET_KEY = os.environ['SECRET_KEY']
-AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
-AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+SECRET_KEY = os.environ.get('SECRET_KEY')
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_S3_REGION_NAME = "us-west-1"
-AWS_STORAGE_BUCKET_NAME = os.environ['S3_BUCKET']
+AWS_STORAGE_BUCKET_NAME = os.environ.get('S3_BUCKET')
 AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = None
 AWS_S3_VERIFY = True
