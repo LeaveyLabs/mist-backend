@@ -63,7 +63,7 @@ class PasswordReset(models.Model):
     validation_time = models.FloatField(null=True)
 
 class PhoneNumberAuthentication(models.Model):
-    email = models.EmailField(unique=True)
+    email = models.EmailField(null=True)
     phone_number = PhoneNumberField(unique=True)
     code = models.CharField(max_length=6, default=get_random_code)
     code_time = models.FloatField(default=get_current_time)
