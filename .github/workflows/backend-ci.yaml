@@ -1,11 +1,7 @@
 name: backend-ci
 
 
-on: 
-  push:
-    branches:
-    - master
-    - development
+on:
   pull_request:
     branches:
     - master
