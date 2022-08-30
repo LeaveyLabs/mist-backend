@@ -9,6 +9,7 @@ from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from users.models import User
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
+from users.tests.generics import create_simple_uploaded_file_from_image_path
 
 from users.views.register import RegisterUserEmailView
 from users.views.user import MatchingPhoneNumbersView, NearbyUsersView, UserView
@@ -704,8 +705,24 @@ class UserViewPatchTest(TestCase):
         test_image_io2 = BytesIO()
         test_image2.save(test_image_io2, format='JPEG')
 
-        self.image_file1 = SimpleUploadedFile('test1.jpeg', test_image_io1.getvalue(), content_type='image/jpeg')
-        self.image_file2 = SimpleUploadedFile('test2.jpeg', test_image_io2.getvalue(), content_type='image/jpeg')
+        self.obama_image_file1 = create_simple_uploaded_file_from_image_path(
+            'test_assets/obama1.jpeg', 
+            'obama1.jpeg')
+        self.obama_image_file2 = create_simple_uploaded_file_from_image_path(
+            'test_assets/obama2.jpeg', 
+            'obama2.jpeg')
+        self.kevin_image_file1 = create_simple_uploaded_file_from_image_path(
+            'test_assets/kevin1.jpeg', 
+            'kevin1.jpeg')
+        self.kevin_image_file2 = create_simple_uploaded_file_from_image_path(
+            'test_assets/kevin2.jpeg', 
+            'kevin2.jpeg')
+        self.adam_image_file1 = create_simple_uploaded_file_from_image_path(
+            'test_assets/adam1.jpeg', 
+            'adam1.jpeg')
+        self.adam_image_file2 = create_simple_uploaded_file_from_image_path(
+            'test_assets/adam2.jpeg', 
+            'adam2.jpeg')
 
     def test_patch_should_not_update_given_invalid_user(self):
         self.assertFalse(User.objects.filter(pk=self.unused_pk))
@@ -869,8 +886,7 @@ class UserViewPatchTest(TestCase):
         request = APIRequestFactory().patch(
             'api/users/', 
             encode_multipart(boundary=BOUNDARY, data={
-                'picture': self.image_file1,
-                'confirm_picture': self.image_file2,
+                'picture': self.obama_image_file1,
             }),
             content_type=MULTIPART_CONTENT,
             HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
@@ -885,6 +901,52 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.user1.first_name, patched_user.first_name)
         self.assertEqual(self.user1.last_name, patched_user.last_name)
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
+        return
+
+    def test_patch_should_verify_user_given_matching_picture_and_confirm_picture(self):
+        request = APIRequestFactory().patch(
+            'api/users/', 
+            encode_multipart(boundary=BOUNDARY, data={
+                'picture': self.obama_image_file1,
+                'confirm_picture': self.obama_image_file2,
+            }),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(patched_user.picture)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
+        self.assertTrue(patched_user.is_verified)
+        return
+    
+    def test_patch_should_not_verify_user_given_unmatching_picture_and_confirm_picture(self):
+        request = APIRequestFactory().patch(
+            'api/users/', 
+            encode_multipart(boundary=BOUNDARY, data={
+                'picture': self.obama_image_file1,
+                'confirm_picture': self.kevin_image_file1,
+            }),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(patched_user.picture)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
+        self.assertFalse(patched_user.is_verified)
         return
     
     def test_patch_should_not_update_picture_given_invalid_picture(self):

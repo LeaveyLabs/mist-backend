@@ -4,17 +4,15 @@ from django.forms import ValidationError
 from profanity_check import predict
 from rest_framework import serializers
 
-from users.generics import get_current_time
-from .models import Ban, PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
-from django.contrib.auth import authenticate
-from django.contrib.auth.password_validation import validate_password
+from users.generics import get_current_time, get_face_encoding, is_match
+from .models import Ban, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_validated')
-        read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_validated')
+        fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_verified')
+        read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_verified')
 
 class CompleteUserSerializer(serializers.ModelSerializer):
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
@@ -23,9 +21,10 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'email', 'username',
-        'first_name', 'last_name', 'picture', 'phone_number', 
+        'first_name', 'last_name', 'picture', 
+        'confirm_picture', 'phone_number', 
         'date_of_birth', 'sex', 'latitude', 
-        'longitude', 'keywords', 'is_validated')
+        'longitude', 'keywords', 'is_verified')
         extra_kwargs = {
             'picture': {'required': True},
             'phone_number': {'required': True},
@@ -43,7 +42,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def validate_username(self, username):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
         if not re.match(alphanumeric_dash_and_underscores_only, username):
-            raise ValidationError("Letters, numbers, underscores, or hypens")
+            raise ValidationError("abc, 123, _ and .")
         [is_offensive] = predict([username])
         if is_offensive:
             raise serializers.ValidationError("Avoid offensive language")
@@ -160,7 +159,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
         alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
         if not re.match(alphanumeric_dash_period_and_underscores_only, username):
-            raise ValidationError({"username": "Username must contain only letters, numbers, underscores, or periods"})
+            raise ValidationError({"username": "abc, 123, _ and . only"})
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
@@ -179,12 +178,15 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.email = validated_data.get('email', instance.email).lower()
         instance.username = validated_data.get('username', instance.username).lower()
         instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
-        instance.picture = validated_data.get('picture', instance.picture)
         instance.latitude = validated_data.get('latitude', instance.latitude)
         instance.longitude = validated_data.get('longitude', instance.longitude)
         instance.keywords = validated_data.get('keywords', instance.keywords)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.picture = validated_data.get('picture', instance.picture)
+        instance.confirm_picture = validated_data.get('confirm_picture', instance.confirm_picture)
+        print(instance.picture, instance.confirm_picture)
+        instance.is_verified = is_match(instance.picture, instance.confirm_picture)
         instance.save()
         return instance
     
@@ -195,35 +197,25 @@ class ProfilePictureVerificationSerializer(serializers.Serializer):
     picture = serializers.ImageField()
     confirm_picture = serializers.ImageField()
 
-    def is_match(self, picture, confirm_picture):
-        import face_recognition
+    def validate(self, data):
+        picture = data.get('picture')
+        confirm_picture = data.get('confirm_picture')
 
-        processed_picture = face_recognition.load_image_file(picture)
-        processed_confirm = face_recognition.load_image_file(confirm_picture)
-        picture_encodings = face_recognition.face_encodings(processed_picture)
-        confirm_encodings = face_recognition.face_encodings(processed_confirm)
-
-        if not picture_encodings:
+        if not get_face_encoding(picture):
             raise serializers.ValidationError(
                 {
                     "picture": "No face detected in picture"
                 }
             )
-        if not confirm_encodings:
+        
+        if not get_face_encoding(confirm_picture):
             raise serializers.ValidationError(
                 {
                     "confirm_picture": "No face detected in confirm picture"
                 }
             )
-        
-        results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
-        return results[0]
 
-    def validate(self, data):
-        picture = data.get('picture')
-        confirm_picture = data.get('confirm_picture')
-
-        if not self.is_match(picture, confirm_picture):
+        if not is_match(picture, confirm_picture):
             raise serializers.ValidationError(
                 {
                     "picture": "Does not match",
@@ -289,7 +281,7 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
     def validate_username(self, username):
         alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
         if not re.match(alphanumeric_dash_period_and_underscores_only, username):
-            raise ValidationError("Letters, numbers, underscores, or periods only")
+            raise ValidationError("abc, 123, _ and . only")
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
