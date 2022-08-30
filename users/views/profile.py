@@ -11,13 +11,12 @@ class VerifyProfilePicture(generics.CreateAPIView):
         verification.is_valid(raise_exception=True)
 
         user = get_user_from_request(request)
-        user.picture = verification.picture
+        user.picture = request.data.get('picture')
         user.is_validated = True
         user.save()
 
         return Response(
             {
                 "status": "success",
-                "data": verification.data,
             }, 
-            status=status.HTTP_201_CREATED)
+            status=status.HTTP_200_OK)
