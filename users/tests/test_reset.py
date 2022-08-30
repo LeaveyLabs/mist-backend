@@ -395,7 +395,7 @@ class ValidateResetTextCodeViewTest(TestCase):
         )
         return
 
-    def test_post_should_return_failure_given_unrequested_phone_number_and_valid_code(self):
+    def test_post_should_return_failure_given_requested_phone_number_and_invalid_code(self):
         request = APIRequestFactory().post(
             'api/validate-phone-number',
             {

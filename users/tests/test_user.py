@@ -1,6 +1,8 @@
 from datetime import date, datetime, timedelta
 from io import BytesIO
+import os
 from tempfile import TemporaryFile
+from unittest import skipIf
 from PIL import Image
 from django.core import mail, cache
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -903,6 +905,7 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         return
 
+    @skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
     def test_patch_should_verify_user_given_matching_picture_and_confirm_picture(self):
         request = APIRequestFactory().patch(
             'api/users/', 
@@ -926,6 +929,7 @@ class UserViewPatchTest(TestCase):
         self.assertTrue(patched_user.is_verified)
         return
     
+    @skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
     def test_patch_should_not_verify_user_given_unmatching_picture_and_confirm_picture(self):
         request = APIRequestFactory().patch(
             'api/users/', 
