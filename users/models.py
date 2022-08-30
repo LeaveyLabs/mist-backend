@@ -30,8 +30,12 @@ class User(AbstractUser):
     NUMBER_OF_KEYWORDS = 5
 
     date_of_birth = models.DateField()
-    picture = models.ImageField(upload_to=profile_picture_filepath, null=True)
-    confirm_picture = models.ImageField(upload_to=confirm_profile_picture_filepath, null=True)
+    picture = models.ImageField(
+        upload_to=profile_picture_filepath, null=True, blank=True
+    )
+    confirm_picture = models.ImageField(
+        upload_to=confirm_profile_picture_filepath, null=True, blank=True
+    )
     phone_number = PhoneNumberField(null=True, unique=True)
     sex = models.CharField(max_length=1, choices=SEXES, null=True)
     latitude = models.FloatField(null=True)
