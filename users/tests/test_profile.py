@@ -1,3 +1,5 @@
+import os
+from unittest import skipIf
 from django.test import TestCase
 from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from rest_framework import status
@@ -7,7 +9,7 @@ from users.models import User
 from users.tests.generics import create_dummy_user_and_token_given_id, create_simple_uploaded_file_from_image_path
 from users.views.profile import VerifyProfilePicture
 
-
+@skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
 class VerifyProfilePictureTest(TestCase):
     def setUp(self):
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
