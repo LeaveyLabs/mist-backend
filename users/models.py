@@ -12,6 +12,11 @@ class User(AbstractUser):
         ext = filename.split('.')[-1]
         new_filename = f'{instance.id}.{ext}'
         return os.path.join('profiles', new_filename)
+    
+    def confirm_profile_picture_filepath(instance, filename):
+        ext = filename.split('.')[-1]
+        new_filename = f'{instance.id}.{ext}'
+        return os.path.join('confirm-profiles', new_filename)
 
     male = 'm'
     female = 'f'
@@ -25,13 +30,18 @@ class User(AbstractUser):
     NUMBER_OF_KEYWORDS = 5
 
     date_of_birth = models.DateField()
-    picture = models.ImageField(upload_to=profile_picture_filepath, null=True)
+    picture = models.ImageField(
+        upload_to=profile_picture_filepath, null=True, blank=True
+    )
+    confirm_picture = models.ImageField(
+        upload_to=confirm_profile_picture_filepath, null=True, blank=True
+    )
     phone_number = PhoneNumberField(null=True, unique=True)
     sex = models.CharField(max_length=1, choices=SEXES, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
     keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords)
-    is_validated = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'auth_user'

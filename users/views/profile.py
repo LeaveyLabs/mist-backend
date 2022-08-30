@@ -10,11 +10,6 @@ class VerifyProfilePicture(generics.CreateAPIView):
         verification = ProfilePictureVerificationSerializer(data=request.data)
         verification.is_valid(raise_exception=True)
 
-        user = get_user_from_request(request)
-        user.picture = request.data.get('picture')
-        user.is_validated = True
-        user.save()
-
         return Response(
             {
                 "status": "success",

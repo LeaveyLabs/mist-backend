@@ -45,10 +45,8 @@ class VerifyProfilePictureTest(TestCase):
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = VerifyProfilePicture.as_view()(request)
-        patched_user = User.objects.get(id=self.user1.id)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(patched_user.picture)
         return
 
     def test_post_should_return_success_given_two_kevins(self):
@@ -63,10 +61,8 @@ class VerifyProfilePictureTest(TestCase):
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = VerifyProfilePicture.as_view()(request)
-        patched_user = User.objects.get(id=self.user1.id)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(patched_user.picture)
         return
     
     def test_post_should_return_success_given_two_adams(self):
@@ -81,10 +77,8 @@ class VerifyProfilePictureTest(TestCase):
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = VerifyProfilePicture.as_view()(request)
-        patched_user = User.objects.get(id=self.user1.id)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(patched_user.picture)
         return
     
     def test_post_should_return_failure_given_obama_and_kevin(self):
@@ -99,10 +93,8 @@ class VerifyProfilePictureTest(TestCase):
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = VerifyProfilePicture.as_view()(request)
-        patched_user = User.objects.get(id=self.user1.id)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(patched_user.picture)
         return
     
     def test_post_should_return_failure_given_obama_and_adam(self):
@@ -117,10 +109,8 @@ class VerifyProfilePictureTest(TestCase):
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = VerifyProfilePicture.as_view()(request)
-        patched_user = User.objects.get(id=self.user1.id)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(patched_user.picture)
         return
     
     def test_post_should_return_failure_given_adam_and_kevin(self):
@@ -135,8 +125,6 @@ class VerifyProfilePictureTest(TestCase):
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = VerifyProfilePicture.as_view()(request)
-        patched_user = User.objects.get(id=self.user1.id)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(patched_user.picture)
         return
