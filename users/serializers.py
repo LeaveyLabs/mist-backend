@@ -191,67 +191,47 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def partial_update(self, instance, validated_data):
         return self.update(self, instance, validated_data)
 
-class ProfilePictureValidationSerializer(serializers.Serializer):
+class ProfilePictureVerificationSerializer(serializers.Serializer):
+    picture = serializers.ImageField()
+    confirm_picture = serializers.ImageField()
+
     def is_match(self, picture, confirm_picture):
-        return True
-        # processed_picture = face_recognition.load_image_file(picture)
-        # processed_confirm = face_recognition.load_image_file(confirm_picture)
-        # picture_encodings = face_recognition.face_encodings(processed_picture)
-        # confirm_encodings = face_recognition.face_encodings(processed_confirm)
-        # results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
-        # return results[0]
+        import face_recognition
+
+        processed_picture = face_recognition.load_image_file(picture)
+        processed_confirm = face_recognition.load_image_file(confirm_picture)
+        picture_encodings = face_recognition.face_encodings(processed_picture)
+        confirm_encodings = face_recognition.face_encodings(processed_confirm)
+
+        if not picture_encodings:
+            raise serializers.ValidationError(
+                {
+                    "picture": "No face detected in picture"
+                }
+            )
+        if not confirm_encodings:
+            raise serializers.ValidationError(
+                {
+                    "confirm_picture": "No face detected in confirm picture"
+                }
+            )
+        
+        results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
+        return results[0]
 
     def validate(self, data):
         picture = data.get('picture')
         confirm_picture = data.get('confirm_picture')
-        if not picture and not confirm_picture: return data
-        if picture and not confirm_picture: 
-            raise ValidationError(
-                {
-                    "picture": "Picture must be validated, input confirm_picture",
-                }
-            )
+
         if not self.is_match(picture, confirm_picture):
-            raise ValidationError(
+            raise serializers.ValidationError(
                 {
-                    "picture": "Does not contain the same person as confirm_picture",
-                    "confirm_picture": "Does not contain the same person as picture"
+                    "picture": "Does not match",
+                    "confirm_picture": "Does not match",
                 }
             )
+        
         return data
-
-class LoginSerializer(serializers.Serializer):
-    email_or_username = serializers.CharField()
-    password = serializers.CharField()
-
-    def validate(self, data):
-        email_or_username = data.get('email_or_username').lower()
-        password = data.get('password')
-
-        users_with_matching_email = User.objects.filter(email__iexact=email_or_username)
-        if users_with_matching_email:
-            user_with_matching_email = users_with_matching_email[0]
-            email_or_username = user_with_matching_email.username
-            
-        user = authenticate(username=email_or_username, password=password)
-        if user:
-            if not user.is_active:
-                raise serializers.ValidationError({
-                    "non_field_errors": [
-                        "User account is disabled"
-                    ]
-                })
-        else:
-            raise serializers.ValidationError({
-                    "non_field_errors": [
-                        "Unable to log in with provided credentials"
-                    ]
-                })
-
-        data['user'] = user
-        return data
-            
-            
 
 class UserEmailRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -320,82 +300,6 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError("Avoid offensive language")
 
         return username
-
-class PasswordValidationRequestSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
-
-    def validate(self, data):
-        username = data.get('username').lower()
-        password = data.get('password')
-
-        user = User(username=username)
-        validate_password(password=password, user=user)
-
-        return data
-
-class PasswordResetRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-
-    def validate_email(self, email):
-        if not User.objects.filter(email__iexact=email):
-            raise ValidationError("Email does not exist")
-        return email
-
-class PasswordResetValidationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    code = serializers.CharField()
-
-    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
-
-    def validate_email(self, email):
-        matching_password_reset_requests = PasswordReset.objects.filter(email__iexact=email)
-        if not matching_password_reset_requests:
-            raise ValidationError("Email didn't request a reset")
-        return email
-
-    def validate(self, data):
-        email = data.get('email')
-        code = data.get('code')
-        password_reset_request = PasswordReset.objects.get(email__iexact=email)
-
-        current_time = datetime.now().timestamp()
-        time_since_reset_request = current_time - password_reset_request.code_time
-        request_expired = time_since_reset_request > self.EXPIRATION_TIME
-
-        if request_expired:
-            raise ValidationError({"code": "Code expired"})
-
-        if password_reset_request.code != code:
-            raise ValidationError({"code": "Code doesn't match"})
-        return data
-
-class PasswordResetFinalizationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField()
-
-    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
-
-    def validate_email(self, email):
-        matching_password_reset_requests = PasswordReset.objects.filter(email__iexact=email)
-        if not matching_password_reset_requests:
-            raise ValidationError("Email did not request a password reset")
-        
-        password_reset_request = matching_password_reset_requests[0]
-        if not password_reset_request.validated:
-            raise ValidationError("Request has not been validated")
-        
-        current_time = datetime.now().timestamp()
-        time_since_reset_request = current_time - password_reset_request.validation_time
-        request_expired = time_since_reset_request > self.EXPIRATION_TIME
-        if request_expired:
-            raise ValidationError("Request has expired")
-        
-        return email
-
-    def validate_password(self, password):
-        validate_password(password)
-        return password
 
 class PhoneNumberRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()

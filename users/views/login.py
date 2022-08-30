@@ -34,7 +34,7 @@ class RequestLoginCodeView(generics.CreateAPIView):
         return users_with_matching_phone_number[0] == testing_admin_users[0]
 
     def login_backdoor_enabled(self):
-        return os.environ['ENVIRONMENT'] == 'dev' or os.environ['ENVIRONMENT'] == 'local'
+        return os.environ.get('ENVIRONMENT') == 'dev' or os.environ.get('ENVIRONMENT') == 'local'
     
     def post(self, request, *args, **kwargs):
         login_request = LoginCodeRequestSerializer(data=request.data)
@@ -68,6 +68,7 @@ class RequestLoginCodeView(generics.CreateAPIView):
                 "data": login_request.data,
             },
             status=status.HTTP_200_OK)
+
 
 class ValidateLoginCodeView(generics.CreateAPIView):
     """

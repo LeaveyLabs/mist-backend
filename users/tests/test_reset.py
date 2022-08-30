@@ -6,6 +6,7 @@ from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
+from users.tests.generics import create_dummy_user_and_token_given_id
 
 from users.views.reset import RequestResetEmailView, RequestResetTextCodeView, ValidateResetEmailView, ValidateResetTextCodeView
 from users.models import PasswordReset, PhoneNumberReset, User
@@ -16,14 +17,7 @@ from twilio_config import TwillioTestClientMessages
 
 class RequestResetEmailViewTest(TestCase):
     def setUp(self):
-        self.user1 = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            phone_number="+12345678999"
-        )
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         self.unused_email = "thisEmailIsNotInUse@usc.edu"
         self.invalid_phone_number = "not-a-valid-phone-number"
         return
@@ -66,15 +60,7 @@ class RequestResetEmailViewTest(TestCase):
 
 class ValidateResetEmailViewTest(TestCase):
     def setUp(self):
-        self.user1 = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            phone_number="+12345678999"
-        )
-        self.auth_token1 = Token.objects.create(user=self.user1)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
 
         self.reset = PhoneNumberReset.objects.create(
             email=self.user1.email,
@@ -170,25 +156,8 @@ class RequestResetTextCodeViewTest(TestCase):
     def setUp(self):
         TwillioTestClientMessages.created = []
 
-        self.user1 = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            phone_number="+12345678999"
-        )
-        self.auth_token1 = Token.objects.create(user=self.user1)
-
-        self.user2 = User.objects.create(
-            email="email2@usc.edu",
-            username="unrelatedUsername2",
-            first_name="completelyDifferentFirstName2",
-            last_name="notTheSameLastName2",
-            date_of_birth=date(2000, 1, 1),
-            phone_number="+12345678998"
-        )
-        self.auth_token2 = Token.objects.create(user=self.user2)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
 
         self.reset = PhoneNumberReset.objects.create(
             email=self.user1.email,
@@ -369,14 +338,7 @@ class RequestResetTextCodeViewTest(TestCase):
 
 class ValidateResetTextCodeViewTest(TestCase):
     def setUp(self):
-        self.user1 = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            phone_number="+12345678999"
-        )
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
 
         self.new_phone_number = "+13108889999"
 
