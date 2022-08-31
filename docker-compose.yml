@@ -8,6 +8,7 @@ services:
     env_file: .env
     environment:
       HOST: host.docker.internal
+      SKIP_SLOW_TESTS: 0
     depends_on:
       - db
     volumes:

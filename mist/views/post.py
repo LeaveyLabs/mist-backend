@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
 
 from ..serializers import PostSerializer
-from ..models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Post, Tag
+from ..models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
 
 class Order(Enum):
     VOTE = 0
@@ -199,3 +199,13 @@ class TaggedPostsView(generics.ListAPIView):
         tagged_comments = Comment.objects.filter(id__in=tags.values_list('comment_id'))
         tagged_posts = Post.objects.filter(id__in=tagged_comments.values_list('post_id'))
         return tagged_posts
+
+class MistboxView(generics.ListAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = PostSerializer
+
+    def get_queryset(self):
+        user = get_user_from_request(self.request)
+        mistbox = Mistbox.objects.filter(user=user).prefetch_related('posts')
+        if not mistbox.posts.all(): return Post.objects.none()
+        return mistbox.posts.all()
