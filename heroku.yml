@@ -13,5 +13,5 @@ run:
     image: web
   worker:
     command:
-      - python3 -m celery -A backend worker -l info -B
+      - python3 -m celery -A backend worker -l info -B --concurrency 2
     image: worker
