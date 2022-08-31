@@ -59,7 +59,7 @@ class TasksTest(TestCase):
         send_mistbox_notifications()
         self.assertTrue(NotificationServiceMock.sent_notifications)
         for notification in NotificationServiceMock.sent_notifications:
-            self.assertTrue('mistbox' in notification)
+            self.assertIn('mistbox', notification)
     
     def test_make_daily_mistboxes(self):
         make_daily_mistboxes()

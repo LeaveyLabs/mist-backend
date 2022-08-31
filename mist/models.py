@@ -256,8 +256,8 @@ class Message(models.Model):
         return self.text
 
 class Mistbox(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
     
 class MistboxPost(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, related_name='mistbox_post', on_delete=models.CASCADE)
     mistbox = models.ForeignKey(Mistbox, related_name='posts', on_delete=models.CASCADE)
