@@ -276,7 +276,7 @@ class MessageTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn(
-            f"Someone sent you a special message ❤️", 
+            "Someone sent you a special message ❤️", 
             NotificationServiceMock.sent_notifications)
         return
     

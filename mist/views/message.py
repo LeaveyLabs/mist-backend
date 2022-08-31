@@ -45,7 +45,7 @@ class MessageView(viewsets.ModelViewSet):
             username = User.objects.get(id=sender).username
             receiving_devices.send_message(f"{username}: {body}")
         else:
-            receiving_devices.send_message(f"Someone sent you a special message ❤️")
+            receiving_devices.send_message("Someone sent you a special message ❤️")
         
         return message_response
 

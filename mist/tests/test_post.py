@@ -1111,7 +1111,7 @@ class KeywordPostsViewTest(TestCase):
         response_posts = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(current_user_post not in response_posts)
+        self.assertNotIn(current_user_post, response_posts)
         return
     
     def test_get_should_empty_list_for_user_without_keywords(self):        
