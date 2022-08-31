@@ -65,7 +65,7 @@ class ConversationView(generics.ListAPIView):
 
         sent_messages = Message.objects.filter(
             sender=requesting_user).select_related('receiver')
-        for sent_message in sent_messages:
+        for sent_message in sent_messages.iterator():
             pk = sent_message.receiver.pk
             message_data = MessageSerializer(sent_message).data
             if blocking_users.filter(blocking_user_id=pk).exists(): continue
@@ -76,7 +76,7 @@ class ConversationView(generics.ListAPIView):
 
         received_messages = Message.objects.filter(
             receiver=requesting_user).select_related('sender')
-        for received_message in received_messages:
+        for received_message in received_messages.iterator():
             if received_message.sender in cannot_message: continue
             pk = received_message.sender.pk
             message_data = MessageSerializer(received_message).data
