@@ -42,11 +42,14 @@ class ConversationView(generics.ListAPIView):
 
         conversations = {}
 
-        blocking_users = Block.objects.filter(blocked_user=requesting_user)
-        blocked_users = Block.objects.filter(blocking_user=requesting_user)
+        blocking_users = Block.objects.filter(
+            blocked_user=requesting_user).select_related('blocked_user')
+        blocked_users = Block.objects.filter(
+            blocking_user=requesting_user).select_related('blocking_user')
         cannot_message = blocking_users | blocked_users
 
-        sent_messages = Message.objects.filter(sender=requesting_user)
+        sent_messages = Message.objects.filter(
+            sender=requesting_user).select_related('receiver')
         for sent_message in sent_messages:
             pk = sent_message.receiver.pk
             message_data = MessageSerializer(sent_message).data
@@ -56,7 +59,8 @@ class ConversationView(generics.ListAPIView):
                 conversations[pk] = []
             conversations[pk].append(message_data)
 
-        received_messages = Message.objects.filter(receiver=requesting_user)
+        received_messages = Message.objects.filter(
+            receiver=requesting_user).select_related('sender')
         for received_message in received_messages:
             if received_message.sender in cannot_message: continue
             pk = received_message.sender.pk
