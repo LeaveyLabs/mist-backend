@@ -10,12 +10,12 @@ import random
 class User(AbstractUser):
     def profile_picture_filepath(instance, filename):
         ext = filename.split('.')[-1]
-        new_filename = f'{instance.id}.{ext}'
+        new_filename = f'{instance.username}.{ext}'
         return os.path.join('profiles', new_filename)
     
     def confirm_profile_picture_filepath(instance, filename):
         ext = filename.split('.')[-1]
-        new_filename = f'{instance.id}.{ext}'
+        new_filename = f'{instance.username}.{ext}'
         return os.path.join('confirm-profiles', new_filename)
 
     male = 'm'
