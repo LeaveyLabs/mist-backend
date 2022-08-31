@@ -8,7 +8,7 @@ from users.generics import get_user_from_request
 from users.models import User
 
 from ..serializers import MessageSerializer
-from ..models import Block, Message
+from ..models import Block, MatchRequest, Message
 
 class MessageView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MessagePermission)
@@ -29,9 +29,24 @@ class MessageView(viewsets.ModelViewSet):
         sender = message_response.data.get("sender")
         receiver = message_response.data.get("receiver")
         body = message_response.data.get("body")
-        username = User.objects.get(id=sender).username
+
+        sender_match_request = MatchRequest.objects.filter(
+            match_requesting_user=sender,
+            match_requested_user=receiver
+        )
+        receiver_match_request = MatchRequest.objects.filter(
+            match_requesting_user=receiver,
+            match_requested_user=sender,
+        )
+
         receiving_devices = APNSDevice.objects.filter(user=receiver)
-        receiving_devices.send_message(f"{username}: {body}")
+
+        if sender_match_request.exists() and receiver_match_request.exists():
+            username = User.objects.get(id=sender).username
+            receiving_devices.send_message(f"{username}: {body}")
+        else:
+            receiving_devices.send_message(f"Someone sent you a special message ❤️")
+        
         return message_response
 
 class ConversationView(generics.ListAPIView):
