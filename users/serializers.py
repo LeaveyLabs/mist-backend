@@ -185,8 +185,10 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.picture = validated_data.get('picture', instance.picture)
         instance.confirm_picture = validated_data.get('confirm_picture', instance.confirm_picture)
-        print(instance.picture, instance.confirm_picture)
-        instance.is_verified = is_match(instance.picture, instance.confirm_picture)
+        if instance.picture and instance.confirm_picture:
+            instance.is_verified = is_match(instance.picture, instance.confirm_picture)
+        else:
+            instance.is_verified = False
         instance.save()
         return instance
     

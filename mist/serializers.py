@@ -154,7 +154,7 @@ class CommentSerializer(serializers.ModelSerializer):
         tags = []
         try: tags = obj.tags.all()
         except: tags = Tag.objects.filter(comment_id=obj.id)
-        return [TagSerializer(tag).data for tag in tags]
+        return [TagSerializer(tag).data for tag in tags.iterator()]
     
     def get_votecount(self, obj):
         try: return obj.votecount

@@ -1,6 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
@@ -90,7 +91,7 @@ class PostVote(models.Model):
     AVG_RATING = (MIN_RATING+MAX_RATING)//2
     DEFAULT_EMOJI = "❤️"
 
-    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postvotes')
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
     rating = models.IntegerField(default=AVG_RATING)
@@ -253,3 +254,10 @@ class Message(models.Model):
 
     def _str_(self):
         return self.text
+
+class Mistbox(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    
+class MistboxPost(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    mistbox = models.ForeignKey(Mistbox, related_name='posts', on_delete=models.CASCADE)

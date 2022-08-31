@@ -881,6 +881,7 @@ class UserViewPatchTest(TestCase):
         self.assertFalse(patched_user.picture)
         return
 
+    @skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
     def test_patch_should_update_picture_given_valid_picture(self):
         pre_patched_user = User.objects.get(pk=self.user1.pk)
         self.assertFalse(pre_patched_user.picture)

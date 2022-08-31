@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,7 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'django_nose',
     'mist',
-    'notifications',
+    'mist_worker',
     'phonenumber_field',
     'push_notifications',
     'rest_framework',
@@ -159,7 +158,7 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 # Tell nose to measure coverage on the 'mist' and 'users' apps
 NOSE_ARGS = [
     '--with-coverage',
-    '--cover-package=mist,users',
+    '--cover-package=mist,users,mist_worker',
 ]
 
 import sys
