@@ -91,7 +91,7 @@ class PostVote(models.Model):
     AVG_RATING = (MIN_RATING+MAX_RATING)//2
     DEFAULT_EMOJI = "❤️"
 
-    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postvotes')
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
     rating = models.IntegerField(default=AVG_RATING)

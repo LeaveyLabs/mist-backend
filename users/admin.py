@@ -4,12 +4,12 @@ from rest_framework.authtoken.models import Token
 from .models import EmailAuthentication, PhoneNumberAuthentication, PhoneNumberReset, User
 
 ADDITIONAL_USER_FIELDS = (
-    (None, {'fields': ('date_of_birth',)}),
+    (None, {'fields': ('phone_number', 'date_of_birth', 'is_hidden')}),
 )
 
 class UserAdmin(UserAdmin):
     model = User
-    list_display = ("id", "email", "first_name", "last_name", "token")
+    list_display = ("id", "email", "first_name", "last_name", "token", "phone_number")
 
     add_fieldsets = UserAdmin.add_fieldsets + ADDITIONAL_USER_FIELDS
     fieldsets = UserAdmin.fieldsets + ADDITIONAL_USER_FIELDS

@@ -5,8 +5,8 @@ from django.test import TestCase
 from freezegun import freeze_time
 from unittest.mock import patch
 
-from mist_worker.tasks import make_daily_mistboxes, send_mistbox_notifications
-from mist.models import Mistbox, MistboxPost, Post
+from mist_worker.tasks import make_daily_mistboxes, send_mistbox_notifications, tally_random_upvotes
+from mist.models import Mistbox, MistboxPost, Post, PostVote
 from push_notifications.models import APNSDevice
 from users.tests.generics import create_dummy_user_and_token_given_id
 
@@ -71,3 +71,11 @@ class TasksTest(TestCase):
         self.assertTrue(mistbox2)
         self.assertTrue(mistboxposts1)
         self.assertTrue(mistboxposts2)
+
+    def test_tally_random_upvotes(self):
+        tally_random_upvotes()
+        post_votes_1 = PostVote.objects.filter(post=self.post1)
+        post_votes_2 = PostVote.objects.filter(post=self.post2)
+        post_votes_3 = PostVote.objects.filter(post=self.post3)
+        self.assertTrue(
+            post_votes_1 or post_votes_2 or post_votes_3)

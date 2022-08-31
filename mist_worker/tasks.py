@@ -1,3 +1,4 @@
+import uuid
 from celery import shared_task
 
 @shared_task(name="send_mistbox_notifications_task")
@@ -35,3 +36,53 @@ def make_daily_mistboxes():
             MistboxPost.objects.create(
                 mistbox=mistbox,
                 post=post)
+
+@shared_task(name="tally_random_upvotes_task")
+def tally_random_upvotes_task():
+    tally_random_upvotes()
+
+def tally_random_upvotes():
+    import datetime
+    from random import randint, choice
+
+    from mist.models import Post, PostVote
+    from users.models import User
+
+    NUMBER_OF_TEST_VOTERS = 30
+
+    initial_test_voters = User.objects.filter(
+        username__icontains='test_voter',
+        is_hidden=True)
+    
+    remaining_test_voters = [
+        User(
+            username=f'test_voter-{uuid.uuid4()}',
+            date_of_birth=datetime.date(2000, 1, 1),
+            is_hidden=True,
+        )
+        for _ in range(NUMBER_OF_TEST_VOTERS - initial_test_voters.count())
+    ]
+    User.objects.bulk_create(remaining_test_voters)
+    
+    final_test_voters = User.objects.filter(
+        username__icontains='test_voter',
+        is_hidden=True).prefetch_related('postvotes')
+    
+    posts = Post.objects.all()
+    emojis = ["❤️", "👀", "✌️", "🥲", "😉", "😂", "😤"]
+
+    for test_voter in final_test_voters:
+        voted_postvote_ids = [
+            postvote.id for postvote in test_voter.postvotes.all()
+        ]
+        unvoted_posts = posts.exclude(id__in=voted_postvote_ids)
+        random_unvoted_post = choice(unvoted_posts)
+        random_emoji = choice(emojis)
+        try:
+            PostVote.objects.create(
+                post=random_unvoted_post,
+                voter=test_voter,
+                emoji=random_emoji,
+            )
+        except:
+            continue
