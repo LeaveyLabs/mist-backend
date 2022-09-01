@@ -40,5 +40,5 @@ AWS_S3_VERIFY = True
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN')
 
-CELERY_BROKER_URL = os.environ.get("REDIS_TLS_URL") + f"?ssl_cert_reqs={ssl.CERT_NONE}"
-CELERY_RESULT_BACKEND = os.environ.get("REDIS_TLS_URL") + f"?ssl_cert_reqs={ssl.CERT_NONE}"
+CELERY_BROKER_URL = os.environ.get("REDIS_TLS_URL") + f"?ssl_cert_reqs=none"
+CELERY_RESULT_BACKEND = os.environ.get("REDIS_TLS_URL") + f"?ssl_cert_reqs=none"
