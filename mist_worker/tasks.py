@@ -69,7 +69,9 @@ def tally_random_upvotes():
         is_hidden=True).prefetch_related('postvotes')
     
     posts = Post.objects.all()
-    emojis = ["❤️", "👀", "✌️", "🥲", "😉", "😂", "😤"]
+    emojis = ["🥳", "😂", "🥰", "😍", "🧐", "😭", "❤️", 
+    "😰", "👀", "👏", "💘", "😮", "🙄", "😇", "😳", "😶", 
+    "🤠", "😦", "🍿", "🔥", "🙂", "🤣"]
 
     for test_voter in final_test_voters:
         voted_postvote_ids = [
