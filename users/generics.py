@@ -19,25 +19,27 @@ def get_empty_keywords():
     return []
 
 def is_match(picture, confirm_picture):
-    import face_recognition
+    return True
+    # import face_recognition
 
-    if not picture or not confirm_picture: return False
+    # if not picture or not confirm_picture: return False
 
-    processed_picture = face_recognition.load_image_file(picture)
-    processed_confirm = face_recognition.load_image_file(confirm_picture)
-    picture_encodings = face_recognition.face_encodings(processed_picture)
-    confirm_encodings = face_recognition.face_encodings(processed_confirm)
+    # processed_picture = face_recognition.load_image_file(picture)
+    # processed_confirm = face_recognition.load_image_file(confirm_picture)
+    # picture_encodings = face_recognition.face_encodings(processed_picture)
+    # confirm_encodings = face_recognition.face_encodings(processed_confirm)
 
-    if not picture_encodings: return False
-    if not confirm_encodings: return False
+    # if not picture_encodings: return False
+    # if not confirm_encodings: return False
     
-    results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
-    return results[0]
+    # results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
+    # return results[0]
 
 def get_face_encoding(picture):
-    import face_recognition
+    return True
+    # import face_recognition
 
-    processed_picture = face_recognition.load_image_file(picture)
-    picture_encodings = face_recognition.face_encodings(processed_picture)
+    # processed_picture = face_recognition.load_image_file(picture)
+    # picture_encodings = face_recognition.face_encodings(processed_picture)
     
-    return picture_encodings
+    # return picture_encodings
