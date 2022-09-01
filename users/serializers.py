@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 import re
 from django.forms import ValidationError
-from profanity_check import predict
+# from profanity_check import predict
 from rest_framework import serializers
 
 from users.generics import get_current_time, get_face_encoding, is_match
@@ -43,27 +43,27 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
         if not re.match(alphanumeric_dash_and_underscores_only, username):
             raise ValidationError("abc, 123, _ and .")
-        [is_offensive] = predict([username])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language")
+        # [is_offensive] = predict([username])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language")
         return username.lower()
 
     def validate_first_name(self, first_name):
         letters_only = "^[A-Za-z]*$"
         if not re.match(letters_only, first_name):
             raise ValidationError("Letters only")
-        [is_offensive] = predict([first_name])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language")
+        # [is_offensive] = predict([first_name])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language")
         return first_name
 
     def validate_last_name(self, last_name):
         letters_only = "^[A-Za-z]*$"
         if not re.match(letters_only, last_name):
             raise ValidationError("Letters only")
-        [is_offensive] = predict([last_name])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language")
+        # [is_offensive] = predict([last_name])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language")
         return last_name
     
     def validate_date_of_birth(self, date_of_birth):
@@ -289,9 +289,9 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
         if users_with_matching_username:
             raise ValidationError("Username's taken")
         
-        [is_offensive] = predict([username])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language")
+        # [is_offensive] = predict([username])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language")
 
         return username
 

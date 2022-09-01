@@ -173,53 +173,53 @@ class PostTest(TestCase):
         ))
         return
 
-    def test_post_should_not_create_post_given_profanity(self):
-        test_post = Post(
-            title='fuck you',
-            body='fuck fuck fuck shit ass',
-            latitude=self.USC_LATITUDE,
-            longitude=self.USC_LONGITUDE,
-            timestamp=0,
-            author=self.user1,
-        )
-        serialized_post = PostSerializer(test_post).data
+    # def test_post_should_not_create_post_given_profanity(self):
+    #     test_post = Post(
+    #         title='fuck you',
+    #         body='fuck fuck fuck shit ass',
+    #         latitude=self.USC_LATITUDE,
+    #         longitude=self.USC_LONGITUDE,
+    #         timestamp=0,
+    #         author=self.user1,
+    #     )
+    #     serialized_post = PostSerializer(test_post).data
 
-        request = APIRequestFactory().post(
-            '/api/posts',
-            serialized_post,
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-        )
-        response = PostView.as_view({'post':'create'})(request)
+    #     request = APIRequestFactory().post(
+    #         '/api/posts',
+    #         serialized_post,
+    #         format='json',
+    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+    #     )
+    #     response = PostView.as_view({'post':'create'})(request)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(Post.objects.filter(
-            body=test_post.body,
-        ))
+    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    #     self.assertFalse(Post.objects.filter(
+    #         body=test_post.body,
+    #     ))
 
-    def test_post_should_not_create_post_given_hate_speech(self):
-        test_post = Post(
-            title='nigger',
-            body='faggot nigga nigger',
-            latitude=self.USC_LATITUDE,
-            longitude=self.USC_LONGITUDE,
-            timestamp=0,
-            author=self.user1,
-        )
-        serialized_post = PostSerializer(test_post).data
+    # def test_post_should_not_create_post_given_hate_speech(self):
+    #     test_post = Post(
+    #         title='nigger',
+    #         body='faggot nigga nigger',
+    #         latitude=self.USC_LATITUDE,
+    #         longitude=self.USC_LONGITUDE,
+    #         timestamp=0,
+    #         author=self.user1,
+    #     )
+    #     serialized_post = PostSerializer(test_post).data
 
-        request = APIRequestFactory().post(
-            '/api/posts',
-            serialized_post,
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-        )
-        response = PostView.as_view({'post':'create'})(request)
+    #     request = APIRequestFactory().post(
+    #         '/api/posts',
+    #         serialized_post,
+    #         format='json',
+    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+    #     )
+    #     response = PostView.as_view({'post':'create'})(request)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(Post.objects.filter(
-            body=test_post.body,
-        ))
+    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    #     self.assertFalse(Post.objects.filter(
+    #         body=test_post.body,
+    #     ))
         
     def test_get_should_return_all_posts_given_no_parameters(self):
         serialized_posts = [

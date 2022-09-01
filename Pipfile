@@ -30,7 +30,6 @@ celery = "*"
 redis = "*"
 django-redis = "*"
 django-celery-beat = "*"
-alt-profanity-check = "*"
 face-recognition = "*"
 python-dateutil = "*"
 

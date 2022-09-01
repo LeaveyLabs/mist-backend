@@ -1,5 +1,5 @@
 from psycopg2 import IntegrityError
-from profanity_check import predict
+# from profanity_check import predict
 from rest_framework import serializers
 from users.models import User
 
@@ -43,9 +43,9 @@ class PostSerializer(serializers.ModelSerializer):
         return votes_data
 
     def validate_body(self, body):
-        [is_offensive] = predict([body])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language.")
+        # [is_offensive] = predict([body])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language.")
         return body
 
 class PostVoteSerializer(serializers.ModelSerializer):
@@ -165,9 +165,9 @@ class CommentSerializer(serializers.ModelSerializer):
         except: return obj.calculate_flagcount()
     
     def validate_body(self, body):
-        [is_offensive] = predict([body])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language.")
+        # [is_offensive] = predict([body])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language.")
         return body
 
 class CommentVoteSerializer(serializers.ModelSerializer):
