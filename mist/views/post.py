@@ -206,6 +206,9 @@ class MistboxView(generics.ListAPIView):
 
     def get_queryset(self):
         user = get_user_from_request(self.request)
-        mistbox = Mistbox.objects.filter(user=user).prefetch_related('posts')
+        mistbox = Mistbox.objects\
+            .filter(user=user)\
+            .prefetch_related('posts')\
+            .order_by('-date')
         if not mistbox.posts.all(): return Post.objects.none()
         return mistbox.posts.all()

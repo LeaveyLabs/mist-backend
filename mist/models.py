@@ -7,6 +7,7 @@ from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
+from users.generics import get_current_date
 
 from users.models import User
 
@@ -257,6 +258,7 @@ class Message(models.Model):
 
 class Mistbox(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
+    date = models.DateField(default=get_current_date)
     
 class MistboxPost(models.Model):
     post = models.ForeignKey(Post, related_name='mistbox_post', on_delete=models.CASCADE)
