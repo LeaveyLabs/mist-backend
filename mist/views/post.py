@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from users.generics import get_user_from_request
 
-from ..serializers import PostSerializer
+from ..serializers import MistboxSerializer, PostSerializer
 from ..models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
 
 class Order(Enum):
@@ -202,13 +202,11 @@ class TaggedPostsView(generics.ListAPIView):
 
 class MistboxView(generics.ListAPIView):
     permission_classes = (IsAuthenticated, )
-    serializer_class = PostSerializer
+    serializer_class = MistboxSerializer
 
     def get_queryset(self):
         user = get_user_from_request(self.request)
-        mistbox = Mistbox.objects\
+        return Mistbox.objects\
             .filter(user=user)\
             .prefetch_related('posts')\
-            .order_by('-date')
-        if not mistbox.posts.all(): return Post.objects.none()
-        return mistbox.posts.all()
+            .order_by('-timestamp')

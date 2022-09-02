@@ -4,7 +4,7 @@ from rest_framework import serializers
 from users.models import User
 
 from users.serializers import ReadOnlyUserSerializer
-from .models import Block, CommentFlag, CommentVote, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
+from .models import Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.SerializerMethodField()
@@ -194,3 +194,13 @@ class FeatureSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feature
         fields = ('id', 'timestamp', 'post')
+
+class MistboxSerializer(serializers.Serializer):
+    posts = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Mistbox
+        fields = ('user', 'timestamp', 'posts')
+
+    def get_posts(self, obj):
+        return [PostSerializer(post).data for post in obj.posts.all()]

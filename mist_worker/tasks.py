@@ -17,16 +17,25 @@ def make_daily_mistboxes_task():
     make_daily_mistboxes()
 
 def make_daily_mistboxes():
-    from mist.models import Post, Mistbox, MistboxPost
+    from mist.models import Post, Mistbox
     from users.models import User
+    from datetime import datetime, timedelta
 
     for user in User.objects.all():
         if not user.keywords: continue
         
+        twenty_four_hours = timedelta(days=1).total_seconds()
+        mistbox_creation_time = datetime.now().timestamp()
+        yesterday_creation_time = mistbox_creation_time-twenty_four_hours
+
         postset = Post.objects.none()
         for keyword in user.keywords:
-            word_in_title = Post.objects.filter(title__icontains=keyword)
-            word_in_body = Post.objects.filter(body__icontains=keyword)
+            word_in_title = Post.objects.filter(
+                title__icontains=keyword,
+                time_created__gt=yesterday_creation_time)
+            word_in_body = Post.objects.filter(
+                body__icontains=keyword,
+                time_created__gt=yesterday_creation_time)
             postset = (word_in_title | word_in_body | postset)
             postset = postset.exclude(author=user)
         postset = postset.distinct()
@@ -35,9 +44,8 @@ def make_daily_mistboxes():
         mistbox = Mistbox.objects.create(user=user)
 
         for post in postset:
-            MistboxPost.objects.create(
-                mistbox=mistbox,
-                post=post)
+            post.mistboxes.add(mistbox)
+            post.save()
 
 @shared_task(name="tally_random_upvotes_task")
 def tally_random_upvotes_task():
@@ -96,9 +104,9 @@ def verify_profile_picture_task(user_instance):
     verify_profile_picture(user_instance)
 
 def verify_profile_picture(user_instance):
-    VERIFIFCATION_SERVER = os.environ.get(VERIFIFCATION_SERVER)
+    VERIFIFCATION_SERVER = os.environ.get('VERIFIFCATION_SERVER')
     verification_request = requests.post(
-        f'{VERIFIFCATION_SERVER}/api-verify-profile-picture/', 
+        f'{VERIFIFCATION_SERVER}api-verify-profile-picture/', 
         files={
             'picture': user_instance.picture,
             'confirm_picture': user_instance.confirm_picture,

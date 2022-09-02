@@ -6,7 +6,7 @@ from freezegun import freeze_time
 from unittest.mock import patch
 
 from mist_worker.tasks import make_daily_mistboxes, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
-from mist.models import Mistbox, MistboxPost, Post, PostVote
+from mist.models import Mistbox, Post, PostVote
 from push_notifications.models import APNSDevice
 from users.tests.generics import create_dummy_user_and_token_given_id, create_simple_uploaded_file_from_image_path
 
@@ -18,7 +18,6 @@ class NotificationServiceMock:
     def send_fake_notification(self, message):
         NotificationServiceMock.sent_notifications.append(message)
 
-@freeze_time("2020-01-01")
 @patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
     NotificationServiceMock.send_fake_notification)
 class TasksTest(TestCase):
@@ -84,8 +83,8 @@ class TasksTest(TestCase):
         make_daily_mistboxes()
         mistbox1 = Mistbox.objects.filter(user=self.user1)[0]
         mistbox2 = Mistbox.objects.filter(user=self.user2)[0]
-        mistboxposts1 = MistboxPost.objects.filter(mistbox_id=mistbox1)
-        mistboxposts2 = MistboxPost.objects.filter(mistbox_id=mistbox2)
+        mistboxposts1 = Post.objects.filter(mistboxes=mistbox1)
+        mistboxposts2 = Post.objects.filter(mistboxes=mistbox2)
         self.assertTrue(mistbox1)
         self.assertTrue(mistbox2)
         self.assertTrue(mistboxposts1)
@@ -113,6 +112,3 @@ class TasksTest(TestCase):
 
         self.assertFalse(self.user1.is_pending_verification)
         self.assertFalse(self.user2.is_pending_verification)
-
-        self.assertTrue(self.user1.is_verified)
-        self.assertFalse(self.user2.is_verified)

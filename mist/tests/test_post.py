@@ -8,7 +8,7 @@ from rest_framework.test import APIRequestFactory
 
 from mist.models import Comment, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, Word
 from mist.serializers import PostSerializer, PostVoteSerializer
-from mist.views.post import FavoritedPostsView, FeaturedPostsView, KeywordPostsView, MatchedPostsView, PostView, SubmittedPostsView, TaggedPostsView
+from mist.views.post import FavoritedPostsView, FeaturedPostsView, KeywordPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
 from mist_worker.tasks import make_daily_mistboxes
 from users.models import User
 
@@ -1281,8 +1281,8 @@ class MistboxViewTest(TestCase):
         )
 
         self.post3 = Post.objects.create(
-            title='FakeTitleForFirstPost',
-            body='FakeTextForFirstPost',
+            title='FakeTitleForThirdPost',
+            body='FakeTextForThirdPost',
             author=self.user1,
             timestamp=0,
         )
@@ -1293,12 +1293,13 @@ class MistboxViewTest(TestCase):
         serialized_post = PostSerializer(self.post1).data
         
         request = APIRequestFactory().get(
-            '/api/mistboxes/',
+            '/api/mistbox-posts/',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = KeywordPostsView.as_view()(request)
-        response_posts = response.data
+        response = MistboxView.as_view()(request)
+        response_mistboxes = response.data
+        response_posts = response_mistboxes[0].get('posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response_posts, [serialized_post])
@@ -1308,35 +1309,59 @@ class MistboxViewTest(TestCase):
         current_user_post = PostSerializer(self.post3).data
         
         request = APIRequestFactory().get(
-            '/api/mistboxes/',
+            '/api/mistbox-posts/',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = KeywordPostsView.as_view()(request)
-        response_posts = response.data
+        response = MistboxView.as_view()(request)
+        response_mistboxes = response.data
+        response_posts = response_mistboxes[0].get('posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(current_user_post not in response_posts)
+        self.assertNotIn(current_user_post, response_posts)
         return
     
     def test_get_should_empty_list_for_user_without_keywords(self):        
         request = APIRequestFactory().get(
-            '/api/mistboxes/',
+            '/api/mistbox-posts/',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
         )
-        response = KeywordPostsView.as_view()(request)
-        response_posts = response.data
+        response = MistboxView.as_view()(request)
+        response_mistboxes = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response_posts)
+        self.assertFalse(response_mistboxes)
         return
 
     def test_get_should_not_return_anything_given_stranger(self):
         request = APIRequestFactory().get(
-            '/api/mistboxes/',
+            '/api/mistbox-posts/',
         )
-        response = KeywordPostsView.as_view()(request)
+        response = MistboxView.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+    def test_get_should_not_return_posts_made_over_two_days_ago(self):
+        beginning_of_time_post = Post.objects.create(
+            title='FakeTitleForLastPost',
+            body='FakeTextForLastPost',
+            author=self.user1,
+            timestamp=0,
+            time_created=0,
+        )
+        serialized_post = PostSerializer(beginning_of_time_post).data
+
+        request = APIRequestFactory().get(
+            '/api/mistbox-posts/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MistboxView.as_view()(request)
+        response_mistboxes = response.data
+        response_posts = response_mistboxes[0].get('posts')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn(serialized_post, response_posts)
         return

@@ -1,7 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
@@ -13,6 +12,11 @@ from users.models import User
 
 def get_current_time():
     return datetime.now().timestamp()
+
+class Mistbox(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
+    date = models.DateField(default=get_current_date)
+    timestamp = models.FloatField(default=get_current_time)
 
 # Post Interactions
 class Post(models.Model):
@@ -26,7 +30,9 @@ class Post(models.Model):
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
     timestamp = models.FloatField(default=get_current_time)
+    time_created = models.FloatField(default=get_current_time)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    mistboxes = models.ManyToManyField(Mistbox, related_name='posts', blank=True)
 
     def _str_(self):
         return self.title
@@ -255,11 +261,3 @@ class Message(models.Model):
 
     def _str_(self):
         return self.text
-
-class Mistbox(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
-    date = models.DateField(default=get_current_date)
-    
-class MistboxPost(models.Model):
-    post = models.ForeignKey(Post, related_name='mistbox_post', on_delete=models.CASCADE)
-    mistbox = models.ForeignKey(Mistbox, related_name='posts', on_delete=models.CASCADE)
