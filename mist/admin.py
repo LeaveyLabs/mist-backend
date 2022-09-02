@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from users.models import User
-from .models import Block, CommentFlag, CommentVote, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
+from .models import Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, MistboxPost, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
 
 # Admin models
 class PostAdmin(admin.ModelAdmin):
@@ -49,6 +49,13 @@ class CommentFlagAdmin(admin.ModelAdmin):
     def comment_body(self, obj):
         return Comment.objects.get(id=obj.comment_id).body
 
+class MistboxAdmin(admin.ModelAdmin):
+    model = Mistbox
+    list_display = ("id", "user", "posts", "date")
+    
+    def posts(self, obj):
+        return MistboxPost.objects.filter(mistbox_id=obj.id)
+
 # Register your models here.
 admin.site.register(Post, PostAdmin)
 admin.site.register(Comment, CommentAdmin)
@@ -64,3 +71,4 @@ admin.site.register(Feature)
 admin.site.register(MatchRequest)
 admin.site.register(FriendRequest)
 admin.site.register(Favorite)
+admin.site.register(Mistbox, MistboxAdmin)
