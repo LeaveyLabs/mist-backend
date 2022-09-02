@@ -3,10 +3,11 @@ from io import BytesIO
 import os
 from tempfile import TemporaryFile
 from unittest import skipIf
+from unittest.mock import patch
 from PIL import Image
 from django.core import mail, cache
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from users.models import User
 from rest_framework import status
@@ -18,9 +19,16 @@ from users.views.user import MatchingPhoneNumbersView, NearbyUsersView, UserView
 from users.serializers import CompleteUserSerializer, ReadOnlyUserSerializer
 from users.models import Ban, PhoneNumberAuthentication, User, EmailAuthentication
 
-from generics import create_dummy_user_and_token_given_id
+from .generics import create_dummy_user_and_token_given_id
+
+class RemoteServiceMock:
+    service_queue = []
+
+    def verify_profile_picture(self, instance):
+        RemoteServiceMock.service_queue.append("verify_profile_picture")
 
 # Create your tests here.
+@skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
 class ThrottleTest(TestCase):
     def setUp(self):
         cache.cache.clear()
@@ -881,7 +889,6 @@ class UserViewPatchTest(TestCase):
         self.assertFalse(patched_user.picture)
         return
 
-    @skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
     def test_patch_should_update_picture_given_valid_picture(self):
         pre_patched_user = User.objects.get(pk=self.user1.pk)
         self.assertFalse(pre_patched_user.picture)
@@ -906,10 +913,10 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         return
 
-    @skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
-    def test_patch_should_verify_user_given_matching_picture_and_confirm_picture(self):
+    @patch('users.serializers.CompleteUserSerializer.start_verify_profile_picture_task', RemoteServiceMock.verify_profile_picture)
+    def test_patch_should_start_verification_service_given_picture_and_confirm_picture(self):
         request = APIRequestFactory().patch(
-            'api/users/', 
+            'api/users/',
             encode_multipart(boundary=BOUNDARY, data={
                 'picture': self.obama_image_file1,
                 'confirm_picture': self.obama_image_file2,
@@ -921,37 +928,14 @@ class UserViewPatchTest(TestCase):
         patched_user = User.objects.get(pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(patched_user.picture)
         self.assertEqual(self.user1.email, patched_user.email)
         self.assertEqual(self.user1.username, patched_user.username)
         self.assertEqual(self.user1.first_name, patched_user.first_name)
         self.assertEqual(self.user1.last_name, patched_user.last_name)
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
-        self.assertTrue(patched_user.is_verified)
-        return
-    
-    @skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
-    def test_patch_should_not_verify_user_given_unmatching_picture_and_confirm_picture(self):
-        request = APIRequestFactory().patch(
-            'api/users/', 
-            encode_multipart(boundary=BOUNDARY, data={
-                'picture': self.obama_image_file1,
-                'confirm_picture': self.kevin_image_file1,
-            }),
-            content_type=MULTIPART_CONTENT,
-            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
-        )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
-        patched_user = User.objects.get(pk=self.user1.pk)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(patched_user.picture)
-        self.assertEqual(self.user1.email, patched_user.email)
-        self.assertEqual(self.user1.username, patched_user.username)
-        self.assertEqual(self.user1.first_name, patched_user.first_name)
-        self.assertEqual(self.user1.last_name, patched_user.last_name)
-        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
-        self.assertFalse(patched_user.is_verified)
+        self.assertTrue(patched_user.confirm_picture)
+        self.assertIn('verify_profile_picture', RemoteServiceMock.service_queue)
         return
     
     def test_patch_should_not_update_picture_given_invalid_picture(self):

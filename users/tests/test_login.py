@@ -37,7 +37,6 @@ class RequestLoginCodeViewTest(TestCase):
             },
         )
         response = RequestLoginCodeView.as_view()(request)
-        print(response.data)
         messages = TwillioTestClientMessages.created
         matching_messages = [
             message.get('to') == self.user1.phone_number

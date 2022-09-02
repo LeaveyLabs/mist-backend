@@ -88,3 +88,14 @@ def tally_random_upvotes():
             )
         except:
             continue
+
+@shared_task(name="verify_profile_picture_task")
+def verify_profile_picture_task(user_instance):
+    verify_profile_picture(user_instance)
+
+def verify_profile_picture(user_instance):
+    from users.generics import is_match
+    user_instance.is_verified = is_match(
+        user_instance.picture, 
+        user_instance.confirm_picture)
+    user_instance.save()

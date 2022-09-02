@@ -33,7 +33,6 @@ from mist.views.post import FavoritedPostsView, FeaturedPostsView, FriendPostsVi
 from mist.views.tag import TagView
 from mist.views.post_vote import PostVoteView
 from mist.views.word import WordView
-from users.views.profile import VerifyProfilePicture
 from users.views.user import UserView, NearbyUsersView, MatchingPhoneNumbersView
 from users.views.register import RegisterUserEmailView, RegisterPhoneNumberView, ValidateUserEmailView, ValidatePhoneNumberView, ValidateUsernameView
 from users.views.login import RequestLoginCodeView, ValidateLoginCodeView
@@ -66,8 +65,6 @@ urlpatterns = [
     path('api-register-email/', RegisterUserEmailView.as_view()),
     path('api-validate-email/', ValidateUserEmailView.as_view()),
     path('api-validate-username/', ValidateUsernameView.as_view()),
-    # Verification
-    path('api-verify-profile-picture/', VerifyProfilePicture.as_view()),
     # Phone Numbers
     path('api-register-phone-number/', RegisterPhoneNumberView.as_view()),
     path('api-validate-phone-number/', ValidatePhoneNumberView.as_view()),

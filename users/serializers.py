@@ -3,8 +3,9 @@ import re
 from django.forms import ValidationError
 # from profanity_check import predict
 from rest_framework import serializers
+from mist_worker.tasks import verify_profile_picture_task
 
-from users.generics import get_current_time, get_face_encoding, is_match
+from users.generics import get_current_time
 from .models import Ban, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 from phonenumber_field.serializerfields import PhoneNumberField
 
@@ -173,6 +174,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         user.set_unusable_password()
         user.save()
         return user
+
+    def start_verify_profile_picture_task(self, instance):
+        verify_profile_picture_task.delay(instance)
     
     def update(self, instance, validated_data):
         instance.email = validated_data.get('email', instance.email).lower()
@@ -186,7 +190,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.picture = validated_data.get('picture', instance.picture)
         instance.confirm_picture = validated_data.get('confirm_picture', instance.confirm_picture)
         if instance.picture and instance.confirm_picture:
-            instance.is_verified = is_match(instance.picture, instance.confirm_picture)
+            self.start_verify_profile_picture_task(instance)
         else:
             instance.is_verified = False
         instance.save()
@@ -194,38 +198,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     
     def partial_update(self, instance, validated_data):
         return self.update(self, instance, validated_data)
-
-class ProfilePictureVerificationSerializer(serializers.Serializer):
-    picture = serializers.ImageField()
-    confirm_picture = serializers.ImageField()
-
-    def validate(self, data):
-        picture = data.get('picture')
-        confirm_picture = data.get('confirm_picture')
-
-        if not get_face_encoding(picture):
-            raise serializers.ValidationError(
-                {
-                    "picture": "No face detected in picture"
-                }
-            )
-        
-        if not get_face_encoding(confirm_picture):
-            raise serializers.ValidationError(
-                {
-                    "confirm_picture": "No face detected in confirm picture"
-                }
-            )
-
-        if not is_match(picture, confirm_picture):
-            raise serializers.ValidationError(
-                {
-                    "picture": "Does not match",
-                    "confirm_picture": "Does not match",
-                }
-            )
-        
-        return data
 
 class UserEmailRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
