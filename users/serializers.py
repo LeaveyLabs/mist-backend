@@ -25,7 +25,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         'first_name', 'last_name', 'picture', 
         'confirm_picture', 'phone_number', 
         'date_of_birth', 'sex', 'latitude', 
-        'longitude', 'keywords', 'is_verified')
+        'longitude', 'keywords', 
+        'is_verified', 'is_pending_verification')
         extra_kwargs = {
             'picture': {'required': True},
             'phone_number': {'required': True},
@@ -190,8 +191,10 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.picture = validated_data.get('picture', instance.picture)
         instance.confirm_picture = validated_data.get('confirm_picture', instance.confirm_picture)
         if instance.picture and instance.confirm_picture:
+            instance.is_pending_verification = True
             self.start_verify_profile_picture_task(instance)
         else:
+            instance.is_pending_verification = False
             instance.is_verified = False
         instance.save()
         return instance

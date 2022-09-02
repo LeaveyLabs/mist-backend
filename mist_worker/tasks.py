@@ -1,4 +1,6 @@
+import os
 import uuid
+import requests
 from celery import shared_task
 
 @shared_task(name="send_mistbox_notifications_task")
@@ -94,8 +96,14 @@ def verify_profile_picture_task(user_instance):
     verify_profile_picture(user_instance)
 
 def verify_profile_picture(user_instance):
-    from users.generics import is_match
-    user_instance.is_verified = is_match(
-        user_instance.picture, 
-        user_instance.confirm_picture)
+    VERIFIFCATION_SERVER = os.environ.get(VERIFIFCATION_SERVER)
+    verification_request = requests.post(
+        f'{VERIFIFCATION_SERVER}/api-verify-profile-picture/', 
+        files={
+            'picture': user_instance.picture,
+            'confirm_picture': user_instance.confirm_picture,
+        },
+    )
+    user_instance.is_verified = (verification_request.status_code == 200)
+    user_instance.is_pending_verification = False
     user_instance.save()

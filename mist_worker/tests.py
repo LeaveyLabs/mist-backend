@@ -5,10 +5,10 @@ from django.test import TestCase
 from freezegun import freeze_time
 from unittest.mock import patch
 
-from mist_worker.tasks import make_daily_mistboxes, send_mistbox_notifications, tally_random_upvotes
+from mist_worker.tasks import make_daily_mistboxes, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
 from mist.models import Mistbox, MistboxPost, Post, PostVote
 from push_notifications.models import APNSDevice
-from users.tests.generics import create_dummy_user_and_token_given_id
+from users.tests.generics import create_dummy_user_and_token_given_id, create_simple_uploaded_file_from_image_path
 
 # Create your tests here.
 
@@ -55,6 +55,25 @@ class TasksTest(TestCase):
         APNSDevice.objects.create(user=self.user1, registration_id='1')
         APNSDevice.objects.create(user=self.user1, registration_id='2')
 
+        self.obama_image_file1 = create_simple_uploaded_file_from_image_path(
+            'test_assets/obama1.jpeg', 
+            'obama1.jpeg')
+        self.obama_image_file2 = create_simple_uploaded_file_from_image_path(
+            'test_assets/obama2.jpeg', 
+            'obama2.jpeg')
+        self.kevin_image_file1 = create_simple_uploaded_file_from_image_path(
+            'test_assets/kevin1.jpeg', 
+            'kevin1.jpeg')
+        self.kevin_image_file2 = create_simple_uploaded_file_from_image_path(
+            'test_assets/kevin2.jpeg', 
+            'kevin2.jpeg')
+        self.adam_image_file1 = create_simple_uploaded_file_from_image_path(
+            'test_assets/adam1.jpeg', 
+            'adam1.jpeg')
+        self.adam_image_file2 = create_simple_uploaded_file_from_image_path(
+            'test_assets/adam2.jpeg', 
+            'adam2.jpeg')
+
     def test_send_mistbox_notifications(self):
         send_mistbox_notifications()
         self.assertTrue(NotificationServiceMock.sent_notifications)
@@ -79,3 +98,21 @@ class TasksTest(TestCase):
         post_votes_3 = PostVote.objects.filter(post=self.post3)
         self.assertTrue(
             post_votes_1 or post_votes_2 or post_votes_3)
+
+    def test_verify_profile_picture(self):
+        self.user1.picture = self.kevin_image_file1
+        self.user1.confirm_picture = self.kevin_image_file2
+        self.user1.save()
+
+        self.user2.picture = self.obama_image_file1
+        self.user2.confirm_picture = self.kevin_image_file2
+        self.user2.save()
+
+        verify_profile_picture(self.user1)
+        verify_profile_picture(self.user2)
+
+        self.assertFalse(self.user1.is_pending_verification)
+        self.assertFalse(self.user2.is_pending_verification)
+
+        self.assertTrue(self.user1.is_verified)
+        self.assertFalse(self.user2.is_verified)
