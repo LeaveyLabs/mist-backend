@@ -1,3 +1,5 @@
+import os
+from unittest import skipIf
 from django.test import TestCase
 
 # Create your tests here.
@@ -98,6 +100,7 @@ class TasksTest(TestCase):
         self.assertTrue(
             post_votes_1 or post_votes_2 or post_votes_3)
 
+    @skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
     def test_verify_profile_picture(self):
         self.user1.picture = self.kevin_image_file1
         self.user1.confirm_picture = self.kevin_image_file2
