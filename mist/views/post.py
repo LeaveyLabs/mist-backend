@@ -209,4 +209,4 @@ class MistboxView(generics.ListAPIView):
         return Mistbox.objects\
             .filter(user=user)\
             .prefetch_related('posts')\
-            .order_by('-timestamp')
+            .order_by('-creation_time')

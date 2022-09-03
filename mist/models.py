@@ -15,7 +15,7 @@ def get_current_time():
 
 class Mistbox(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
-    timestamp = models.FloatField(default=get_current_time)
+    creation_time = models.FloatField(default=get_current_time)
 
 # Post Interactions
 class Post(models.Model):

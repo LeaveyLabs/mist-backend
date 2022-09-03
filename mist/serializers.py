@@ -197,10 +197,14 @@ class FeatureSerializer(serializers.ModelSerializer):
 
 class MistboxSerializer(serializers.Serializer):
     posts = serializers.SerializerMethodField()
+    creation_time = serializers.SerializerMethodField()
 
     class Meta:
         model = Mistbox
-        fields = ('user', 'timestamp', 'posts')
+        fields = ('user', 'creation_time', 'posts')
+
+    def get_creation_time(self, obj):
+        return obj.creation_time
 
     def get_posts(self, obj):
         return [PostSerializer(post).data for post in obj.posts.all()]
