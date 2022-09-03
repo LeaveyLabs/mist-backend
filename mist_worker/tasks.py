@@ -40,7 +40,6 @@ def make_daily_mistboxes():
             postset = postset.exclude(author=user)
         postset = postset.distinct()
 
-        Mistbox.objects.filter(user=user).delete()
         mistbox = Mistbox.objects.create(user=user)
 
         for post in postset:
