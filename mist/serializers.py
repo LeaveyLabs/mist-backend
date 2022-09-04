@@ -47,6 +47,14 @@ class PostSerializer(serializers.ModelSerializer):
         #     raise serializers.ValidationError("Avoid offensive language.")
         return body
 
+    def convert_votes_to_emoji_tuple(self, vote_queryset):
+        emoji_tuple = {}
+        for vote in vote_queryset.all().iterator():
+            if vote.emoji not in emoji_tuple:
+                emoji_tuple[vote.emoji] = 0
+            emoji_tuple[vote.emoji] += 1
+        return emoji_tuple
+
 class PostVoteSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostVote

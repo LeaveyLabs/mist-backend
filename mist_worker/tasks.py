@@ -79,9 +79,9 @@ def verify_profile_picture_task(user_instance):
     verify_profile_picture(user_instance)
 
 def verify_profile_picture(user_instance):
-    VERIFIFCATION_SERVER = os.environ.get('VERIFIFCATION_SERVER')
+    VERIFICATION_SERVER = os.environ.get('VERIFICATION_SERVER')
     verification_request = requests.post(
-        f'{VERIFIFCATION_SERVER}api-verify-profile-picture/', 
+        f'{VERIFICATION_SERVER}api-verify-profile-picture/', 
         files={
             'picture': user_instance.picture,
             'confirm_picture': user_instance.confirm_picture,
