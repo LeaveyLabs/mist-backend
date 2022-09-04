@@ -158,3 +158,14 @@ class NearbyUsersView(generics.ListAPIView):
             requesting_user.latitude,
             requesting_user.longitude)
         return nearby_users
+
+class UserPopulationView(generics.RetrieveAPIView):
+    permission_classes = (IsAuthenticated, )
+    
+    def retrieve(self, request, *args, **kwargs):
+        return Response(
+            {
+                "population": User.objects.count(),
+            },
+            status.HTTP_200_OK,
+        )

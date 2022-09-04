@@ -15,7 +15,7 @@ from rest_framework.test import APIRequestFactory
 from users.tests.generics import create_simple_uploaded_file_from_image_path
 
 from users.views.register import RegisterUserEmailView
-from users.views.user import MatchingPhoneNumbersView, NearbyUsersView, UserView
+from users.views.user import MatchingPhoneNumbersView, NearbyUsersView, UserPopulationView, UserView
 from users.serializers import CompleteUserSerializer, ReadOnlyUserSerializer
 from users.models import Ban, PhoneNumberAuthentication, User, EmailAuthentication
 
@@ -1172,3 +1172,21 @@ class NearbyUsersViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertCountEqual(response_users, serialized_users)
         return
+
+class UserPopulationViewTest(TestCase):
+    def setUp(self):
+        self.population_size = 6
+
+        for i in range(self.population_size):
+            self.user, self.auth_token = create_dummy_user_and_token_given_id(i)
+    
+    def test_get_should_return_user_population(self):
+        request = APIRequestFactory().get(
+            'api/get-user-population/',
+            HTTP_AUTHORIZATION=f"Token {self.auth_token}"
+        )
+        response = UserPopulationView.as_view()(request)
+        response_population_size = response.data.get('population')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_population_size, self.population_size)

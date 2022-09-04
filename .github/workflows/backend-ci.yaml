@@ -32,7 +32,8 @@ jobs:
         APNS_AUTH_KEY_FILE_TEXT: ${{secrets.APNS_AUTH_KEY_FILE_TEXT}}
         APNS_TOPIC: ${{secrets.APNS_TOPIC}}
         REDIS_URL: ${{secrets.REDIS_URL}}
-        SKIP_SLOW_TESTS: ${{secrets.SKIP_SLOW_TESTS}}
+        SKIP_SLOW_TESTS: 0
+        VERIFICATION_SERVER: ${{secrets.VERIFICATION_SERVER}}
 
     services:
       postgres:
