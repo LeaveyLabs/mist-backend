@@ -265,11 +265,11 @@ class Message(models.Model):
         return self.text
 
 class Mistbox(models.Model):
-    NUMBER_OF_KEYWORDS = 5
-    MAX_DAILY_SWIPES = 5
+    NUMBER_OF_KEYWORDS = 10
+    MAX_DAILY_SWIPES = 10
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
-    keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
+    keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords, blank=True)
     creation_time = models.FloatField(default=get_current_time)
     posts = models.ManyToManyField(Post, blank=True)
     swipecount = models.IntegerField(default=0)

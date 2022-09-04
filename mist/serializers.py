@@ -195,9 +195,8 @@ class FeatureSerializer(serializers.ModelSerializer):
         model = Feature
         fields = ('id', 'timestamp', 'post')
 
-class MistboxSerializer(serializers.Serializer):
+class MistboxSerializer(serializers.ModelSerializer):
     posts = serializers.SerializerMethodField()
-    creation_time = serializers.SerializerMethodField()
 
     class Meta:
         model = Mistbox
@@ -206,9 +205,9 @@ class MistboxSerializer(serializers.Serializer):
 
     def validate_keywords(self, keywords):
         return [keyword.lower() for keyword in keywords]
-
-    def get_creation_time(self, obj):
-        return obj.creation_time
-
+    
     def get_posts(self, obj):
-        return [PostSerializer(post).data for post in obj.posts.all()]
+        posts = []
+        try: posts = obj.posts
+        except: posts = Post.objects.none()
+        return [PostSerializer(post).data for post in posts.all()]

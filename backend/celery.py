@@ -13,7 +13,7 @@ app.autodiscover_tasks()
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    from mist_worker.tasks import send_mistbox_notifications_task
-    # sender.add_periodic_task(crontab(hour=16, minute=59), make_daily_mistboxes_task.s())
+    from mist_worker.tasks import reset_mistbox_swipecount_task, send_mistbox_notifications_task
+    sender.add_periodic_task(crontab(hour=17, minute=0), reset_mistbox_swipecount_task.s())
     sender.add_periodic_task(crontab(hour=17, minute=0), send_mistbox_notifications_task.s())
     sender.add_periodic_task(3600, tally_random_upvotes_task.s())

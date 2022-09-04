@@ -12,38 +12,15 @@ def send_mistbox_notifications():
     APNSDevice.objects.all().send_message(
         "Your mistbox is ready! See who wrote about you today 👀")
 
-# @shared_task(name="make_daily_mistboxes_task")
-# def make_daily_mistboxes_task():
-#     make_daily_mistboxes()
+@shared_task(name="reset_mistbox_swipecount_task")
+def reset_mistbox_swipecount_task():
+    reset_mistbox_swipecount()
 
-# def make_daily_mistboxes():
-#     from mist.models import Post, Mistbox
-#     from datetime import datetime, timedelta
-
-#     for mistbox in Mistbox.objects.all():
-#         if not user.keywords: continue
-        
-#         twenty_four_hours = timedelta(days=1).total_seconds()
-#         mistbox_creation_time = datetime.now().timestamp()
-#         yesterday_creation_time = mistbox_creation_time-twenty_four_hours
-
-#         postset = Post.objects.none()
-#         for keyword in user.keywords:
-#             word_in_title = Post.objects.filter(
-#                 title__icontains=keyword,
-#                 time_created__gt=yesterday_creation_time)
-#             word_in_body = Post.objects.filter(
-#                 body__icontains=keyword,
-#                 time_created__gt=yesterday_creation_time)
-#             postset = (word_in_title | word_in_body | postset)
-#             postset = postset.exclude(author=user)
-#         postset = postset.distinct()
-
-#         mistbox = Mistbox.objects.create(user=user)
-
-#         for post in postset:
-#             post.mistboxes.add(mistbox)
-#             post.save()
+def reset_mistbox_swipecount():
+    from mist.models import Mistbox
+    for mistbox in Mistbox.objects.all():
+        mistbox.swipecount = 0
+        mistbox.save()
 
 @shared_task(name="tally_random_upvotes_task")
 def tally_random_upvotes_task():

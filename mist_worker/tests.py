@@ -7,8 +7,8 @@ from django.test import TestCase
 from freezegun import freeze_time
 from unittest.mock import patch
 
-from mist_worker.tasks import send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
-from mist.models import Post, PostVote
+from mist_worker.tasks import reset_mistbox_swipecount, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
+from mist.models import Mistbox, Post, PostVote
 from push_notifications.models import APNSDevice
 from users.tests.generics import create_dummy_user_and_token_given_id, create_simple_uploaded_file_from_image_path
 
@@ -30,26 +30,22 @@ class TasksTest(TestCase):
         self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
         self.user3, self.auth_token3 = create_dummy_user_and_token_given_id(3)
 
-        self.user1.keywords = ["hello", "these", "are", "my", "keywords"]
-        self.user2.keywords = ["hello", "these", "are", "my", "keywords"]
-
-        self.user1.save()
-        self.user2.save()
+        keywords = ["these", "are", "test", "keywords"]
 
         self.post1 = Post.objects.create(
-            title=self.user1.keywords[0],
-            body=self.user1.keywords[1],
+            title=keywords[0],
+            body=keywords[1],
             author=self.user2,
         )
         self.post2 = Post.objects.create(
-            title=self.user1.keywords[2],
-            body=self.user2.keywords[0],
+            title=keywords[2],
+            body=keywords[0],
             author=self.user3,
 
         )
         self.post3 = Post.objects.create(
-            title=self.user2.keywords[0],
-            body=self.user2.keywords[1],
+            title=keywords[0],
+            body=keywords[1],
             author=self.user1,
         )
 
@@ -80,17 +76,16 @@ class TasksTest(TestCase):
         self.assertTrue(NotificationServiceMock.sent_notifications)
         for notification in NotificationServiceMock.sent_notifications:
             self.assertIn('mistbox', notification)
-    
-    # def test_make_daily_mistboxes(self):
-    #     make_daily_mistboxes()
-    #     mistbox1 = Mistbox.objects.filter(user=self.user1)[0]
-    #     mistbox2 = Mistbox.objects.filter(user=self.user2)[0]
-    #     mistboxposts1 = Post.objects.filter(mistboxes=mistbox1)
-    #     mistboxposts2 = Post.objects.filter(mistboxes=mistbox2)
-    #     self.assertTrue(mistbox1)
-    #     self.assertTrue(mistbox2)
-    #     self.assertTrue(mistboxposts1)
-    #     self.assertTrue(mistboxposts2)
+
+    def test_reset_mistbox_swipecount(self):
+        for mistbox in Mistbox.objects.all().iterator():
+            mistbox.swipecount = 10
+            mistbox.save()
+        
+        reset_mistbox_swipecount()
+
+        for mistbox in Mistbox.objects.all().iterator():
+            self.assertEqual(mistbox.swipecount, 0)
 
     def test_tally_random_upvotes(self):
         tally_random_upvotes()

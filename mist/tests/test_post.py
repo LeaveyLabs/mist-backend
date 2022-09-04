@@ -8,7 +8,7 @@ from rest_framework.test import APIRequestFactory
 
 from mist.models import Comment, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, Word
 from mist.serializers import PostSerializer, PostVoteSerializer
-from mist.views.post import FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
+from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
 from users.models import User
 
 @freeze_time("2020-01-01")
@@ -127,10 +127,10 @@ class PostTest(TestCase):
         self.assertEqual(word4.calculate_occurrences(), 1)
 
     def test_save_should_add_to_mistboxes_with_keywords_in_post(self):
-        mistbox = Mistbox.objects.create(
-            user=self.user1,
-            keywords=['these', 'are', 'cool', 'keywords'],
-        )
+        mistbox = Mistbox.objects.create(user=self.user1)
+        mistbox.keywords = ['these', 'are', 'cool', 'keywords']
+        mistbox.save()
+
         post1 = Post.objects.create(
             title='these',
             body='cool',
@@ -142,6 +142,7 @@ class PostTest(TestCase):
             author=self.user1,
         )
         test_mistbox = Mistbox.objects.get(id=mistbox.id)
+
         self.assertIn(post1, test_mistbox.posts.all())
         self.assertIn(post2, test_mistbox.posts.all())
         return
@@ -1189,7 +1190,7 @@ class MistboxViewTest(TestCase):
         self.user2.save()
         self.auth_token2 = Token.objects.create(user=self.user2)
 
-        user1_mistbox = Mistbox.objects.get(user=self.user1)
+        user1_mistbox = Mistbox.objects.create(user=self.user1)
         user1_mistbox.keywords.append('FakeTitleForFirstPost')
         user1_mistbox.save()
 
@@ -1218,13 +1219,13 @@ class MistboxViewTest(TestCase):
         serialized_post = PostSerializer(self.post1).data
         
         request = APIRequestFactory().get(
-            '/api/mistbox-posts/',
+            '/api/mistbox/',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = MistboxView.as_view()(request)
-        response_mistboxes = response.data
-        response_posts = response_mistboxes[0].get('posts')
+        response_mistbox = response.data
+        response_posts = response_mistbox.get('posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response_posts, [serialized_post])
@@ -1234,27 +1235,40 @@ class MistboxViewTest(TestCase):
         current_user_post = PostSerializer(self.post3).data
         
         request = APIRequestFactory().get(
-            '/api/mistbox-posts/',
+            '/api/mistbox/',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = MistboxView.as_view()(request)
-        response_mistboxes = response.data
-        response_posts = response_mistboxes[0].get('posts')
+        response_mistbox = response.data
+        response_posts = response_mistbox.get('posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotIn(current_user_post, response_posts)
         return
-    
-    def test_get_should_empty_list_of_posts_for_user_without_keywords(self):        
+
+    def test_get_should_return_404_for_user_without_mistbox(self):        
         request = APIRequestFactory().get(
-            '/api/mistbox-posts/',
+            '/api/mistbox/',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
         )
         response = MistboxView.as_view()(request)
-        response_mistboxes = response.data
-        response_posts = response_mistboxes[0].get('posts')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        return
+
+    def test_get_should_empty_list_of_posts_for_user_without_keywords(self):     
+        Mistbox.objects.create(user=self.user2)
+
+        request = APIRequestFactory().get(
+            '/api/mistbox/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = MistboxView.as_view()(request)
+        response_mistbox = response.data
+        response_posts = response_mistbox.get('posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response_posts)
@@ -1267,6 +1281,62 @@ class MistboxViewTest(TestCase):
         response = MistboxView.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+    def test_patch_should_update_keywords_given_user_with_mistbox_and_keywords(self):
+        new_keywords = ["new", "keywords"]
+
+        request = APIRequestFactory().patch(
+            '/api/mistbox/',
+            {
+                "keywords": new_keywords
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MistboxView.as_view()(request)
+        patched_mistbox = Mistbox.objects.get(user=self.user1)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(patched_mistbox.keywords, new_keywords)
+        return
+
+    def test_patch_should_create_mistbox_given_user_without_mistbox_and_keywords(self):
+        new_keywords = ["new", "keywords"]
+
+        request = APIRequestFactory().patch(
+            '/api/mistbox/',
+            {
+                "keywords": new_keywords
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = MistboxView.as_view()(request)
+        matching_mistboxes = Mistbox.objects.filter(user=self.user2)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(matching_mistboxes)
+        self.assertEqual(matching_mistboxes[0].keywords, new_keywords)
+        return
+    
+    def test_patch_should_create_mistbox_given_user_without_mistbox_and_no_keywords(self):
+        new_keywords = []
+
+        request = APIRequestFactory().patch(
+            '/api/mistbox/',
+            {
+                "keywords": new_keywords,
+            },
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = MistboxView.as_view()(request)
+        matching_mistboxes = Mistbox.objects.filter(user=self.user2)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(matching_mistboxes)
+        self.assertEqual(matching_mistboxes[0].keywords, new_keywords)
         return
 
     # def test_get_should_not_return_posts_made_over_two_days_ago(self):
@@ -1292,5 +1362,115 @@ class MistboxViewTest(TestCase):
     #     self.assertNotIn(serialized_post, response_posts)
     #     return
 
-    def test_delete_should_delete_mistbox_post_given_id(self):
-        return
+class DeleteMistboxPostViewTest(TestCase):
+    def setUp(self):
+        self.user1 = User(
+            email='TestUser1@usc.edu',
+            username='TestUser1',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user1.set_password("TestPassword1@98374")
+        self.user1.save()
+        self.auth_token1 = Token.objects.create(user=self.user1)
+
+        self.user2 = User(
+            email='TestUser2@usc.edu',
+            username='TestUser2',
+            date_of_birth=date(2000, 1, 1),
+        )
+        self.user2.set_password("TestPassword2@98374")
+        self.user2.save()
+        self.auth_token2 = Token.objects.create(user=self.user2)
+
+        user1_mistbox = Mistbox.objects.create(user=self.user1)
+        user1_mistbox.keywords.append('FakeTitleForFirstPost')
+        user1_mistbox.save()
+
+        self.post1 = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            body='FakeTextForFirstPost',
+            author=self.user2,
+            timestamp=0,
+        )
+
+        self.post2 = Post.objects.create(
+            title='FakeTitleForSecondPost',
+            body='FakeTextForSecondPost',
+            author=self.user2,
+            timestamp=0,
+        )
+
+        self.post3 = Post.objects.create(
+            title='FakeTitleForThirdPost',
+            body='FakeTextForThirdPost',
+            author=self.user1,
+            timestamp=0,
+        )
+
+    def test_delete_should_return_404_given_nonexistent_mistbox(self):
+        request = APIRequestFactory().delete(
+            f'api/delete-mistbox-posts/?post={self.post2.id}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = DeleteMistboxPostView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_should_return_404_given_nonexistent_post_id(self):
+        nonexistent_post_id = 1333
+
+        mistbox_before_delete = Mistbox.objects.get(user=self.user1)
+
+        request = APIRequestFactory().delete(
+            f'api/delete-mistbox-posts/?post={nonexistent_post_id}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = DeleteMistboxPostView.as_view()(request)
+
+        mistbox_after_delete = Mistbox.objects.get(user=self.user1)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(mistbox_before_delete, mistbox_after_delete)
+
+    def test_delete_should_return_404_given_post_not_in_mistbox(self):
+        mistbox_before_delete = Mistbox.objects.get(user=self.user1)
+
+        request = APIRequestFactory().delete(
+            f'api/delete-mistbox-posts/?post={self.post2.id}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = DeleteMistboxPostView.as_view()(request)
+
+        mistbox_after_delete = Mistbox.objects.get(user=self.user1)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(mistbox_before_delete, mistbox_after_delete)
+
+    def test_delete_should_return_400_given_exceeded_daily_limit(self):
+        mistbox_before_delete = Mistbox.objects.get(user=self.user1)
+        mistbox_before_delete.swipecount = Mistbox.MAX_DAILY_SWIPES
+        mistbox_before_delete.save()
+
+        request = APIRequestFactory().delete(
+            f'api/delete-mistbox-posts/?post={self.post1.id}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = DeleteMistboxPostView.as_view()(request)
+
+        mistbox_after_delete = Mistbox.objects.get(user=self.user1)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(mistbox_before_delete, mistbox_after_delete)
+
+    def test_delete_should_delete_post_from_mistbox_given_existing_post(self):
+        self.assertIn(self.post1, Mistbox.objects.get(user=self.user1).posts.all())
+        
+        request = APIRequestFactory().delete(
+            f'api/delete-mistbox-posts/?post={self.post1.id}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = DeleteMistboxPostView.as_view()(request)
+        mistbox = Mistbox.objects.get(user=self.user1)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertNotIn(self.post1, mistbox.posts.all())

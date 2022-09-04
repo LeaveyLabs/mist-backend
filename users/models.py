@@ -46,11 +46,6 @@ class User(AbstractUser):
     class Meta:
         db_table = 'auth_user'
 
-    def save(self, *args, **kwargs):
-        from mist.models import Mistbox
-        super(User, self).save(*args, **kwargs)
-        Mistbox.objects.create(user=self)
-
 class EmailAuthentication(models.Model):
     def get_random_code():
         return f'{random.randint(0, 999_999):06}'
