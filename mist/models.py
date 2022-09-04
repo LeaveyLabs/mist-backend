@@ -101,7 +101,7 @@ class PostVote(models.Model):
     DEFAULT_EMOJI = "❤️"
 
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postvotes')
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='votes')
     timestamp = models.FloatField(default=get_current_time)
     rating = models.IntegerField(default=AVG_RATING)
     emoji = models.CharField(max_length=5, default=DEFAULT_EMOJI)

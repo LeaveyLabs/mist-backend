@@ -36,11 +36,10 @@ class PostSerializer(serializers.ModelSerializer):
         return ReadOnlyUserSerializer(obj.author).data
     
     def get_votes(self, obj):
-        vote_instances = PostVote.objects.filter(post_id=obj.id)
-        votes_data = []
-        for vote_instance in vote_instances:
-            votes_data.append(PostVoteSerializer(vote_instance).data)
-        return votes_data
+        votes = []
+        try: votes = obj.votes
+        except: votes = PostVote.objects.filter(post_id=obj.id)
+        return [PostVoteSerializer(vote).data for vote in votes.all()]
 
     def validate_body(self, body):
         # [is_offensive] = predict([body])
