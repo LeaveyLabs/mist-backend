@@ -29,7 +29,7 @@ from mist.views.post_flag import PostFlagView
 from mist.views.friend import FriendRequestView, FriendshipView
 from mist.views.match import MatchRequestView, MatchView
 from mist.views.message import ConversationView, MessageView
-from mist.views.post import FavoritedPostsView, FeaturedPostsView, FriendPostsView, KeywordPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
+from mist.views.post import FavoritedPostsView, FeaturedPostsView, FriendPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
 from mist.views.tag import TagView
 from mist.views.post_vote import PostVoteView
 from mist.views.word import WordView
@@ -87,7 +87,6 @@ urlpatterns = [
     path('api/friend-posts/', FriendPostsView.as_view()),
     path('api/favorited-posts/', FavoritedPostsView.as_view()),
     path('api/submitted-posts/', SubmittedPostsView.as_view()),
-    path('api/keyword-posts/', KeywordPostsView.as_view()),
     path('api/mistbox-posts/', MistboxView.as_view()),
     path('api/tagged-posts/', TaggedPostsView.as_view()),
     path('api/matching-phone-numbers/', MatchingPhoneNumbersView.as_view()),

@@ -1,21 +1,18 @@
 from datetime import datetime
 from decimal import Decimal
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
-from users.generics import get_current_date
+from users.generics import get_empty_keywords
 
 from users.models import User
 
 def get_current_time():
     return datetime.now().timestamp()
-
-class Mistbox(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
-    creation_time = models.FloatField(default=get_current_time)
 
 # Post Interactions
 class Post(models.Model):
@@ -31,7 +28,6 @@ class Post(models.Model):
     timestamp = models.FloatField(default=get_current_time)
     time_created = models.FloatField(default=get_current_time)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    mistboxes = models.ManyToManyField(Mistbox, related_name='posts', blank=True)
 
     def _str_(self):
         return self.title
@@ -69,12 +65,19 @@ class Post(models.Model):
                 str.maketrans('', '', string.punctuation)
                 ).split()
             words_in_post = words_in_text + words_in_title
+            mistboxes = Mistbox.objects.all()
             # for each word ...
             for word in words_in_post:
                 # ... if it doesn't exist create one
                 matching_word = Word.objects.filter(text__iexact=word.lower()).first()
                 if not matching_word:
                     matching_word = Word.objects.create(text=word.lower())
+
+                for mistbox in mistboxes.iterator():
+                    for keyword in mistbox.keywords:
+                        if word in keyword:
+                            mistbox.posts.add(self)
+                            mistbox.save()
 
 class Word(models.Model):
     text = models.CharField(max_length=100)
@@ -260,3 +263,13 @@ class Message(models.Model):
 
     def _str_(self):
         return self.text
+
+class Mistbox(models.Model):
+    NUMBER_OF_KEYWORDS = 5
+    MAX_DAILY_SWIPES = 5
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
+    keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords)
+    creation_time = models.FloatField(default=get_current_time)
+    posts = models.ManyToManyField(Post, blank=True)
+    swipecount = models.IntegerField(default=0)

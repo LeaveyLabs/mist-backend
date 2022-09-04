@@ -24,8 +24,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'email', 'username',
         'first_name', 'last_name', 'picture', 
         'confirm_picture', 'phone_number', 
-        'date_of_birth', 'sex', 'latitude', 
-        'longitude', 'keywords', 
+        'date_of_birth', 'sex', 'latitude', 'longitude',
         'is_verified', 'is_pending_verification')
         extra_kwargs = {
             'picture': {'required': True},
@@ -88,9 +87,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if self.picture_below_size_limit(picture):
             raise ValidationError(f"Max file size is {self.MEGABYTE_LIMIT}MB")
         return picture
-    
-    def validate_keywords(self, keywords):
-        return [keyword.lower() for keyword in keywords]
 
     def verify_email_authentication(self, validated_data):
         email = validated_data.get('email').lower()
@@ -185,7 +181,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
         instance.latitude = validated_data.get('latitude', instance.latitude)
         instance.longitude = validated_data.get('longitude', instance.longitude)
-        instance.keywords = validated_data.get('keywords', instance.keywords)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.picture = validated_data.get('picture', instance.picture)

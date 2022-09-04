@@ -201,7 +201,11 @@ class MistboxSerializer(serializers.Serializer):
 
     class Meta:
         model = Mistbox
-        fields = ('user', 'creation_time', 'posts')
+        fields = ('user', 'keywords', 'creation_time', 'posts')
+        read_only_fields = ('user', 'creation_time', 'posts')
+
+    def validate_keywords(self, keywords):
+        return [keyword.lower() for keyword in keywords]
 
     def get_creation_time(self, obj):
         return obj.creation_time

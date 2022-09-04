@@ -1,8 +1,8 @@
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from .generics import get_current_time, get_empty_keywords, get_random_code
+
+from .generics import get_current_time, get_random_code
 import os
 from phonenumber_field.modelfields import PhoneNumberField
 import random
@@ -27,7 +27,6 @@ class User(AbstractUser):
         (female, female),
         (other, other),
     )
-    NUMBER_OF_KEYWORDS = 5
 
     date_of_birth = models.DateField()
     picture = models.ImageField(
@@ -40,13 +39,17 @@ class User(AbstractUser):
     sex = models.CharField(max_length=1, choices=SEXES, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
-    keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords)
     is_verified = models.BooleanField(default=False)
     is_hidden = models.BooleanField(default=False)
     is_pending_verification = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'auth_user'
+
+    def save(self, *args, **kwargs):
+        from mist.models import Mistbox
+        super(User, self).save(*args, **kwargs)
+        Mistbox.objects.create(user=self)
 
 class EmailAuthentication(models.Model):
     def get_random_code():

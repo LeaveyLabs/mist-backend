@@ -6,10 +6,9 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 
-from mist.models import Comment, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, Word
+from mist.models import Comment, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, Word
 from mist.serializers import PostSerializer, PostVoteSerializer
-from mist.views.post import FavoritedPostsView, FeaturedPostsView, KeywordPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
-from mist_worker.tasks import make_daily_mistboxes
+from mist.views.post import FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
 from users.models import User
 
 @freeze_time("2020-01-01")
@@ -94,7 +93,7 @@ class PostTest(TestCase):
     def test_calculate_flagcount_should_return_number_of_flags(self):
         return self.assertEquals(self.post1.calculate_flagcount(), 1)
 
-    def test_post_should_create_words_in_post(self):
+    def test_save_should_create_words_in_post(self):
         Post.objects.create(
             title='TitleWord',
             body='StartingTextWord MiddleTextWord NumbersWord123',
@@ -107,7 +106,7 @@ class PostTest(TestCase):
         self.assertFalse(Word.objects.filter(text__iexact='ThisWordDoesNotExist'))
         self.assertFalse(Word.objects.filter(text__iexact='NeitherDoesThisOne'))
     
-    def test_post_should_increment_subwords_in_post(self):
+    def test_save_should_increment_subwords_in_post(self):
         Post.objects.create(
             title='w',
             body='wo',
@@ -126,6 +125,26 @@ class PostTest(TestCase):
         self.assertEqual(word2.calculate_occurrences(), 2)
         self.assertEqual(word3.calculate_occurrences(), 1)
         self.assertEqual(word4.calculate_occurrences(), 1)
+
+    def test_save_should_add_to_mistboxes_with_keywords_in_post(self):
+        mistbox = Mistbox.objects.create(
+            user=self.user1,
+            keywords=['these', 'are', 'cool', 'keywords'],
+        )
+        post1 = Post.objects.create(
+            title='these',
+            body='cool',
+            author=self.user1,
+        )
+        post2 = Post.objects.create(
+            title='are',
+            body='keywords',
+            author=self.user1,
+        )
+        test_mistbox = Mistbox.objects.get(id=mistbox.id)
+        self.assertIn(post1, test_mistbox.posts.all())
+        self.assertIn(post2, test_mistbox.posts.all())
+        return
     
     def test_post_should_create_post_given_valid_post(self):
         test_post = Post(
@@ -1042,107 +1061,12 @@ class SubmittedPostsViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
 
-class KeywordPostsViewTest(TestCase):
-    def setUp(self):
-        self.user1 = User(
-            email='TestUser1@usc.edu',
-            username='TestUser1',
-            date_of_birth=date(2000, 1, 1),
-            keywords=['first', 'only', 'appears', 'in', 'post1']
-        )
-        self.user1.set_password("TestPassword1@98374")
-        self.user1.save()
-        self.auth_token1 = Token.objects.create(user=self.user1)
-
-        self.user2 = User(
-            email='TestUser2@usc.edu',
-            username='TestUser2',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user2.set_password("TestPassword2@98374")
-        self.user2.save()
-        self.auth_token2 = Token.objects.create(user=self.user2)
-
-        self.post1 = Post.objects.create(
-            title='FakeTitleForFirstPost',
-            body='FakeTextForFirstPost',
-            author=self.user2,
-            timestamp=0,
-        )
-
-        self.post2 = Post.objects.create(
-            title='FakeTitleForSecondPost',
-            body='FakeTextForSecondPost',
-            author=self.user2,
-            timestamp=0,
-        )
-
-        self.post3 = Post.objects.create(
-            title='FakeTitleForFirstPost',
-            body='FakeTextForFirstPost',
-            author=self.user1,
-            timestamp=0,
-        )
-        
-    def test_get_should_return_all_posts_with_keywords_given_no_parameters(self):
-        serialized_post = PostSerializer(self.post1).data
-        
-        request = APIRequestFactory().get(
-            '/api/keyword-posts/',
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-        )
-        response = KeywordPostsView.as_view()(request)
-        response_posts = response.data
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response_posts, [serialized_post])
-        return
-
-    def test_get_should_not_return_posts_submitted_by_user(self):
-        current_user_post = PostSerializer(self.post3).data
-        
-        request = APIRequestFactory().get(
-            '/api/keyword-posts/',
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-        )
-        response = KeywordPostsView.as_view()(request)
-        response_posts = response.data
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertNotIn(current_user_post, response_posts)
-        return
-    
-    def test_get_should_empty_list_for_user_without_keywords(self):        
-        request = APIRequestFactory().get(
-            '/api/keyword-posts/',
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
-        )
-        response = KeywordPostsView.as_view()(request)
-        response_posts = response.data
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response_posts)
-        return
-
-    def test_get_should_not_return_anything_given_stranger(self):
-        request = APIRequestFactory().get(
-            '/api/keyword-posts/',
-        )
-        response = KeywordPostsView.as_view()(request)
-
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        return
-
 class TaggedPostsViewTest(TestCase):
     def setUp(self):
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
             date_of_birth=date(2000, 1, 1),
-            keywords=['first', 'only', 'appears', 'in', 'post1']
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -1251,7 +1175,6 @@ class MistboxViewTest(TestCase):
             email='TestUser1@usc.edu',
             username='TestUser1',
             date_of_birth=date(2000, 1, 1),
-            keywords=['first', 'only', 'appears', 'in', 'post1']
         )
         self.user1.set_password("TestPassword1@98374")
         self.user1.save()
@@ -1265,6 +1188,10 @@ class MistboxViewTest(TestCase):
         self.user2.set_password("TestPassword2@98374")
         self.user2.save()
         self.auth_token2 = Token.objects.create(user=self.user2)
+
+        user1_mistbox = Mistbox.objects.get(user=self.user1)
+        user1_mistbox.keywords.append('FakeTitleForFirstPost')
+        user1_mistbox.save()
 
         self.post1 = Post.objects.create(
             title='FakeTitleForFirstPost',
@@ -1286,8 +1213,6 @@ class MistboxViewTest(TestCase):
             author=self.user1,
             timestamp=0,
         )
-
-        make_daily_mistboxes()
         
     def test_get_should_return_all_posts_with_keywords_given_no_parameters(self):
         serialized_post = PostSerializer(self.post1).data
@@ -1321,7 +1246,7 @@ class MistboxViewTest(TestCase):
         self.assertNotIn(current_user_post, response_posts)
         return
     
-    def test_get_should_empty_list_for_user_without_keywords(self):        
+    def test_get_should_empty_list_of_posts_for_user_without_keywords(self):        
         request = APIRequestFactory().get(
             '/api/mistbox-posts/',
             format='json',
@@ -1329,9 +1254,10 @@ class MistboxViewTest(TestCase):
         )
         response = MistboxView.as_view()(request)
         response_mistboxes = response.data
+        response_posts = response_mistboxes[0].get('posts')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response_mistboxes)
+        self.assertFalse(response_posts)
         return
 
     def test_get_should_not_return_anything_given_stranger(self):
@@ -1343,25 +1269,28 @@ class MistboxViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
 
-    def test_get_should_not_return_posts_made_over_two_days_ago(self):
-        beginning_of_time_post = Post.objects.create(
-            title='FakeTitleForLastPost',
-            body='FakeTextForLastPost',
-            author=self.user1,
-            timestamp=0,
-            time_created=0,
-        )
-        serialized_post = PostSerializer(beginning_of_time_post).data
+    # def test_get_should_not_return_posts_made_over_two_days_ago(self):
+    #     beginning_of_time_post = Post.objects.create(
+    #         title='FakeTitleForLastPost',
+    #         body='FakeTextForLastPost',
+    #         author=self.user1,
+    #         timestamp=0,
+    #         time_created=0,
+    #     )
+    #     serialized_post = PostSerializer(beginning_of_time_post).data
 
-        request = APIRequestFactory().get(
-            '/api/mistbox-posts/',
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-        )
-        response = MistboxView.as_view()(request)
-        response_mistboxes = response.data
-        response_posts = response_mistboxes[0].get('posts')
+    #     request = APIRequestFactory().get(
+    #         '/api/mistbox-posts/',
+    #         format='json',
+    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+    #     )
+    #     response = MistboxView.as_view()(request)
+    #     response_mistboxes = response.data
+    #     response_posts = response_mistboxes[0].get('posts')
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertNotIn(serialized_post, response_posts)
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     self.assertNotIn(serialized_post, response_posts)
+    #     return
+
+    def test_delete_should_delete_mistbox_post_given_id(self):
         return

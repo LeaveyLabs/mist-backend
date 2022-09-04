@@ -159,7 +159,7 @@ class UserViewPostTest(TestCase):
         self.fake_first_name = 'FirstNameOfFakeUser'
         self.fake_last_name = 'LastNameOfFakeUser'
         self.fake_date_of_birth = date(2000, 1, 1)
-        self.fake_keywords = ['These', 'Are', 'Fake', 'Keywords', 'Folks']
+        # self.fake_keywords = ['These', 'Are', 'Fake', 'Keywords', 'Folks']
 
         test_image1 = Image.open('test_assets/obama1.jpeg')
         test_image_io1 = BytesIO()
@@ -1011,24 +1011,24 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(patched_user.longitude, new_longitude)
         return
 
-    def test_patch_should_update_keywords_given_valid_keywords(self):
-        new_keywords = ['These', 'Are', 'Test', 'Keywords', 'People']
-        lowercased_new_keywords = [keyword.lower() for keyword in new_keywords]
+    # def test_patch_should_update_keywords_given_valid_keywords(self):
+    #     new_keywords = ['These', 'Are', 'Test', 'Keywords', 'People']
+    #     lowercased_new_keywords = [keyword.lower() for keyword in new_keywords]
 
-        request = APIRequestFactory().patch(
-            'api/users/',
-            {
-                'keywords': new_keywords,
-            },
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-        )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
-        patched_user = User.objects.get(pk=self.user1.pk)
+    #     request = APIRequestFactory().patch(
+    #         'api/users/',
+    #         {
+    #             'keywords': new_keywords,
+    #         },
+    #         format='json',
+    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+    #     )
+    #     response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+    #     patched_user = User.objects.get(pk=self.user1.pk)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(patched_user.keywords, lowercased_new_keywords)
-        return
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     self.assertEqual(patched_user.keywords, lowercased_new_keywords)
+    #     return
 
 class MatchingPhoneNumbersViewTest(TestCase):
     def setUp(self):
