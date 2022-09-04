@@ -26,7 +26,7 @@ class Post(models.Model):
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
     timestamp = models.FloatField(default=get_current_time)
-    time_created = models.FloatField(default=get_current_time)
+    creation_time = models.FloatField(default=get_current_time)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def _str_(self):
