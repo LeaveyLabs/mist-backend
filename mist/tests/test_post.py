@@ -1212,7 +1212,7 @@ class MistboxViewTest(TestCase):
         self.auth_token2 = Token.objects.create(user=self.user2)
 
         user1_mistbox = Mistbox.objects.create(user=self.user1)
-        user1_mistbox.keywords.append('FakeTitleForFirstPost')
+        user1_mistbox.keywords.append('FakeTitleForFirstPost'.lower())
         user1_mistbox.save()
 
         self.post1 = Post.objects.create(
@@ -1404,7 +1404,7 @@ class DeleteMistboxPostViewTest(TestCase):
         self.auth_token2 = Token.objects.create(user=self.user2)
 
         user1_mistbox = Mistbox.objects.create(user=self.user1)
-        user1_mistbox.keywords.append('FakeTitleForFirstPost')
+        user1_mistbox.keywords.append('FakeTitleForFirstPost'.lower())
         user1_mistbox.save()
 
         self.post1 = Post.objects.create(
