@@ -3,7 +3,7 @@ import re
 from django.forms import ValidationError
 # from profanity_check import predict
 from rest_framework import serializers
-from mist.models import Badge
+from mist.models import Badge, Mistbox
 from mist_worker.tasks import verify_profile_picture_task
 
 from users.generics import get_current_time
@@ -31,6 +31,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     MEGABYTE_LIMIT = 10
 
     badges = serializers.SerializerMethodField()
+    keywords = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -38,7 +39,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         'first_name', 'last_name', 'picture', 
         'confirm_picture', 'phone_number', 
         'date_of_birth', 'sex', 'latitude', 'longitude',
-        'is_verified', 'is_pending_verification', 'badges',)
+        'is_verified', 'is_pending_verification', 'badges', 'keywords')
         read_only_fields = ('badges', 'is_verified', 'is_pending_verification',)
         extra_kwargs = {
             'picture': {'required': True},
@@ -51,6 +52,11 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         except: badges = Badge.objects.filter(user_id=obj.id)
         print([badge for badge in badges.all()])
         return [badge.badge_type for badge in badges.all()]
+
+    def get_keywords(self, obj):
+        mistbox_exists = Mistbox.objects.filter(user_id=obj.id).exists()
+        if not mistbox_exists: return []
+        return Mistbox.objects.get(user_id=obj.id).keywords
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
