@@ -50,7 +50,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         badges = []
         try: badges = obj.badges
         except: badges = Badge.objects.filter(user_id=obj.id)
-        print([badge for badge in badges.all()])
         return [badge.badge_type for badge in badges.all()]
 
     def get_keywords(self, obj):

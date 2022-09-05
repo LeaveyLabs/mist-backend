@@ -206,8 +206,6 @@ class MistboxView(generics.RetrieveUpdateAPIView):
         mistbox.keywords = mistbox_updates.data.get('keywords')
         mistbox.save()
 
-        print(mistbox.user, mistbox.keywords)
-
         return Response(
             {
                 "status": "success",
