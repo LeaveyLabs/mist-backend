@@ -4,7 +4,6 @@ from django.test import TestCase
 
 # Create your tests here.
 from django.test import TestCase
-from freezegun import freeze_time
 from unittest.mock import patch
 
 from mist_worker.tasks import reset_mistbox_opens, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture

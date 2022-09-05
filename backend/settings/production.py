@@ -1,4 +1,3 @@
-import ssl
 from backend.settings.base import *
 
 DEBUG = False
