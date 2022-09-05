@@ -1175,7 +1175,7 @@ class NearbyUsersViewTest(TestCase):
 
 class UserPopulationViewTest(TestCase):
     def setUp(self):
-        self.population_size = 6
+        self.population_size = 10
 
         for i in range(self.population_size):
             self.user, self.auth_token = create_dummy_user_and_token_given_id(i)
