@@ -1,16 +1,17 @@
 from decimal import Decimal
 from enum import Enum
-from django.db.models import Count
 from django.db.models.expressions import RawSQL
-from rest_framework import viewsets, generics
+from django.shortcuts import get_object_or_404
+from rest_framework import viewsets, generics, status
+from rest_framework.response import Response
 from mist.generics import is_impermissible_post
 from mist.permissions import PostPermission
 from rest_framework.permissions import IsAuthenticated
 
 from users.generics import get_user_from_request
 
-from ..serializers import PostSerializer
-from ..models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Post, Tag
+from ..serializers import MistboxSerializer, PostSerializer
+from ..models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
 
 class Order(Enum):
     VOTE = 0
@@ -54,7 +55,7 @@ class PostView(viewsets.ModelViewSet):
         location_description = self.request.query_params.get('location_description')
         author = self.request.query_params.get('author')
         # filter
-        queryset = Post.objects.all()
+        queryset = Post.objects.all().prefetch_related('votes')
         if latitude and longitude:
             queryset = self.get_locations_nearby_coords(
                 latitude, longitude, radius or self.MAX_DISTANCE)
@@ -170,22 +171,6 @@ class SubmittedPostsView(generics.ListAPIView):
         user = get_user_from_request(self.request)
         return Post.objects.filter(author=user)
 
-class KeywordPostsView(generics.ListAPIView):
-    permission_classes = (IsAuthenticated, )
-    serializer_class = PostSerializer
-    
-    def get_queryset(self):
-        user = get_user_from_request(self.request)
-        queryset = Post.objects.none()
-        if not user.keywords: return queryset
-        for keyword in user.keywords:
-            word_in_title = Post.objects.filter(title__icontains=keyword)
-            word_in_body = Post.objects.filter(body__icontains=keyword)
-            queryset = (word_in_title | word_in_body | queryset)
-            queryset = queryset.exclude(author=user)
-        queryset = queryset.distinct()
-        return queryset
-
 class TaggedPostsView(generics.ListAPIView):
     permission_classes = (IsAuthenticated, )
     serializer_class = PostSerializer
@@ -199,3 +184,62 @@ class TaggedPostsView(generics.ListAPIView):
         tagged_comments = Comment.objects.filter(id__in=tags.values_list('comment_id'))
         tagged_posts = Post.objects.filter(id__in=tagged_comments.values_list('post_id'))
         return tagged_posts
+
+class MistboxView(generics.RetrieveUpdateAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = MistboxSerializer
+
+    def get_object(self):
+        user = get_user_from_request(self.request)
+        return get_object_or_404(
+            Mistbox.objects.all().prefetch_related('posts'),
+            user=user,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        mistbox_updates = MistboxSerializer(data=request.data)
+        mistbox_updates.is_valid(raise_exception=True)
+
+        user = get_user_from_request(self.request)
+
+        mistbox, _ = Mistbox.objects.get_or_create(user=user)
+        mistbox.keywords = mistbox_updates.data.get('keywords')
+        mistbox.save()
+
+        return Response(
+            {
+                "status": "success",
+                "data": mistbox_updates.data,
+            },
+            status.HTTP_200_OK)
+
+class DeleteMistboxPostView(generics.DestroyAPIView):
+    permission_classes = (IsAuthenticated, )
+    serializer_class = MistboxSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        user = get_user_from_request(self.request)
+        post_id = self.request.query_params.get("post")
+        post = get_object_or_404(
+            Post.objects.all(),
+            id=post_id,
+        )
+        mistbox = get_object_or_404(
+            Mistbox.objects.all(),
+            user=user,
+        )
+
+        if post not in mistbox.posts.all():
+            return Response(None, status.HTTP_404_NOT_FOUND)
+
+        if mistbox.opens_used_today + 1 > Mistbox.MAX_DAILY_SWIPES:
+            return Response(
+            {
+                "detail": "no swipes left today"
+            }, 
+            status.HTTP_400_BAD_REQUEST)
+        
+        mistbox.posts.remove(post)
+        mistbox.opens_used_today += 1
+        mistbox.save()
+        return Response(None, status.HTTP_204_NO_CONTENT)

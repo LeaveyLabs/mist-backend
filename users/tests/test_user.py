@@ -1,35 +1,39 @@
 from datetime import date, datetime, timedelta
 from io import BytesIO
+import os
 from tempfile import TemporaryFile
+from unittest import skipIf
+from unittest.mock import patch
 from PIL import Image
 from django.core import mail, cache
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
+from mist.models import Badge
 from users.models import User
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
+from users.tests.generics import create_simple_uploaded_file_from_image_path
 
 from users.views.register import RegisterUserEmailView
-from users.views.user import MatchingPhoneNumbersView, NearbyUsersView, UserView
+from users.views.user import MatchingPhoneNumbersView, NearbyUsersView, UserPopulationView, UserView
 from users.serializers import CompleteUserSerializer, ReadOnlyUserSerializer
 from users.models import Ban, PhoneNumberAuthentication, User, EmailAuthentication
 
+from .generics import create_dummy_user_and_token_given_id
+
+class RemoteServiceMock:
+    service_queue = []
+
+    def verify_profile_picture(self, instance):
+        RemoteServiceMock.service_queue.append("verify_profile_picture")
+
 # Create your tests here.
+@skipIf(int(os.environ.get("SKIP_SLOW_TESTS", 0)), "slow")
 class ThrottleTest(TestCase):
     def setUp(self):
         cache.cache.clear()
-
-        self.valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1))
-        self.valid_user.set_password('randomPassword')
-        self.valid_user.save()
-        self.auth_token = Token.objects.create(user=self.valid_user)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
 
     def test_should_throttle_anonymous_user_above_50_calls(self):
         number_of_calls = 50
@@ -83,7 +87,7 @@ class ThrottleTest(TestCase):
                 'email': 'validEmail@usc.edu',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = RegisterUserEmailView.as_view()(request)
 
@@ -103,7 +107,7 @@ class ThrottleTest(TestCase):
                 'email': 'validEmail@usc.edu',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = RegisterUserEmailView.as_view()(request)
 
@@ -129,7 +133,7 @@ class ThrottleTest(TestCase):
                     'email': 'validEmail@usc.edu',
                 },
                 format='json',
-                HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+                HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
             )
             fake_response = RegisterUserEmailView.as_view()(fake_request)
 
@@ -156,13 +160,13 @@ class UserViewPostTest(TestCase):
         self.fake_first_name = 'FirstNameOfFakeUser'
         self.fake_last_name = 'LastNameOfFakeUser'
         self.fake_date_of_birth = date(2000, 1, 1)
-        self.fake_keywords = ['These', 'Are', 'Fake', 'Keywords', 'Folks']
+        # self.fake_keywords = ['These', 'Are', 'Fake', 'Keywords', 'Folks']
 
-        test_image1 = Image.open('test_assets/test1.jpeg')
+        test_image1 = Image.open('test_assets/obama1.jpeg')
         test_image_io1 = BytesIO()
         test_image1.save(test_image_io1, format='JPEG')
 
-        test_image2 = Image.open('test_assets/test2.jpeg')
+        test_image2 = Image.open('test_assets/obama2.jpeg')
         test_image_io2 = BytesIO()
         test_image2.save(test_image_io2, format='JPEG')
 
@@ -340,36 +344,23 @@ class UserViewGetTest(TestCase):
     def setUp(self):
         cache.cache.clear()
 
-        self.valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            phone_number="+12136778889")
-        self.valid_user.set_password('randomPassword')
-        self.valid_user.save()
-        self.auth_token = Token.objects.create(user=self.valid_user)
-        self.user_serializer = CompleteUserSerializer(self.valid_user)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user1.username = 'unrelatedUsername'
+        self.user1.first_name = 'completelyDifferentFirstName'
+        self.user1.last_name = 'notTheSameLastName'
+        self.user1.save()
+
+        self.user_serializer = CompleteUserSerializer(self.user1)
 
     # Serialization
     def test_get_should_return_readonly_user_given_nonmatching_token(self):
-        non_matching_user = User.objects.create(
-            email="nonMatchingEmail@usc.edu",
-            username="nonMatchingUsername",
-            first_name="thisFirstNameHasNotBeenTaken",
-            last_name="thisLastNameHasNotBeenTaken",
-            date_of_birth=date(2000, 1, 1),
-            phone_number="+12345678900")
-        non_matching_user.set_password('nonMatchingPassword')
-        non_matching_user.save()
-
+        non_matching_user, _ = create_dummy_user_and_token_given_id(2)
         user_serializer = ReadOnlyUserSerializer(non_matching_user)
 
         request = APIRequestFactory().get(
             'api/users/',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'retrieve'})(request, pk=non_matching_user.id)
         
@@ -381,14 +372,26 @@ class UserViewGetTest(TestCase):
         request = APIRequestFactory().get(
             'api/users/',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = UserView.as_view({'get':'retrieve'})(request, pk=self.valid_user.id)
+        response = UserView.as_view({'get':'retrieve'})(request, pk=self.user1.id)
         response_user = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response_user, self.user_serializer.data)
         return
+
+    def test_serializer_should_return_badges_attribute_given_user_with_badges(self):
+        Badge.objects.create(badge_type=Badge.LOVE_MIST, user=self.user1)
+
+        complete_serializer = CompleteUserSerializer(self.user1)
+        readonly_serializer = CompleteUserSerializer(self.user1)
+
+        complete_badges = complete_serializer.data.get('badges')
+        readonly_badges = readonly_serializer.data.get('badges')
+
+        self.assertEqual(complete_badges, [Badge.LOVE_MIST])
+        self.assertEqual(readonly_badges, [Badge.LOVE_MIST])
 
     # Valid Queries
     def test_get_should_return_user_given_word(self):
@@ -398,12 +401,14 @@ class UserViewGetTest(TestCase):
                 'words': 'name',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
+        self.assertTrue(response_users)
+        self.assertEqual(response_users[0], self.user_serializer.data)
         return
     
     def test_get_should_return_user_given_case_insensitive_word(self):
@@ -413,24 +418,28 @@ class UserViewGetTest(TestCase):
                 'words': 'NAME',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
+        self.assertTrue(response_users)
+        self.assertEqual(response_users[0], self.user_serializer.data)
         return
     
     def test_get_should_return_user_given_multiple_words(self):
         request = APIRequestFactory().get(
             'api/users/?words=name&words=not',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
+        self.assertTrue(response_users)
+        self.assertEqual(response_users[0], self.user_serializer.data)
         return
 
     def test_get_should_return_user_given_full_username(self):
@@ -440,12 +449,13 @@ class UserViewGetTest(TestCase):
                 'username': 'unrelatedUsername',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
+        self.assertEqual(response_users[0], self.user_serializer.data)
         return
     
     def test_get_should_return_user_given_prefix_username(self):
@@ -455,12 +465,13 @@ class UserViewGetTest(TestCase):
                 'username': 'unrelated',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
+        self.assertEqual(response_users[0], self.user_serializer.data)
         return
 
     def test_get_should_return_user_given_full_first_name(self):
@@ -470,12 +481,13 @@ class UserViewGetTest(TestCase):
                 'first_name': 'completelyDifferentFirstName',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
+        self.assertEqual(response_users[0], self.user_serializer.data)
         return
     
     def test_get_should_return_user_given_prefix_first_name(self):
@@ -485,12 +497,13 @@ class UserViewGetTest(TestCase):
                 'first_name': 'completely',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
+        self.assertEqual(response_users[0], self.user_serializer.data)
         return
 
     def test_get_should_return_user_given_full_last_name(self):
@@ -500,12 +513,13 @@ class UserViewGetTest(TestCase):
                 'last_name': 'notTheSameLastName',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
+        self.assertEqual(response_users[0], self.user_serializer.data)
         return
         
     def test_get_should_return_user_given_prefix_last_name(self):
@@ -515,12 +529,13 @@ class UserViewGetTest(TestCase):
                 'last_name': 'notTheSame',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data[0], self.user_serializer.data)
+        self.assertEqual(response_users[0], self.user_serializer.data)
         return
 
     def test_get_should_return_user_given_valid_token(self):
@@ -529,10 +544,10 @@ class UserViewGetTest(TestCase):
         request = APIRequestFactory().get(
             'api/users/',
             {
-                'token': self.auth_token,
+                'token': self.auth_token1,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
         response_users = response.data
@@ -549,12 +564,13 @@ class UserViewGetTest(TestCase):
                 'words': 'notInTheTextAtAll',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data)
+        self.assertFalse(response_users)
         return
 
     def test_get_should_not_return_user_given_nonexistent_full_username(self):
@@ -564,12 +580,13 @@ class UserViewGetTest(TestCase):
                 'username': 'thisUsernameDoesNotExist',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data)
+        self.assertFalse(response_users)
         return
     
     def test_get_should_not_return_user_given_nonexistent_prefix_username(self):
@@ -579,12 +596,13 @@ class UserViewGetTest(TestCase):
                 'username': 'sername',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data)        
+        self.assertFalse(response_users)
         return
 
     def test_get_should_not_return_user_given_nonexistent_full_first_name(self):
@@ -594,12 +612,13 @@ class UserViewGetTest(TestCase):
                 'first_name': 'thisFirstNameDoesNotExist',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data)        
+        self.assertFalse(response_users)
         return
     
     def test_get_should_not_return_user_given_nonexistent_prefix_first_name(self):
@@ -609,12 +628,13 @@ class UserViewGetTest(TestCase):
                 'first_name': 'DifferentFirstName',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data)
+        self.assertFalse(response_users)
         return
 
     def test_get_should_not_return_user_given_nonexistent_full_last_name(self):
@@ -624,12 +644,13 @@ class UserViewGetTest(TestCase):
                 'last_name': 'thisLastNameDoesNotExist',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data)        
+        self.assertFalse(response_users)
         return
 
     def test_get_should_not_return_user_given_nonexistent_prefix_last_name(self):
@@ -639,12 +660,13 @@ class UserViewGetTest(TestCase):
                 'last_name': 'astName',
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
+        response_users = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(response.data)        
+        self.assertFalse(response_users)
         return
     
     def test_get_should_not_return_user_given_invalid_token(self):
@@ -655,7 +677,7 @@ class UserViewGetTest(TestCase):
                 'token': invalid_token,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = UserView.as_view({'get':'list'})(request)
         response_users = response.data
@@ -668,71 +690,67 @@ class UserViewDeleteTest(TestCase):
     def setUp(self):
         cache.cache.clear()
 
-        self.valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1))
-        self.valid_user.set_password('randomPassword')
-        self.valid_user.save()
-        self.auth_token = Token.objects.create(user=self.valid_user)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         self.unused_pk = 151
 
     def test_delete_should_delete_valid_user(self):
-        self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
+        self.assertTrue(User.objects.filter(pk=self.user1.pk))
 
-        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION=f'Token {self.auth_token}',)
-        response = UserView.as_view({'delete':'destroy'})(request, pk=self.valid_user.pk)
+        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
+        response = UserView.as_view({'delete':'destroy'})(request, pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(User.objects.filter(pk=self.valid_user.pk))
+        self.assertFalse(User.objects.filter(pk=self.user1.pk))
         return
 
     def test_delete_should_not_delete_nonexistent_user(self):
-        self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
+        self.assertTrue(User.objects.filter(pk=self.user1.pk))
 
-        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION=f'Token {self.auth_token}',)
+        request = APIRequestFactory().delete('api/users/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
         response = UserView.as_view({'delete':'destroy'})(request, pk=self.unused_pk)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertTrue(User.objects.filter(pk=self.valid_user.pk))
+        self.assertTrue(User.objects.filter(pk=self.user1.pk))
         return
 
 class UserViewPatchTest(TestCase):
     def setUp(self):
         cache.cache.clear()
 
-        self.valid_user = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedusername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            latitude=0,
-            longitude=0,
-            phone_number="+11234567890")
-        self.password = "strongPassword@1354689$"
-        self.valid_user.set_password(self.password)
-        self.valid_user.save()
-        self.auth_token = Token.objects.create(user=self.valid_user)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         self.unused_pk = 151
 
-        test_image1 = Image.open('test_assets/test1.jpeg')
+        test_image1 = Image.open('test_assets/obama1.jpeg')
         test_image_io1 = BytesIO()
         test_image1.save(test_image_io1, format='JPEG')
 
-        test_image2 = Image.open('test_assets/test2.jpeg')
+        test_image2 = Image.open('test_assets/obama2.jpeg')
         test_image_io2 = BytesIO()
         test_image2.save(test_image_io2, format='JPEG')
 
-        self.image_file1 = SimpleUploadedFile('test1.jpeg', test_image_io1.getvalue(), content_type='image/jpeg')
-        self.image_file2 = SimpleUploadedFile('test2.jpeg', test_image_io2.getvalue(), content_type='image/jpeg')
+        self.obama_image_file1 = create_simple_uploaded_file_from_image_path(
+            'test_assets/obama1.jpeg', 
+            'obama1.jpeg')
+        self.obama_image_file2 = create_simple_uploaded_file_from_image_path(
+            'test_assets/obama2.jpeg', 
+            'obama2.jpeg')
+        self.kevin_image_file1 = create_simple_uploaded_file_from_image_path(
+            'test_assets/kevin1.jpeg', 
+            'kevin1.jpeg')
+        self.kevin_image_file2 = create_simple_uploaded_file_from_image_path(
+            'test_assets/kevin2.jpeg', 
+            'kevin2.jpeg')
+        self.adam_image_file1 = create_simple_uploaded_file_from_image_path(
+            'test_assets/adam1.jpeg', 
+            'adam1.jpeg')
+        self.adam_image_file2 = create_simple_uploaded_file_from_image_path(
+            'test_assets/adam2.jpeg', 
+            'adam2.jpeg')
 
     def test_patch_should_not_update_given_invalid_user(self):
         self.assertFalse(User.objects.filter(pk=self.unused_pk))
 
-        request = APIRequestFactory().patch('api/users/', HTTP_AUTHORIZATION=f'Token {self.auth_token}',)
+        request = APIRequestFactory().patch('api/users/', HTTP_AUTHORIZATION=f'Token {self.auth_token1}',)
         response = UserView.as_view({'patch':'partial_update'})(request, pk=self.unused_pk)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -740,7 +758,7 @@ class UserViewPatchTest(TestCase):
         return
         
     def test_patch_should_update_username_given_valid_username(self):
-        self.assertEqual(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
+        self.assertEqual(self.user1.username, User.objects.get(pk=self.user1.pk).username)
         fake_new_username = 'FakeNewUsername'
 
         request = APIRequestFactory().patch(
@@ -749,23 +767,22 @@ class UserViewPatchTest(TestCase):
                 'username': fake_new_username,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(fake_new_username.lower(), patched_user.username)
-        self.assertTrue(patched_user.check_password(self.password))
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
     
     def test_patch_should_not_update_username_given_invalid_username(self):
-        self.assertEqual(self.valid_user.username, User.objects.get(pk=self.valid_user.pk).username)
+        self.assertEqual(self.user1.username, User.objects.get(pk=self.user1.pk).username)
 
         request = APIRequestFactory().patch(
             'api/users/',
@@ -773,25 +790,24 @@ class UserViewPatchTest(TestCase):
                 'username': "$%@#",
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertTrue(patched_user.check_password(self.password))
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.user1.username, patched_user.username)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
 
     def test_patch_should_update_first_name_given_first_name(self):
         fake_first_name = 'heyMyRealFirstName'
 
-        self.assertEqual(self.valid_user.first_name, User.objects.get(pk=self.valid_user.pk).first_name)
+        self.assertEqual(self.user1.first_name, User.objects.get(pk=self.user1.pk).first_name)
 
         request = APIRequestFactory().patch(
             'api/users/',
@@ -799,17 +815,17 @@ class UserViewPatchTest(TestCase):
                 'first_name': fake_first_name,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
         self.assertEqual(patched_user.first_name, fake_first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
 
@@ -822,24 +838,24 @@ class UserViewPatchTest(TestCase):
                 'first_name': fake_first_name,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
         self.assertNotEqual(patched_user.first_name, fake_first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
     
     def test_patch_should_update_last_name_given_last_name(self):
         fake_last_name = 'heyMyRealLastName'
 
-        self.assertEqual(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+        self.assertEqual(self.user1.last_name, User.objects.get(pk=self.user1.pk).last_name)
 
         request = APIRequestFactory().patch(
             'api/users/',
@@ -847,24 +863,24 @@ class UserViewPatchTest(TestCase):
                 'last_name': fake_last_name,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
         self.assertEqual(patched_user.last_name, fake_last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
 
     def test_patch_should_not_update_last_name_given_invalid_last_name(self):
         fake_last_name = '++**&&'
 
-        self.assertEqual(self.valid_user.last_name, User.objects.get(pk=self.valid_user.pk).last_name)
+        self.assertEqual(self.user1.last_name, User.objects.get(pk=self.user1.pk).last_name)
 
         request = APIRequestFactory().patch(
             'api/users/',
@@ -872,48 +888,72 @@ class UserViewPatchTest(TestCase):
                 'last_name': fake_last_name,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
         self.assertNotEqual(patched_user.last_name, fake_last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         self.assertFalse(patched_user.picture)
         return
 
     def test_patch_should_update_picture_given_valid_picture(self):
-        pre_patched_user = User.objects.get(pk=self.valid_user.pk)
+        pre_patched_user = User.objects.get(pk=self.user1.pk)
         self.assertFalse(pre_patched_user.picture)
 
         request = APIRequestFactory().patch(
             'api/users/', 
             encode_multipart(boundary=BOUNDARY, data={
-                'picture': self.image_file1,
-                'confirm_picture': self.image_file2,
+                'picture': self.obama_image_file1,
             }),
             content_type=MULTIPART_CONTENT,
-            HTTP_AUTHORIZATION=f"Token {self.auth_token}"
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
         )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(patched_user.picture)
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
+        return
+
+    @patch('users.serializers.CompleteUserSerializer.start_verify_profile_picture_task', RemoteServiceMock.verify_profile_picture)
+    def test_patch_should_start_verification_service_given_picture_and_confirm_picture(self):
+        request = APIRequestFactory().patch(
+            'api/users/',
+            encode_multipart(boundary=BOUNDARY, data={
+                'picture': self.obama_image_file1,
+                'confirm_picture': self.obama_image_file2,
+            }),
+            content_type=MULTIPART_CONTENT,
+            HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
+        )
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
+        self.assertTrue(patched_user.picture)
+        self.assertTrue(patched_user.confirm_picture)
+        self.assertIn('verify_profile_picture', RemoteServiceMock.service_queue)
         return
     
     def test_patch_should_not_update_picture_given_invalid_picture(self):
         ten_mb_limit = (1024 * 1024 * 10)
-        pre_patched_user = User.objects.get(pk=self.valid_user.pk)
+        pre_patched_user = User.objects.get(pk=self.user1.pk)
         self.assertFalse(pre_patched_user.picture)
 
         with TemporaryFile() as temp_file:
@@ -924,18 +964,18 @@ class UserViewPatchTest(TestCase):
                 'api/users/', 
                 encode_multipart(boundary=BOUNDARY, data={'picture': temp_file}),
                 content_type=MULTIPART_CONTENT,
-                HTTP_AUTHORIZATION=f"Token {self.auth_token}"
+                HTTP_AUTHORIZATION=f"Token {self.auth_token1}"
             )
-            response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-            patched_user = User.objects.get(pk=self.valid_user.pk)
+            response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+            patched_user = User.objects.get(pk=self.user1.pk)
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
             self.assertFalse(patched_user.picture)
-            self.assertEqual(self.valid_user.email, patched_user.email)
-            self.assertEqual(self.valid_user.username, patched_user.username)
-            self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-            self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-            self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+            self.assertEqual(self.user1.email, patched_user.email)
+            self.assertEqual(self.user1.username, patched_user.username)
+            self.assertEqual(self.user1.first_name, patched_user.first_name)
+            self.assertEqual(self.user1.last_name, patched_user.last_name)
+            self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         return
 
     def test_patch_should_update_latitude_given_valid_latitude(self):
@@ -947,17 +987,17 @@ class UserViewPatchTest(TestCase):
                 'latitude': new_latitude,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         self.assertEqual(patched_user.latitude, new_latitude)
         return
     
@@ -970,79 +1010,44 @@ class UserViewPatchTest(TestCase):
                 'longitude': new_longitude,
             },
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+        patched_user = User.objects.get(pk=self.user1.pk)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(self.valid_user.email, patched_user.email)
-        self.assertEqual(self.valid_user.username, patched_user.username)
-        self.assertEqual(self.valid_user.first_name, patched_user.first_name)
-        self.assertEqual(self.valid_user.last_name, patched_user.last_name)
-        self.assertEqual(self.valid_user.date_of_birth, patched_user.date_of_birth)
+        self.assertEqual(self.user1.email, patched_user.email)
+        self.assertEqual(self.user1.username, patched_user.username)
+        self.assertEqual(self.user1.first_name, patched_user.first_name)
+        self.assertEqual(self.user1.last_name, patched_user.last_name)
+        self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
         self.assertEqual(patched_user.longitude, new_longitude)
         return
 
-    def test_patch_should_update_keywords_given_valid_keywords(self):
-        new_keywords = ['These', 'Are', 'Test', 'Keywords', 'People']
-        lowercased_new_keywords = [keyword.lower() for keyword in new_keywords]
+    # def test_patch_should_update_keywords_given_valid_keywords(self):
+    #     new_keywords = ['These', 'Are', 'Test', 'Keywords', 'People']
+    #     lowercased_new_keywords = [keyword.lower() for keyword in new_keywords]
 
-        request = APIRequestFactory().patch(
-            'api/users/',
-            {
-                'keywords': new_keywords,
-            },
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
-        )
-        response = UserView.as_view({'patch':'partial_update'})(request, pk=self.valid_user.pk)
-        patched_user = User.objects.get(pk=self.valid_user.pk)
+    #     request = APIRequestFactory().patch(
+    #         'api/users/',
+    #         {
+    #             'keywords': new_keywords,
+    #         },
+    #         format='json',
+    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+    #     )
+    #     response = UserView.as_view({'patch':'partial_update'})(request, pk=self.user1.pk)
+    #     patched_user = User.objects.get(pk=self.user1.pk)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(patched_user.keywords, lowercased_new_keywords)
-        return
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     self.assertEqual(patched_user.keywords, lowercased_new_keywords)
+    #     return
 
 class MatchingPhoneNumbersViewTest(TestCase):
     def setUp(self):
-        self.user1 = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            latitude=0,
-            longitude=0,
-            phone_number="+11234567890")
-        self.user1.set_password('randomPassword')
-        self.user1.save()
-        self.auth_token1 = Token.objects.create(user=self.user1)
-
-        self.user2 = User.objects.create(
-            email="email2@usc.edu",
-            username="unrelatedUsername2",
-            first_name="completelyDifferentFirstName2",
-            last_name="notTheSameLastName2",
-            date_of_birth=date(2000, 1, 1),
-            latitude=0,
-            longitude=0,
-            phone_number="+11234567891")
-        self.user2.set_password('randomPassword')
-        self.user2.save()
-        self.auth_token2 = Token.objects.create(user=self.user2)
-
-        self.user3 = User.objects.create(
-            email="email3@usc.edu",
-            username="unrelatedUsername3",
-            first_name="completelyDifferentFirstName3",
-            last_name="notTheSameLastName3",
-            date_of_birth=date(2000, 1, 1),
-            latitude=100,
-            longitude=100,
-            phone_number="+11234567892")
-        self.user3.set_password('randomPassword')
-        self.user3.save()
-        self.auth_token3 = Token.objects.create(user=self.user3)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
+        self.user3, self.auth_token3 = create_dummy_user_and_token_given_id(3)
         return
             
     def test_get_should_return_list_of_matching_users_given_valid_phone_number(self):
@@ -1138,41 +1143,9 @@ class MatchingPhoneNumbersViewTest(TestCase):
 
 class NearbyUsersViewTest(TestCase):
     def setUp(self):
-        self.user1 = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            latitude=0,
-            longitude=0,)
-        self.user1.set_password('randomPassword')
-        self.user1.save()
-        self.auth_token1 = Token.objects.create(user=self.user1)
-
-        self.user2 = User.objects.create(
-            email="email2@usc.edu",
-            username="unrelatedUsername2",
-            first_name="completelyDifferentFirstName2",
-            last_name="notTheSameLastName2",
-            date_of_birth=date(2000, 1, 1),
-            latitude=0,
-            longitude=0,)
-        self.user2.set_password('randomPassword')
-        self.user2.save()
-        self.auth_token2 = Token.objects.create(user=self.user2)
-
-        self.user3 = User.objects.create(
-            email="email3@usc.edu",
-            username="unrelatedUsername3",
-            first_name="completelyDifferentFirstName3",
-            last_name="notTheSameLastName3",
-            date_of_birth=date(2000, 1, 1),
-            latitude=100,
-            longitude=100,)
-        self.user3.set_password('randomPassword')
-        self.user3.save()
-        self.auth_token3 = Token.objects.create(user=self.user3)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
+        self.user3, self.auth_token3 = create_dummy_user_and_token_given_id(3)
         return
 
     def test_get_should_not_return_given_no_auth_user(self):
@@ -1185,6 +1158,18 @@ class NearbyUsersViewTest(TestCase):
         return
 
     def test_get_should_return_only_nearby_users(self):
+        self.user1.latitude = 0
+        self.user1.longitude = 0
+        self.user1.save()
+
+        self.user2.latitude = 0
+        self.user2.longitude = 0
+        self.user2.save()
+
+        self.user3.latitude = 100
+        self.user3.longitude = 100
+        self.user3.save()
+
         serialized_users = [
             ReadOnlyUserSerializer(self.user1).data,
             ReadOnlyUserSerializer(self.user2).data,
@@ -1200,3 +1185,21 @@ class NearbyUsersViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertCountEqual(response_users, serialized_users)
         return
+
+class UserPopulationViewTest(TestCase):
+    def setUp(self):
+        self.population_size = 10
+
+        for i in range(self.population_size):
+            self.user, self.auth_token = create_dummy_user_and_token_given_id(i)
+    
+    def test_get_should_return_user_population(self):
+        request = APIRequestFactory().get(
+            'api/user-population/',
+            HTTP_AUTHORIZATION=f"Token {self.auth_token}"
+        )
+        response = UserPopulationView.as_view()(request)
+        response_population_size = response.data.get('population')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_population_size, self.population_size)

@@ -1,10 +1,10 @@
 from psycopg2 import IntegrityError
-from profanity_check import predict
+# from profanity_check import predict
 from rest_framework import serializers
 from users.models import User
 
 from users.serializers import ReadOnlyUserSerializer
-from .models import Block, CommentFlag, CommentVote, Favorite, Feature, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
+from .models import AccessCode, Badge, Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.SerializerMethodField()
@@ -36,17 +36,24 @@ class PostSerializer(serializers.ModelSerializer):
         return ReadOnlyUserSerializer(obj.author).data
     
     def get_votes(self, obj):
-        vote_instances = PostVote.objects.filter(post_id=obj.id)
-        votes_data = []
-        for vote_instance in vote_instances:
-            votes_data.append(PostVoteSerializer(vote_instance).data)
-        return votes_data
+        votes = []
+        try: votes = obj.votes
+        except: votes = PostVote.objects.filter(post_id=obj.id)
+        return [PostVoteSerializer(vote).data for vote in votes.all()]
 
     def validate_body(self, body):
-        [is_offensive] = predict([body])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language.")
+        # [is_offensive] = predict([body])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language.")
         return body
+
+    def convert_votes_to_emoji_tuple(self, vote_queryset):
+        emoji_tuple = {}
+        for vote in vote_queryset.all().iterator():
+            if vote.emoji not in emoji_tuple:
+                emoji_tuple[vote.emoji] = 0
+            emoji_tuple[vote.emoji] += 1
+        return emoji_tuple
 
 class PostVoteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -154,7 +161,7 @@ class CommentSerializer(serializers.ModelSerializer):
         tags = []
         try: tags = obj.tags.all()
         except: tags = Tag.objects.filter(comment_id=obj.id)
-        return [TagSerializer(tag).data for tag in tags]
+        return [TagSerializer(tag).data for tag in tags.iterator()]
     
     def get_votecount(self, obj):
         try: return obj.votecount
@@ -165,9 +172,9 @@ class CommentSerializer(serializers.ModelSerializer):
         except: return obj.calculate_flagcount()
     
     def validate_body(self, body):
-        [is_offensive] = predict([body])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language.")
+        # [is_offensive] = predict([body])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language.")
         return body
 
 class CommentVoteSerializer(serializers.ModelSerializer):
@@ -194,3 +201,32 @@ class FeatureSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feature
         fields = ('id', 'timestamp', 'post')
+
+class MistboxSerializer(serializers.ModelSerializer):
+    posts = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Mistbox
+        fields = ('user', 'keywords', 'creation_time', 'posts', 'opens_used_today')
+        read_only_fields = ('user', 'creation_time', 'posts', 'opens_used_today')
+
+    def validate_keywords(self, keywords):
+        return [keyword.lower() for keyword in keywords]
+    
+    def get_posts(self, obj):
+        posts = []
+        try: posts = obj.posts
+        except: posts = Post.objects.none()
+        return [PostSerializer(post).data for post in posts.all()]
+
+class AccessCodeClaimSerializer(serializers.Serializer):
+    code = serializers.CharField()
+
+    def validate_code(self, code):
+        access_codes = AccessCode.objects.filter(code_string=code)
+        if not access_codes.exists():
+            raise serializers.ValidationError("Code does not exist")
+        access_code = access_codes[0]
+        if access_code.claimed_user:
+            raise serializers.ValidationError("Already claimed")
+        return code

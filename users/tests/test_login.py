@@ -5,6 +5,7 @@ from users.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
+from users.tests.generics import create_dummy_user_and_token_given_id
 
 from users.views.login import RequestLoginCodeView, ValidateLoginCodeView
 from users.models import PhoneNumberAuthentication, User
@@ -18,14 +19,7 @@ class RequestLoginCodeViewTest(TestCase):
     def setUp(self):
         TwillioTestClientMessages.created = []
 
-        self.user1 = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            phone_number="+12345678999"
-        )
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         
         PhoneNumberAuthentication.objects.create(
             phone_number=self.user1.phone_number,
@@ -48,7 +42,7 @@ class RequestLoginCodeViewTest(TestCase):
             message.get('to') == self.user1.phone_number
             for message in messages
         ]
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(matching_messages)
         return
@@ -97,16 +91,9 @@ class ValidateLoginCodeViewTest(TestCase):
     def setUp(self):
         TwillioTestClientMessages.created = []
 
-        self.user1 = User.objects.create(
-            email="email@usc.edu",
-            username="unrelatedUsername",
-            first_name="completelyDifferentFirstName",
-            last_name="notTheSameLastName",
-            date_of_birth=date(2000, 1, 1),
-            phone_number="+12345678999"
-        )
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         
-        PhoneNumberAuthentication.objects.create(
+        self.phone_number_auth = PhoneNumberAuthentication.objects.create(
             phone_number=self.user1.phone_number,
             email=self.user1.email,
             code="123456",
@@ -159,7 +146,7 @@ class ValidateLoginCodeViewTest(TestCase):
             'api/request-login-code/',
             {
                 'phone_number': str(self.user1.phone_number),
-                'code': '123456',
+                'code': self.phone_number_auth.code,
             },
         )
         response = ValidateLoginCodeView.as_view()(request)

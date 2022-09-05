@@ -12,6 +12,9 @@ def get_user_from_request(request):
 def get_random_code():
     return f'{random.randint(0, 999_999):06}'
 
+def get_current_date():
+    return datetime.today().date()
+
 def get_current_time():
     return datetime.now().timestamp()
 

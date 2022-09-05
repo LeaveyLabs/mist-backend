@@ -42,7 +42,7 @@ class UserView(viewsets.ModelViewSet):
         requesting_user = get_user_from_request(self.request)
 
         # default is to return all users
-        queryset = User.objects.all()
+        queryset = User.objects.all().exclude(is_hidden=True).prefetch_related('badges')
 
         # filter by words...
         if words:
@@ -111,8 +111,9 @@ class MatchingPhoneNumbersView(generics.CreateAPIView):
 
         phonebook = {}
         for phone_number in phone_numbers:
-            matching_users = User.objects.filter(phone_number=phone_number)
-            if matching_users:
+            matching_users = User.objects.filter(
+                phone_number=phone_number).exclude(is_hidden=True)
+            if matching_users.exists():
                 phonebook[phone_number] = ReadOnlyUserSerializer(matching_users[0]).data
             
         return Response(phonebook, status.HTTP_200_OK)
@@ -145,7 +146,8 @@ class NearbyUsersView(generics.ListAPIView):
         .filter(latitude__isnull=False)\
         .filter(longitude__isnull=False)\
         .annotate(distance=distance_raw_sql)\
-        .order_by('distance')
+        .order_by('distance')\
+        .exclude(is_hidden=True)
         # distance must be less than max distance
         qs = qs.filter(distance__lt=max_distance)
         return qs
@@ -156,3 +158,14 @@ class NearbyUsersView(generics.ListAPIView):
             requesting_user.latitude,
             requesting_user.longitude)
         return nearby_users
+
+class UserPopulationView(generics.RetrieveAPIView):
+    permission_classes = (IsAuthenticated, )
+    
+    def retrieve(self, request, *args, **kwargs):
+        return Response(
+            {
+                "population": User.objects.count(),
+            },
+            status.HTTP_200_OK,
+        )

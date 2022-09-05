@@ -1,7 +1,6 @@
 from backend.settings.base import *
 
 # SECURITY WARNING: keep the secret key used in production secret!
-from decouple import config
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -40,3 +39,5 @@ EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 # TODO: Pictures
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
 MEDIA_URL = '/media/'
+
+CELERY_BROKER_URL = os.environ.get("REDIS_URL")

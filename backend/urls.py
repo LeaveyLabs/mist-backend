@@ -29,11 +29,11 @@ from mist.views.post_flag import PostFlagView
 from mist.views.friend import FriendRequestView, FriendshipView
 from mist.views.match import MatchRequestView, MatchView
 from mist.views.message import ConversationView, MessageView
-from mist.views.post import FavoritedPostsView, FeaturedPostsView, FriendPostsView, KeywordPostsView, MatchedPostsView, PostView, SubmittedPostsView, TaggedPostsView
+from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedPostsView, FriendPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
 from mist.views.tag import TagView
 from mist.views.post_vote import PostVoteView
 from mist.views.word import WordView
-from users.views.user import UserView, NearbyUsersView, MatchingPhoneNumbersView
+from users.views.user import UserPopulationView, UserView, NearbyUsersView, MatchingPhoneNumbersView
 from users.views.register import RegisterUserEmailView, RegisterPhoneNumberView, ValidateUserEmailView, ValidatePhoneNumberView, ValidateUsernameView
 from users.views.login import RequestLoginCodeView, ValidateLoginCodeView
 from users.views.reset import RequestResetEmailView, ValidateResetEmailView, RequestResetTextCodeView, ValidateResetTextCodeView
@@ -77,6 +77,7 @@ urlpatterns = [
     # Database
     path('api/', include(router.urls)),
     path('api/nearby-users/', NearbyUsersView.as_view()),
+    path('api/user-population/', UserPopulationView.as_view()),
     path('api/words/', WordView.as_view()),
     path('api/features/', FeatureView.as_view()),
     path('api/matches/', MatchView.as_view()),
@@ -87,7 +88,7 @@ urlpatterns = [
     path('api/friend-posts/', FriendPostsView.as_view()),
     path('api/favorited-posts/', FavoritedPostsView.as_view()),
     path('api/submitted-posts/', SubmittedPostsView.as_view()),
-    path('api/keyword-posts/', KeywordPostsView.as_view()),
+    path('api/mistbox/', MistboxView.as_view()),
     path('api/tagged-posts/', TaggedPostsView.as_view()),
     path('api/matching-phone-numbers/', MatchingPhoneNumbersView.as_view()),
     # Patch Requests
@@ -99,6 +100,7 @@ urlpatterns = [
     path('api/delete-favorite/', FavoriteView.as_view({'delete':'destroy'})),
     path('api/delete-friend-request/', FriendRequestView.as_view({'delete':'destroy'})),
     path('api/delete-match-request/', MatchRequestView.as_view({'delete':'destroy'})),
+    path('api/delete-mistbox-post/', DeleteMistboxPostView.as_view()),
 ]
 
 if settings.DEBUG: 

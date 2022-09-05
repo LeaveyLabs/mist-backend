@@ -1,8 +1,8 @@
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from .generics import get_current_time, get_empty_keywords, get_random_code
+
+from .generics import get_current_time, get_random_code
 import os
 from phonenumber_field.modelfields import PhoneNumberField
 import random
@@ -10,8 +10,13 @@ import random
 class User(AbstractUser):
     def profile_picture_filepath(instance, filename):
         ext = filename.split('.')[-1]
-        new_filename = f'{instance.id}.{ext}'
+        new_filename = f'{instance.username}.{ext}'
         return os.path.join('profiles', new_filename)
+    
+    def confirm_profile_picture_filepath(instance, filename):
+        ext = filename.split('.')[-1]
+        new_filename = f'{instance.username}.{ext}'
+        return os.path.join('confirm-profiles', new_filename)
 
     male = 'm'
     female = 'f'
@@ -22,16 +27,21 @@ class User(AbstractUser):
         (female, female),
         (other, other),
     )
-    NUMBER_OF_KEYWORDS = 5
 
     date_of_birth = models.DateField()
-    picture = models.ImageField(upload_to=profile_picture_filepath, null=True)
+    picture = models.ImageField(
+        upload_to=profile_picture_filepath, null=True, blank=True
+    )
+    confirm_picture = models.ImageField(
+        upload_to=confirm_profile_picture_filepath, null=True, blank=True
+    )
     phone_number = PhoneNumberField(null=True, unique=True)
     sex = models.CharField(max_length=1, choices=SEXES, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
-    keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords)
-    is_validated = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+    is_hidden = models.BooleanField(default=False)
+    is_pending_verification = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'auth_user'

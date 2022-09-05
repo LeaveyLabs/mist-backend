@@ -21,6 +21,7 @@ from ..models import (
     PhoneNumberAuthentication,
 )
 
+
 class RegisterUserEmailView(generics.CreateAPIView):
     permission_classes = (AllowAny, )
     serializer_class = UserEmailRegistrationSerializer
@@ -48,6 +49,7 @@ class RegisterUserEmailView(generics.CreateAPIView):
             }, 
             status=status.HTTP_201_CREATED)
 
+
 class ValidateUserEmailView(generics.CreateAPIView):
     """
     View to validate users emails.
@@ -74,6 +76,7 @@ class ValidateUserEmailView(generics.CreateAPIView):
             },
             status=status.HTTP_200_OK)
 
+
 class ValidateUsernameView(generics.CreateAPIView):
     """
     View to validate usersnames
@@ -91,6 +94,7 @@ class ValidateUsernameView(generics.CreateAPIView):
                 "data": validation_request.data,
             },
             status=status.HTTP_200_OK)
+
 
 class RegisterPhoneNumberView(generics.CreateAPIView):
     """
@@ -120,6 +124,7 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
                 "data": phone_number_registration.data,
             },
             status=status.HTTP_201_CREATED)
+
 
 class ValidatePhoneNumberView(generics.CreateAPIView):
     """

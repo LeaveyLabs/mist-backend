@@ -6,7 +6,7 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import Block, Message, Post
+from mist.models import Block, MatchRequest, Message, Post
 from mist.serializers import MessageSerializer
 from mist.views.message import ConversationView, MessageView
 
@@ -225,7 +225,7 @@ class MessageTest(TestCase):
         ))
         return
 
-    def test_post_should_send_notification_given_valid_message(self):
+    def test_post_should_send_notification_with_username_given_message_to_matched_user(self):
         message = Message(
             sender=self.user1,
             receiver=self.user2,
@@ -234,11 +234,14 @@ class MessageTest(TestCase):
         )
         serialized_message = MessageSerializer(message).data
 
-        self.assertFalse(Message.objects.filter(
-            sender=message.sender,
-            receiver=message.receiver,
-            body=message.body,
-        ))
+        MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+        )
+        MatchRequest.objects.create(
+            match_requesting_user=self.user2,
+            match_requested_user=self.user1,
+        )
 
         request = APIRequestFactory().post(
             '/api/messages/',
@@ -249,9 +252,32 @@ class MessageTest(TestCase):
         response = MessageView.as_view({'post':'create'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(
-            f"{message.sender.username}: {message.body}" 
-            in NotificationServiceMock.sent_notifications)
+        self.assertIn(
+            f"{message.sender.username}: {message.body}",
+            NotificationServiceMock.sent_notifications)
+        return
+
+    def test_post_should_send_anonymous_notification_given_message_to_unmatched_user(self):
+        message = Message(
+            sender=self.user1,
+            receiver=self.user2,
+            body="TestMessageOne",
+            timestamp=0,
+        )
+        serialized_message = MessageSerializer(message).data
+
+        request = APIRequestFactory().post(
+            '/api/messages/',
+            serialized_message,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MessageView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn(
+            "Someone sent you a special message ❤️", 
+            NotificationServiceMock.sent_notifications)
         return
     
     def test_post_should_not_create_message_given_invalid_message(self):

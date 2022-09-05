@@ -1,35 +1,61 @@
 from datetime import date, datetime, timedelta
 import re
 from django.forms import ValidationError
-from profanity_check import predict
+# from profanity_check import predict
 from rest_framework import serializers
+from mist.models import Badge, Mistbox
+from mist_worker.tasks import verify_profile_picture_task
 
 from users.generics import get_current_time
-from .models import Ban, PasswordReset, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
-from django.contrib.auth import authenticate
-from django.contrib.auth.password_validation import validate_password
+from .models import Ban, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
+    badges = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_validated')
-        read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_validated')
+        fields = ('id', 'username', 'first_name', 'last_name', 
+        'picture', 'is_verified', 'badges',)
+        read_only_fields = ('id', 'username', 'first_name', 'last_name', 
+        'picture', 'is_verified', 'badges',)
+
+    def get_badges(self, obj):
+        badges = []
+        try: badges = obj.badges
+        except: badges = Badge.objects.filter(user_id=obj.id)
+        return [badge.badge_type for badge in badges.all()]
 
 class CompleteUserSerializer(serializers.ModelSerializer):
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
     MEGABYTE_LIMIT = 10
 
+    badges = serializers.SerializerMethodField()
+    keywords = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = ('id', 'email', 'username',
-        'first_name', 'last_name', 'picture', 'phone_number', 
-        'date_of_birth', 'sex', 'latitude', 
-        'longitude', 'keywords', 'is_validated')
+        'first_name', 'last_name', 'picture', 
+        'confirm_picture', 'phone_number', 
+        'date_of_birth', 'sex', 'latitude', 'longitude',
+        'is_verified', 'is_pending_verification', 'badges', 'keywords')
+        read_only_fields = ('badges', 'is_verified', 'is_pending_verification',)
         extra_kwargs = {
             'picture': {'required': True},
             'phone_number': {'required': True},
-        } 
+        }
+    
+    def get_badges(self, obj):
+        badges = []
+        try: badges = obj.badges
+        except: badges = Badge.objects.filter(user_id=obj.id)
+        return [badge.badge_type for badge in badges.all()]
+
+    def get_keywords(self, obj):
+        mistbox_exists = Mistbox.objects.filter(user_id=obj.id).exists()
+        if not mistbox_exists: return []
+        return Mistbox.objects.get(user_id=obj.id).keywords
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
@@ -43,28 +69,28 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def validate_username(self, username):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
         if not re.match(alphanumeric_dash_and_underscores_only, username):
-            raise ValidationError("Letters, numbers, underscores, or hypens")
-        [is_offensive] = predict([username])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language")
+            raise ValidationError("abc, 123, _ and .")
+        # [is_offensive] = predict([username])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language")
         return username.lower()
 
     def validate_first_name(self, first_name):
         letters_only = "^[A-Za-z]*$"
         if not re.match(letters_only, first_name):
             raise ValidationError("Letters only")
-        [is_offensive] = predict([first_name])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language")
+        # [is_offensive] = predict([first_name])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language")
         return first_name
 
     def validate_last_name(self, last_name):
         letters_only = "^[A-Za-z]*$"
         if not re.match(letters_only, last_name):
             raise ValidationError("Letters only")
-        [is_offensive] = predict([last_name])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language")
+        # [is_offensive] = predict([last_name])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language")
         return last_name
     
     def validate_date_of_birth(self, date_of_birth):
@@ -87,9 +113,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if self.picture_below_size_limit(picture):
             raise ValidationError(f"Max file size is {self.MEGABYTE_LIMIT}MB")
         return picture
-    
-    def validate_keywords(self, keywords):
-        return [keyword.lower() for keyword in keywords]
 
     def verify_email_authentication(self, validated_data):
         email = validated_data.get('email').lower()
@@ -160,7 +183,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
         alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
         if not re.match(alphanumeric_dash_period_and_underscores_only, username):
-            raise ValidationError({"username": "Username must contain only letters, numbers, underscores, or periods"})
+            raise ValidationError({"username": "abc, 123, _ and . only"})
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
@@ -174,84 +197,31 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         user.set_unusable_password()
         user.save()
         return user
+
+    def start_verify_profile_picture_task(self, instance):
+        verify_profile_picture_task.delay(instance)
     
     def update(self, instance, validated_data):
         instance.email = validated_data.get('email', instance.email).lower()
         instance.username = validated_data.get('username', instance.username).lower()
         instance.date_of_birth = validated_data.get('date_of_birth', instance.date_of_birth)
-        instance.picture = validated_data.get('picture', instance.picture)
         instance.latitude = validated_data.get('latitude', instance.latitude)
         instance.longitude = validated_data.get('longitude', instance.longitude)
-        instance.keywords = validated_data.get('keywords', instance.keywords)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.picture = validated_data.get('picture', instance.picture)
+        instance.confirm_picture = validated_data.get('confirm_picture', instance.confirm_picture)
+        if instance.picture and instance.confirm_picture:
+            instance.is_pending_verification = True
+            self.start_verify_profile_picture_task(instance)
+        else:
+            instance.is_pending_verification = False
+            instance.is_verified = False
         instance.save()
         return instance
     
     def partial_update(self, instance, validated_data):
         return self.update(self, instance, validated_data)
-
-class ProfilePictureValidationSerializer(serializers.Serializer):
-    def is_match(self, picture, confirm_picture):
-        return True
-        # processed_picture = face_recognition.load_image_file(picture)
-        # processed_confirm = face_recognition.load_image_file(confirm_picture)
-        # picture_encodings = face_recognition.face_encodings(processed_picture)
-        # confirm_encodings = face_recognition.face_encodings(processed_confirm)
-        # results = face_recognition.compare_faces(picture_encodings, confirm_encodings[0])
-        # return results[0]
-
-    def validate(self, data):
-        picture = data.get('picture')
-        confirm_picture = data.get('confirm_picture')
-        if not picture and not confirm_picture: return data
-        if picture and not confirm_picture: 
-            raise ValidationError(
-                {
-                    "picture": "Picture must be validated, input confirm_picture",
-                }
-            )
-        if not self.is_match(picture, confirm_picture):
-            raise ValidationError(
-                {
-                    "picture": "Does not contain the same person as confirm_picture",
-                    "confirm_picture": "Does not contain the same person as picture"
-                }
-            )
-        return data
-
-class LoginSerializer(serializers.Serializer):
-    email_or_username = serializers.CharField()
-    password = serializers.CharField()
-
-    def validate(self, data):
-        email_or_username = data.get('email_or_username').lower()
-        password = data.get('password')
-
-        users_with_matching_email = User.objects.filter(email__iexact=email_or_username)
-        if users_with_matching_email:
-            user_with_matching_email = users_with_matching_email[0]
-            email_or_username = user_with_matching_email.username
-            
-        user = authenticate(username=email_or_username, password=password)
-        if user:
-            if not user.is_active:
-                raise serializers.ValidationError({
-                    "non_field_errors": [
-                        "User account is disabled"
-                    ]
-                })
-        else:
-            raise serializers.ValidationError({
-                    "non_field_errors": [
-                        "Unable to log in with provided credentials"
-                    ]
-                })
-
-        data['user'] = user
-        return data
-            
-            
 
 class UserEmailRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -309,93 +279,17 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
     def validate_username(self, username):
         alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
         if not re.match(alphanumeric_dash_period_and_underscores_only, username):
-            raise ValidationError("Username must contain only letters, numbers, underscores, or periods")
+            raise ValidationError("abc, 123, _ and . only")
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
             raise ValidationError("Username's taken")
         
-        [is_offensive] = predict([username])
-        if is_offensive:
-            raise serializers.ValidationError("Avoid offensive language")
+        # [is_offensive] = predict([username])
+        # if is_offensive:
+        #     raise serializers.ValidationError("Avoid offensive language")
 
         return username
-
-class PasswordValidationRequestSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    password = serializers.CharField()
-
-    def validate(self, data):
-        username = data.get('username').lower()
-        password = data.get('password')
-
-        user = User(username=username)
-        validate_password(password=password, user=user)
-
-        return data
-
-class PasswordResetRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-
-    def validate_email(self, email):
-        if not User.objects.filter(email__iexact=email):
-            raise ValidationError("Email does not exist")
-        return email
-
-class PasswordResetValidationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    code = serializers.CharField()
-
-    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
-
-    def validate_email(self, email):
-        matching_password_reset_requests = PasswordReset.objects.filter(email__iexact=email)
-        if not matching_password_reset_requests:
-            raise ValidationError("Email didn't request a reset")
-        return email
-
-    def validate(self, data):
-        email = data.get('email')
-        code = data.get('code')
-        password_reset_request = PasswordReset.objects.get(email__iexact=email)
-
-        current_time = datetime.now().timestamp()
-        time_since_reset_request = current_time - password_reset_request.code_time
-        request_expired = time_since_reset_request > self.EXPIRATION_TIME
-
-        if request_expired:
-            raise ValidationError({"code": "Code expired"})
-
-        if password_reset_request.code != code:
-            raise ValidationError({"code": "Code doesn't match"})
-        return data
-
-class PasswordResetFinalizationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField()
-
-    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
-
-    def validate_email(self, email):
-        matching_password_reset_requests = PasswordReset.objects.filter(email__iexact=email)
-        if not matching_password_reset_requests:
-            raise ValidationError("Email did not request a password reset")
-        
-        password_reset_request = matching_password_reset_requests[0]
-        if not password_reset_request.validated:
-            raise ValidationError("Request has not been validated")
-        
-        current_time = datetime.now().timestamp()
-        time_since_reset_request = current_time - password_reset_request.validation_time
-        request_expired = time_since_reset_request > self.EXPIRATION_TIME
-        if request_expired:
-            raise ValidationError("Request has expired")
-        
-        return email
-
-    def validate_password(self, password):
-        validate_password(password)
-        return password
 
 class PhoneNumberRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -504,7 +398,7 @@ class ResetEmailValidationSerializer(serializers.Serializer):
         matching_emails = PhoneNumberReset.objects.filter(
             email__iexact=email).order_by('-email_code_time')
         if not matching_emails:
-            raise ValidationError("Email did not request a phone number reset")
+            raise ValidationError("No reset request")
         
         matching_email = matching_emails[0]
 
@@ -541,7 +435,7 @@ class ResetTextRequestSerializer(serializers.Serializer):
         matching_emails = PhoneNumberReset.objects.filter(
             email__iexact=email).order_by('-email_code_time')
         if not matching_emails:
-            raise ValidationError("Email did not request a phone number reset")
+            raise ValidationError("Email did not request reset")
         
         matching_email = matching_emails[0]
         if not matching_email.email_validated:

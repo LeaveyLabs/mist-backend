@@ -1,11 +1,13 @@
 from datetime import datetime
 from decimal import Decimal
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
+from users.generics import get_empty_keywords, get_random_code
 
 from users.models import User
 
@@ -24,6 +26,7 @@ class Post(models.Model):
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
     timestamp = models.FloatField(default=get_current_time)
+    creation_time = models.FloatField(default=get_current_time)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def _str_(self):
@@ -62,12 +65,19 @@ class Post(models.Model):
                 str.maketrans('', '', string.punctuation)
                 ).split()
             words_in_post = words_in_text + words_in_title
+            mistboxes = Mistbox.objects.all().exclude(user=self.author)
             # for each word ...
             for word in words_in_post:
                 # ... if it doesn't exist create one
                 matching_word = Word.objects.filter(text__iexact=word.lower()).first()
                 if not matching_word:
                     matching_word = Word.objects.create(text=word.lower())
+
+                for mistbox in mistboxes.iterator():
+                    for keyword in mistbox.keywords:
+                        if word in keyword:
+                            mistbox.posts.add(self)
+                            mistbox.save()
 
 class Word(models.Model):
     text = models.CharField(max_length=100)
@@ -90,8 +100,8 @@ class PostVote(models.Model):
     AVG_RATING = (MIN_RATING+MAX_RATING)//2
     DEFAULT_EMOJI = "❤️"
 
-    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postvotes')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='votes')
     timestamp = models.FloatField(default=get_current_time)
     rating = models.IntegerField(default=AVG_RATING)
     emoji = models.CharField(max_length=5, default=DEFAULT_EMOJI)
@@ -253,3 +263,27 @@ class Message(models.Model):
 
     def _str_(self):
         return self.text
+
+class Mistbox(models.Model):
+    NUMBER_OF_KEYWORDS = 10
+    MAX_DAILY_SWIPES = 10
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='mistbox', on_delete=models.CASCADE)
+    keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords, blank=True)
+    creation_time = models.FloatField(default=get_current_time)
+    posts = models.ManyToManyField(Post, blank=True)
+    opens_used_today = models.IntegerField(default=0)
+
+class AccessCode(models.Model):
+    code_string = models.CharField(max_length=6, default=get_random_code, unique=True)
+    claimed_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='access_code', on_delete=models.CASCADE, null=True)
+
+class Badge(models.Model):
+    LOVE_MIST = 'LM'
+
+    BADGE_OPTIONS = (
+        (LOVE_MIST, 'LOVE, MIST'),
+    )
+
+    badge_type = models.CharField(max_length=2, choices=BADGE_OPTIONS,)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='badges', on_delete=models.CASCADE)

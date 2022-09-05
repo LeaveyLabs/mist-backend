@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import os
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,6 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 INSTALLED_APPS = [
     'corsheaders',
     'django_celery_beat',
+    'django_cleanup.apps.CleanupConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'django_nose',
     'mist',
-    'notifications',
+    'mist_worker',
     'phonenumber_field',
     'push_notifications',
     'rest_framework',
@@ -112,8 +112,8 @@ AUTHENTICATION_BACKENDS = [
     # Needed to login by username in Django admin, regardless of `allauth`
     'django.contrib.auth.backends.ModelBackend',
 
-    # `allauth` specific authentication methods, such as login by e-mail
-    'allauth.account.auth_backends.AuthenticationBackend',
+    # # `allauth` specific authentication methods, such as login by e-mail
+    # 'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 # Email details
@@ -159,7 +159,7 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 # Tell nose to measure coverage on the 'mist' and 'users' apps
 NOSE_ARGS = [
     '--with-coverage',
-    '--cover-package=mist,users',
+    '--cover-package=mist,users,mist_worker',
 ]
 
 import sys
@@ -194,6 +194,3 @@ PUSH_NOTIFICATIONS_SETTINGS = {
     "UPDATE_ON_DUPLICATE_REG_ID": True,
     "UNIQUE_REG_ID": True,
 }
-
-CELERY_BROKER_URL = os.environ.get("REDIS_URL")
-CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL")
