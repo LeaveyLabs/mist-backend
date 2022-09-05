@@ -31,6 +31,7 @@ redis = "*"
 django-redis = "*"
 django-celery-beat = "*"
 python-dateutil = "*"
+django-cleanup = "*"
 
 [dev-packages]
 

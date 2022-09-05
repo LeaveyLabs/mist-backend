@@ -234,7 +234,7 @@ class DeleteMistboxPostView(generics.DestroyAPIView):
         if post not in mistbox.posts.all():
             return Response(None, status.HTTP_404_NOT_FOUND)
 
-        if mistbox.swipecount + 1 > Mistbox.MAX_DAILY_SWIPES:
+        if mistbox.opens_used_today + 1 > Mistbox.MAX_DAILY_SWIPES:
             return Response(
             {
                 "detail": "no swipes left today"
@@ -242,6 +242,6 @@ class DeleteMistboxPostView(generics.DestroyAPIView):
             status.HTTP_400_BAD_REQUEST)
         
         mistbox.posts.remove(post)
-        mistbox.swipecount += 1
+        mistbox.opens_used_today += 1
         mistbox.save()
         return Response(None, status.HTTP_204_NO_CONTENT)

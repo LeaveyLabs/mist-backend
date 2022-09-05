@@ -24,6 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 INSTALLED_APPS = [
     'corsheaders',
     'django_celery_beat',
+    'django_cleanup.apps.CleanupConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',

@@ -1448,7 +1448,7 @@ class DeleteMistboxPostViewTest(TestCase):
 
     def test_delete_should_return_400_given_exceeded_daily_limit(self):
         mistbox_before_delete = Mistbox.objects.get(user=self.user1)
-        mistbox_before_delete.swipecount = Mistbox.MAX_DAILY_SWIPES
+        mistbox_before_delete.opens_used_today = Mistbox.MAX_DAILY_SWIPES
         mistbox_before_delete.save()
 
         request = APIRequestFactory().delete(

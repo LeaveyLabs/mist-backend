@@ -12,14 +12,14 @@ def send_mistbox_notifications():
     APNSDevice.objects.all().send_message(
         "Your mistbox is ready! See who wrote about you today 👀")
 
-@shared_task(name="reset_mistbox_swipecount_task")
-def reset_mistbox_swipecount_task():
-    reset_mistbox_swipecount()
+@shared_task(name="reset_mistbox_opens_task")
+def reset_mistbox_opens_task():
+    reset_mistbox_opens()
 
-def reset_mistbox_swipecount():
+def reset_mistbox_opens():
     from mist.models import Mistbox
     for mistbox in Mistbox.objects.all():
-        mistbox.swipecount = 0
+        mistbox.opens_used_today = 0
         mistbox.save()
 
 @shared_task(name="tally_random_upvotes_task")

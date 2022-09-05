@@ -272,4 +272,4 @@ class Mistbox(models.Model):
     keywords = ArrayField(models.TextField(), size=NUMBER_OF_KEYWORDS, default=get_empty_keywords, blank=True)
     creation_time = models.FloatField(default=get_current_time)
     posts = models.ManyToManyField(Post, blank=True)
-    swipecount = models.IntegerField(default=0)
+    opens_used_today = models.IntegerField(default=0)

@@ -7,7 +7,7 @@ from django.test import TestCase
 from freezegun import freeze_time
 from unittest.mock import patch
 
-from mist_worker.tasks import reset_mistbox_swipecount, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
+from mist_worker.tasks import reset_mistbox_opens, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
 from mist.models import Mistbox, Post, PostVote
 from push_notifications.models import APNSDevice
 from users.tests.generics import create_dummy_user_and_token_given_id, create_simple_uploaded_file_from_image_path
@@ -79,13 +79,13 @@ class TasksTest(TestCase):
 
     def test_reset_mistbox_swipecount(self):
         for mistbox in Mistbox.objects.all().iterator():
-            mistbox.swipecount = 10
+            mistbox.opens_used_today = 10
             mistbox.save()
         
-        reset_mistbox_swipecount()
+        reset_mistbox_opens()
 
         for mistbox in Mistbox.objects.all().iterator():
-            self.assertEqual(mistbox.swipecount, 0)
+            self.assertEqual(mistbox.opens_used_today, 0)
 
     def test_tally_random_upvotes(self):
         tally_random_upvotes()
