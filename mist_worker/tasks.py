@@ -89,7 +89,7 @@ def verify_profile_picture(user_id):
     VERIFICATION_SERVER = os.environ.get('VERIFICATION_SERVER')
     
     matching_users = User.objects.filter(id=user_id)
-    if not matching_users: return False
+    if not matching_users.exists(): return False
     
     matching_user = matching_users[0]
     
