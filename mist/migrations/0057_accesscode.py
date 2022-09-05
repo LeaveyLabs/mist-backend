@@ -26,12 +26,31 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name='AccessCode',
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code_string', models.CharField(default=users.generics.get_random_code, max_length=6, unique=True)),
-                ('claimed_user', models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='access_code', to=settings.AUTH_USER_MODEL)),
+                (
+                    'id',
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name='ID',
+                    ),
+                ),
+                (
+                    'code_string',
+                    models.CharField(
+                        default=users.generics.get_random_code, max_length=6, unique=True
+                    ),
+                ),
+                (
+                    'claimed_user',
+                    models.OneToOneField(
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name='access_code',
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
-        migrations.RunPython(
-            generate_starter_access_codes
-        )
+        migrations.RunPython(generate_starter_access_codes, migrations.RunPython.noop),
     ]
