@@ -7,7 +7,7 @@ from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
-from users.generics import get_empty_keywords
+from users.generics import get_empty_keywords, get_random_code
 
 from users.models import User
 
@@ -273,3 +273,17 @@ class Mistbox(models.Model):
     creation_time = models.FloatField(default=get_current_time)
     posts = models.ManyToManyField(Post, blank=True)
     opens_used_today = models.IntegerField(default=0)
+
+class AccessCode(models.Model):
+    code_string = models.CharField(max_length=6, default=get_random_code, unique=True)
+    claimed_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='access_code', on_delete=models.CASCADE, null=True)
+
+class Badge(models.Model):
+    LOVE_MIST = 'LM'
+
+    BADGE_OPTIONS = (
+        (LOVE_MIST, 'LOVE, MIST'),
+    )
+
+    badge_type = models.CharField(max_length=2, choices=BADGE_OPTIONS,)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='badges', on_delete=models.CASCADE)

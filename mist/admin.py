@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from .models import Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
+from mist.serializers import PostSerializer
+
+from .models import AccessCode, Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
 
 # Admin models
 class PostAdmin(admin.ModelAdmin):
@@ -48,9 +50,16 @@ class CommentFlagAdmin(admin.ModelAdmin):
     def comment_body(self, obj):
         return Comment.objects.get(id=obj.comment_id).body
 
-# class MistboxAdmin(admin.ModelAdmin):
-#     model = Mistbox
-#     list_display = ("id", "user", "posts")
+class MistboxAdmin(admin.ModelAdmin):
+    model = Mistbox
+    list_display = ("id", "user", "post_list")
+
+    def post_list(self, obj):
+        return [PostSerializer(post).data.get('title') for post in obj.posts.all()]
+
+class AccessCodeAdmin(admin.ModelAdmin):
+    model = AccessCode
+    list_display = ("id", "code_string", "claimed_user")
 
 # Register your models here.
 admin.site.register(Post, PostAdmin)
@@ -59,6 +68,8 @@ admin.site.register(PostVote, PostVoteAdmin)
 admin.site.register(PostFlag, PostFlagAdmin)
 admin.site.register(CommentVote, CommentVoteAdmin)
 admin.site.register(CommentFlag, CommentFlagAdmin)
+admin.site.register(Mistbox, MistboxAdmin)
+admin.site.register(AccessCode, AccessCodeAdmin)
 admin.site.register(Message)
 admin.site.register(Tag)
 admin.site.register(Block)
@@ -67,4 +78,3 @@ admin.site.register(Feature)
 admin.site.register(MatchRequest)
 admin.site.register(FriendRequest)
 admin.site.register(Favorite)
-admin.site.register(Mistbox)
