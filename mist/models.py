@@ -68,14 +68,15 @@ class Post(models.Model):
             mistboxes = Mistbox.objects.all().exclude(user=self.author)
             # for each word ...
             for word in words_in_post:
+                lowercased_word = word.lower()
                 # ... if it doesn't exist create one
-                matching_word = Word.objects.filter(text__iexact=word.lower()).first()
+                matching_word = Word.objects.filter(text__iexact=lowercased_word).first()
                 if not matching_word:
-                    matching_word = Word.objects.create(text=word.lower())
+                    matching_word = Word.objects.create(text=lowercased_word)
 
                 for mistbox in mistboxes.iterator():
                     for keyword in mistbox.keywords:
-                        if word in keyword:
+                        if lowercased_word in keyword:
                             mistbox.posts.add(self)
                             mistbox.save()
 
