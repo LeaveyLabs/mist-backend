@@ -59,7 +59,7 @@ class MistboxAdmin(admin.ModelAdmin):
 
 class AccessCodeAdmin(admin.ModelAdmin):
     model = AccessCode
-    list_display = ("id", "code_string", "claimed_user")
+    list_display = ("code_string", "claimed_user")
 
 # Register your models here.
 admin.site.register(Post, PostAdmin)
