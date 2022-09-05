@@ -33,7 +33,7 @@ from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedP
 from mist.views.tag import TagView
 from mist.views.post_vote import PostVoteView
 from mist.views.word import WordView
-from users.views.user import UserView, NearbyUsersView, MatchingPhoneNumbersView
+from users.views.user import UserPopulationView, UserView, NearbyUsersView, MatchingPhoneNumbersView
 from users.views.register import RegisterUserEmailView, RegisterPhoneNumberView, ValidateUserEmailView, ValidatePhoneNumberView, ValidateUsernameView
 from users.views.login import RequestLoginCodeView, ValidateLoginCodeView
 from users.views.reset import RequestResetEmailView, ValidateResetEmailView, RequestResetTextCodeView, ValidateResetTextCodeView
@@ -77,6 +77,7 @@ urlpatterns = [
     # Database
     path('api/', include(router.urls)),
     path('api/nearby-users/', NearbyUsersView.as_view()),
+    path('api/user-population/', UserPopulationView.as_view()),
     path('api/words/', WordView.as_view()),
     path('api/features/', FeatureView.as_view()),
     path('api/matches/', MatchView.as_view()),

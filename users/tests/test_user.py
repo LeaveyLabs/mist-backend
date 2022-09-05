@@ -1182,7 +1182,7 @@ class UserPopulationViewTest(TestCase):
     
     def test_get_should_return_user_population(self):
         request = APIRequestFactory().get(
-            'api/get-user-population/',
+            'api/user-population/',
             HTTP_AUTHORIZATION=f"Token {self.auth_token}"
         )
         response = UserPopulationView.as_view()(request)
