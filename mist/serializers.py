@@ -207,8 +207,8 @@ class MistboxSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Mistbox
-        fields = ('user', 'keywords', 'creation_time', 'posts')
-        read_only_fields = ('user', 'creation_time', 'posts')
+        fields = ('user', 'keywords', 'creation_time', 'posts', 'swipecount')
+        read_only_fields = ('user', 'creation_time', 'posts', 'swipecount')
 
     def validate_keywords(self, keywords):
         return [keyword.lower() for keyword in keywords]
