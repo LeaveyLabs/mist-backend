@@ -9,6 +9,7 @@ from django.core import mail, cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
+from mist.models import Badge
 from users.models import User
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
@@ -379,6 +380,18 @@ class UserViewGetTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response_user, self.user_serializer.data)
         return
+
+    def test_serializer_should_return_badges_attribute_given_user_with_badges(self):
+        Badge.objects.create(badge_type=Badge.LOVE_MIST, user=self.user1)
+
+        complete_serializer = CompleteUserSerializer(self.user1)
+        readonly_serializer = CompleteUserSerializer(self.user1)
+
+        complete_badges = complete_serializer.data.get('badges')
+        readonly_badges = readonly_serializer.data.get('badges')
+
+        self.assertEqual(complete_badges, [Badge.LOVE_MIST])
+        self.assertEqual(readonly_badges, [Badge.LOVE_MIST])
 
     # Valid Queries
     def test_get_should_return_user_given_word(self):

@@ -3,6 +3,7 @@ import re
 from django.forms import ValidationError
 # from profanity_check import predict
 from rest_framework import serializers
+from mist.models import Badge
 from mist_worker.tasks import verify_profile_picture_task
 
 from users.generics import get_current_time
@@ -10,14 +11,26 @@ from .models import Ban, PhoneNumberAuthentication, PhoneNumberReset, User, Emai
 from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
+    badges = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_verified')
-        read_only_fields = ('id', 'username', 'first_name', 'last_name', 'picture', 'is_verified')
+        fields = ('id', 'username', 'first_name', 'last_name', 
+        'picture', 'is_verified', 'badges',)
+        read_only_fields = ('id', 'username', 'first_name', 'last_name', 
+        'picture', 'is_verified', 'badges',)
+
+    def get_badges(self, obj):
+        badges = []
+        try: badges = obj.badges
+        except: badges = Badge.objects.filter(user_id=obj.id)
+        return [badge.badge_type for badge in badges.all()]
 
 class CompleteUserSerializer(serializers.ModelSerializer):
     EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
     MEGABYTE_LIMIT = 10
+
+    badges = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -25,11 +38,19 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         'first_name', 'last_name', 'picture', 
         'confirm_picture', 'phone_number', 
         'date_of_birth', 'sex', 'latitude', 'longitude',
-        'is_verified', 'is_pending_verification')
+        'is_verified', 'is_pending_verification', 'badges',)
+        read_only_fields = ('badges', 'is_verified', 'is_pending_verification',)
         extra_kwargs = {
             'picture': {'required': True},
             'phone_number': {'required': True},
-        } 
+        }
+    
+    def get_badges(self, obj):
+        badges = []
+        try: badges = obj.badges
+        except: badges = Badge.objects.filter(user_id=obj.id)
+        print([badge for badge in badges.all()])
+        return [badge.badge_type for badge in badges.all()]
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1

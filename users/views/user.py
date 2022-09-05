@@ -42,7 +42,7 @@ class UserView(viewsets.ModelViewSet):
         requesting_user = get_user_from_request(self.request)
 
         # default is to return all users
-        queryset = User.objects.all().exclude(is_hidden=True)
+        queryset = User.objects.all().exclude(is_hidden=True).prefetch_related('badges')
 
         # filter by words...
         if words:
