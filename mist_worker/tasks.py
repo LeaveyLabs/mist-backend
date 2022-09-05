@@ -80,18 +80,28 @@ def tally_random_upvotes():
             continue
 
 @shared_task(name="verify_profile_picture_task")
-def verify_profile_picture_task(user_instance):
-    verify_profile_picture(user_instance)
+def verify_profile_picture_task(user_id):
+    verify_profile_picture(user_id)
 
-def verify_profile_picture(user_instance):
+def verify_profile_picture(user_id):
+    from users.models import User
+
     VERIFICATION_SERVER = os.environ.get('VERIFICATION_SERVER')
+    
+    matching_users = User.objects.filter(id=user_id)
+    if not matching_users: return False
+    
+    matching_user = matching_users[0]
+    
     verification_request = requests.post(
         f'{VERIFICATION_SERVER}api-verify-profile-picture/', 
         files={
-            'picture': user_instance.picture,
-            'confirm_picture': user_instance.confirm_picture,
+            'picture': matching_user.picture,
+            'confirm_picture': matching_user.confirm_picture,
         },
     )
-    user_instance.is_verified = (verification_request.status_code == 200)
-    user_instance.is_pending_verification = False
-    user_instance.save()
+    matching_user.is_verified = (verification_request.status_code == 200)
+    matching_user.is_pending_verification = False
+    matching_user.save()
+    
+    return True

@@ -199,7 +199,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         return user
 
     def start_verify_profile_picture_task(self, instance):
-        verify_profile_picture_task.delay(instance)
+        from backend import celery_app
+        celery_app.send_task(name="verify_profile_picture_task", args=[instance.id])
     
     def update(self, instance, validated_data):
         instance.email = validated_data.get('email', instance.email).lower()
