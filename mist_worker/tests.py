@@ -105,8 +105,8 @@ class TasksTest(TestCase):
         self.user2.confirm_picture = self.kevin_image_file2
         self.user2.save()
 
-        verify_profile_picture(self.user1)
-        verify_profile_picture(self.user2)
+        verify_profile_picture(self.user1.id)
+        verify_profile_picture(self.user2.id)
 
         self.assertFalse(self.user1.is_pending_verification)
         self.assertFalse(self.user2.is_pending_verification)
