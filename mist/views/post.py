@@ -220,6 +220,8 @@ class DeleteMistboxPostView(generics.DestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         user = get_user_from_request(self.request)
         post_id = self.request.query_params.get("post")
+        opened = self.request.query_params.get("opened")
+
         post = get_object_or_404(
             Post.objects.all(),
             id=post_id,
@@ -231,15 +233,18 @@ class DeleteMistboxPostView(generics.DestroyAPIView):
 
         if post not in mistbox.posts.all():
             return Response(None, status.HTTP_404_NOT_FOUND)
-
-        if mistbox.opens_used_today + 1 > Mistbox.MAX_DAILY_SWIPES:
-            return Response(
-            {
-                "detail": "no swipes left today"
-            }, 
-            status.HTTP_400_BAD_REQUEST)
         
         mistbox.posts.remove(post)
-        mistbox.opens_used_today += 1
+
+        if opened: mistbox.opens_used_today += 1
+
+        if opened and mistbox.opens_used_today + 1 > Mistbox.MAX_DAILY_SWIPES:
+            return Response(
+            {
+                "detail": "no opens left today"
+            }, 
+            status.HTTP_400_BAD_REQUEST)
+
         mistbox.save()
+        
         return Response(None, status.HTTP_204_NO_CONTENT)

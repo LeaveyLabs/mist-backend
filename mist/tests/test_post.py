@@ -1453,11 +1453,11 @@ class DeleteMistboxPostViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(mistbox_before_delete, mistbox_after_delete)
 
-    def test_delete_should_return_404_given_post_not_in_mistbox(self):
+    def test_delete_should_return_404_given_opened_post_not_in_mistbox(self):
         mistbox_before_delete = Mistbox.objects.get(user=self.user1)
 
         request = APIRequestFactory().delete(
-            f'api/delete-mistbox-posts/?post={self.post2.id}',
+            f'api/delete-mistbox-posts/?post={self.post2.id}&opened=1',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = DeleteMistboxPostView.as_view()(request)
@@ -1467,7 +1467,23 @@ class DeleteMistboxPostViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(mistbox_before_delete, mistbox_after_delete)
 
-    def test_delete_should_return_400_given_exceeded_daily_limit(self):
+    def test_delete_should_return_400_given_opened_post_and_exceeded_daily_limit(self):
+        mistbox_before_delete = Mistbox.objects.get(user=self.user1)
+        mistbox_before_delete.opens_used_today = Mistbox.MAX_DAILY_SWIPES
+        mistbox_before_delete.save()
+
+        request = APIRequestFactory().delete(
+            f'api/delete-mistbox-posts/?post={self.post1.id}&opened=1',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = DeleteMistboxPostView.as_view()(request)
+
+        mistbox_after_delete = Mistbox.objects.get(user=self.user1)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(mistbox_before_delete, mistbox_after_delete)
+
+    def test_delete_should_delete_post_given_unopened_post_and_exceeded_daily_limit(self):
         mistbox_before_delete = Mistbox.objects.get(user=self.user1)
         mistbox_before_delete.opens_used_today = Mistbox.MAX_DAILY_SWIPES
         mistbox_before_delete.save()
@@ -1480,14 +1496,14 @@ class DeleteMistboxPostViewTest(TestCase):
 
         mistbox_after_delete = Mistbox.objects.get(user=self.user1)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(mistbox_before_delete, mistbox_after_delete)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertNotIn(self.post1, mistbox_after_delete.posts.all())
 
-    def test_delete_should_delete_post_from_mistbox_given_existing_post(self):
+    def test_delete_should_delete_post_from_mistbox_given_opened_post_below_daily_limit(self):
         self.assertIn(self.post1, Mistbox.objects.get(user=self.user1).posts.all())
         
         request = APIRequestFactory().delete(
-            f'api/delete-mistbox-posts/?post={self.post1.id}',
+            f'api/delete-mistbox-posts/?post={self.post1.id}&opened=1',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = DeleteMistboxPostView.as_view()(request)
