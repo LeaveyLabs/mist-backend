@@ -134,6 +134,27 @@ class PostTest(TestCase):
         post1 = Post.objects.create(
             title='these',
             body='cool',
+            author=self.user2,
+        )
+        post2 = Post.objects.create(
+            title='are',
+            body='keywords',
+            author=self.user2,
+        )
+        test_mistbox = Mistbox.objects.get(id=mistbox.id)
+
+        self.assertIn(post1, test_mistbox.posts.all())
+        self.assertIn(post2, test_mistbox.posts.all())
+        return
+
+    def test_save_should_not_add_to_author_mistboxes(self):
+        mistbox = Mistbox.objects.create(user=self.user1)
+        mistbox.keywords = ['these', 'are', 'cool', 'keywords']
+        mistbox.save()
+
+        post1 = Post.objects.create(
+            title='these',
+            body='cool',
             author=self.user1,
         )
         post2 = Post.objects.create(
@@ -143,8 +164,8 @@ class PostTest(TestCase):
         )
         test_mistbox = Mistbox.objects.get(id=mistbox.id)
 
-        self.assertIn(post1, test_mistbox.posts.all())
-        self.assertIn(post2, test_mistbox.posts.all())
+        self.assertNotIn(post1, test_mistbox.posts.all())
+        self.assertNotIn(post2, test_mistbox.posts.all())
         return
     
     def test_post_should_create_post_given_valid_post(self):

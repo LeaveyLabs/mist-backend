@@ -65,7 +65,7 @@ class Post(models.Model):
                 str.maketrans('', '', string.punctuation)
                 ).split()
             words_in_post = words_in_text + words_in_title
-            mistboxes = Mistbox.objects.all()
+            mistboxes = Mistbox.objects.all().exclude(user=self.author)
             # for each word ...
             for word in words_in_post:
                 # ... if it doesn't exist create one
