@@ -58,6 +58,11 @@ def tally_random_upvotes():
     "😰", "👀", "👏", "💘", "😮", "🙄", "😇", "😳", "😶", 
     "🤠", "😦", "🍿", "🔥", "🙂", "🤣"]
 
+    emojis += ["😂", "😂", "😂", "😂", "😂", "😂"]
+    emojis += ["👀", "👀", "👀", "👀", "👀"]
+    emojis += ["😍", "😍", "😍"]
+    emojis += ["🔥"]
+
     for test_voter in final_test_voters:
         voted_postvote_ids = [
             postvote.id for postvote in test_voter.postvotes.all()
