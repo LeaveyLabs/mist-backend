@@ -184,9 +184,10 @@ class TaggedPostsView(generics.ListAPIView):
         if user.phone_number:
             tagged_numbers = Tag.objects.filter(tagged_phone_number=user.phone_number)
             tags = (tags | tagged_numbers).distinct()
-        tagged_comments = Comment.objects.filter(id__in=tags.values_list('comment_id'))
-        tagged_posts = Post.objects.filter(id__in=tagged_comments.values_list('post_id'))
-        return tagged_posts.order_by('-creation_time')
+        tagged_posts = Post.objects.filter(
+            comments__tags__in=tags
+        ).order_by('-comments__tags__timestamp')
+        return tagged_posts
 
 class MistboxView(generics.RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated, )
