@@ -193,4 +193,5 @@ PUSH_NOTIFICATIONS_SETTINGS = {
     "APNS_TOPIC": os.environ.get('APNS_TOPIC'),
     "UPDATE_ON_DUPLICATE_REG_ID": True,
     "UNIQUE_REG_ID": True,
+    "APNS_USE_SANDBOX": os.environ.get("APNS_USE_SANDBOX"),
 }
