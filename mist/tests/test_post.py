@@ -81,17 +81,13 @@ class PostTest(TestCase):
         return
     
     def test_calculate_votecount_should_return_votecount(self):
-        return self.assertEquals(self.post1.calculate_votecount(), 1)
-
-    def test_calculate_averagerating_should_return_average_rating(self):
-        return self.assertEquals(self.post1.calculate_averagerating(), 
-            self.vote.rating)
+        return self.assertEquals(PostSerializer().get_votecount(self.post1), 1)
     
     def test_calculate_commentcount_should_return_number_of_comments(self):
-        return self.assertEquals(self.post1.calculate_commentcount(), 1)
+        return self.assertEquals(PostSerializer().get_commentcount(self.post1), 1)
     
     def test_calculate_flagcount_should_return_number_of_flags(self):
-        return self.assertEquals(self.post1.calculate_flagcount(), 1)
+        return self.assertEquals(PostSerializer().get_flagcount(self.post1), 1)
 
     def test_save_should_create_words_in_post(self):
         Post.objects.create(
@@ -301,11 +297,11 @@ class PostTest(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for response_post in response_posts:
-            self.assertTrue('votecount' in response_post)
-            self.assertTrue('commentcount' in response_post)
-            self.assertTrue('averagerating' in response_post)
-            self.assertTrue('read_only_author' in response_post)
-            self.assertTrue('votes' in response_post)
+            self.assertIn('votecount', response_post)
+            self.assertIn('flagcount', response_post)
+            self.assertIn('commentcount', response_post)
+            self.assertIn('read_only_author', response_post)
+            self.assertIn('votes', response_post)
         return
     
     def test_get_should_return_correct_votes(self):

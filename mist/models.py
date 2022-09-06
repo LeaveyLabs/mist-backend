@@ -39,11 +39,6 @@ class Post(models.Model):
     def calculate_votecount(self):
         return PostVote.objects.filter(post_id=self.pk).count()
     
-    def calculate_averagerating(self):
-        votes = PostVote.objects.filter(post_id=self.pk)
-        if len(votes) == 0: return 0
-        return sum(vote.rating for vote in votes)/float(len(votes))
-    
     def calculate_commentcount(self):
         return Comment.objects.filter(post=self.pk).count()
     
@@ -133,8 +128,8 @@ class PostFlag(models.Model):
     MAX_RATING = 10
     AVG_RATING = (MIN_RATING+MAX_RATING)//2
 
-    flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postflags')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='flags')
     timestamp = models.FloatField(default=get_current_time)
     rating = models.IntegerField(default=AVG_RATING)
 
@@ -148,7 +143,7 @@ class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     body = models.CharField(max_length=500)
     timestamp = models.FloatField(default=get_current_time)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def _str_(self):

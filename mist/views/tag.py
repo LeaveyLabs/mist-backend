@@ -22,7 +22,7 @@ class TagView(viewsets.ModelViewSet):
         tagging_user = self.request.query_params.get("tagging_user")
         tagged_name = self.request.query_params.get("tagged_name")
         comment = self.request.query_params.get("comment")
-        queryset = Tag.objects.all()
+        queryset = Tag.objects.all().select_related('comment__post')
         if tagged_user:
             queryset = queryset.filter(tagged_user=tagged_user)
         if tagging_user:
