@@ -141,10 +141,17 @@ class PostTest(TestCase):
             body='keywords',
             author=self.user2,
         )
+        post3 = Post.objects.create(
+            title='definitely',
+            body='not the droids your looking for',
+            author=self.user2,
+            location_description="keywords"
+        )
         test_mistbox = Mistbox.objects.get(id=mistbox.id)
 
         self.assertIn(post1, test_mistbox.posts.all())
         self.assertIn(post2, test_mistbox.posts.all())
+        self.assertIn(post3, test_mistbox.posts.all())
         return
 
     def test_save_should_not_add_to_author_mistboxes(self):
@@ -1498,16 +1505,18 @@ class DeleteMistboxPostViewTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertNotIn(self.post1, mistbox_after_delete.posts.all())
+        self.assertEqual(mistbox_before_delete.opens_used_today, mistbox_after_delete.opens_used_today)
 
-    def test_delete_should_delete_post_from_mistbox_given_opened_post_below_daily_limit(self):
-        self.assertIn(self.post1, Mistbox.objects.get(user=self.user1).posts.all())
+    def test_delete_should_delete_post_from_mistbox_given_opened_post_and_below_daily_limit(self):
+        mistbox_before_delete = Mistbox.objects.get(user=self.user1)
         
         request = APIRequestFactory().delete(
             f'api/delete-mistbox-posts/?post={self.post1.id}&opened=1',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = DeleteMistboxPostView.as_view()(request)
-        mistbox = Mistbox.objects.get(user=self.user1)
+        mistbox_after_delete = Mistbox.objects.get(user=self.user1)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertNotIn(self.post1, mistbox.posts.all())
+        self.assertNotIn(self.post1, mistbox_after_delete.posts.all())
+        self.assertEqual(mistbox_before_delete.opens_used_today+1, mistbox_after_delete.opens_used_today)

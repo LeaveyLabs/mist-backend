@@ -58,13 +58,24 @@ class Post(models.Model):
         # generate word
         if is_new:
             # gather all words in the post
-            words_in_text = self.body.translate(
-                str.maketrans('', '', string.punctuation)
-                ).split()
-            words_in_title = self.title.translate(
-                str.maketrans('', '', string.punctuation)
-                ).split()
-            words_in_post = words_in_text + words_in_title
+            words_in_text = []
+            words_in_title = []
+            words_in_loc = []
+
+            if self.body:
+                words_in_text = self.body.translate(
+                    str.maketrans('', '', string.punctuation)
+                    ).split()
+            if self.title:
+                words_in_title = self.title.translate(
+                    str.maketrans('', '', string.punctuation)
+                    ).split()
+            if self.location_description:
+                words_in_loc = self.location_description.translate(
+                    str.maketrans('', '', string.punctuation)
+                    ).split()
+            
+            words_in_post = words_in_text + words_in_title + words_in_loc
             mistboxes = Mistbox.objects.all().exclude(user=self.author)
             # for each word ...
             for word in words_in_post:

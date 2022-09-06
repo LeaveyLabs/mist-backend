@@ -65,7 +65,8 @@ class PostView(viewsets.ModelViewSet):
             for word in words:
                 word_in_title = Post.objects.filter(title__icontains=word)
                 word_in_body = Post.objects.filter(body__icontains=word)
-                word_postset = (word_in_title | word_in_body).distinct()
+                word_in_loc = Post.objects.filter(location_description__icontains=word)
+                word_postset = (word_in_title | word_in_body | word_in_loc).distinct()
                 queryset = queryset.intersection(word_postset)
         if start_timestamp and end_timestamp:
             queryset = queryset.filter(
