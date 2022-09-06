@@ -55,7 +55,7 @@ class TagView(viewsets.ModelViewSet):
 
         if tagged_user_id:
             notifications_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist."
-            receiving_devices = APNSDevice.objects.filter(user=tagged_user_id)
+            receiving_devices = APNSDevice.objects.filter(user_id=tagged_user_id)
             receiving_devices.send_message(notifications_body)
         
         elif tagged_phone_number:
