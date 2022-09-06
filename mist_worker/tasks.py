@@ -10,7 +10,7 @@ def send_mistbox_notifications_task():
 def send_mistbox_notifications():
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
-        "Your mistbox is ready! See who wrote about you today 👀")
+        "Your 5 opens have refreshed! See who wrote about you today 👀")
 
 @shared_task(name="reset_mistbox_opens_task")
 def reset_mistbox_opens_task():
