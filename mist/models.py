@@ -14,6 +14,10 @@ from users.models import User
 def get_current_time():
     return datetime.now().timestamp()
 
+class NotificationTypes:
+    TAG = "tag"
+    MESSAGE = "message"
+
 # Post Interactions
 class Post(models.Model):
     USC_LATITUDE = Decimal(34.0224)

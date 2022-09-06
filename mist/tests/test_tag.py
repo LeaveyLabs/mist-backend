@@ -19,7 +19,7 @@ from users.models import User
 class NotificationServiceMock:
     sent_notifications = []
 
-    def send_fake_notification(self, message):
+    def send_fake_notification(self, message, *args, **kwargs):
         NotificationServiceMock.sent_notifications.append(message)
 
 @freeze_time("2020-01-01")

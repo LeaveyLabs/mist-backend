@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
 
-from ..models import Comment, Post, Tag
+from ..models import Comment, NotificationTypes, Post, Tag
 from ..serializers import TagSerializer
 
 import sys
@@ -54,15 +54,20 @@ class TagView(viewsets.ModelViewSet):
         tagging_last_name = tagging_user.last_name
 
         if tagged_user_id:
-            notifications_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist."
+            notifications_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist"
             receiving_devices = APNSDevice.objects.filter(user_id=tagged_user_id)
-            receiving_devices.send_message(notifications_body)
+            receiving_devices.send_message(
+                notifications_body, 
+                extra={
+                    "type": NotificationTypes.TAG,
+                    "data": tag_response.data
+                })
         
         elif tagged_phone_number:
             tagged_comment = Comment.objects.get(id=tagged_comment_id)
             tagged_post_snippet = " ".join(self.get_first_twenty_or_less_words(tagged_comment.post_id))
             download_link = "https://www.getmist.app/download"
-            text_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist: \"{tagged_post_snippet}...\"\n\nSee what your secret admirer has to say about you: {download_link}"
+            text_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist: \"{tagged_post_snippet}...\"\n\nsee what your secret admirer has to say about you: {download_link}"
             twilio_client.messages.create(
                 to=tagged_phone_number,
                 from_=twilio_phone_number,
