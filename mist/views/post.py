@@ -122,7 +122,8 @@ class MatchedPostsView(generics.ListAPIView):
                                 match_requested_user=requesting_user_pk)
             matched_requests = matched_requests | received_requests
         matched_post_pks = matched_requests.values_list('post')
-        matched_posts = Post.objects.filter(pk__in=matched_post_pks)
+        matched_posts = Post.objects.filter(
+            pk__in=matched_post_pks).order_by('-creation_time')
         return matched_posts
 
 
@@ -132,7 +133,8 @@ class FeaturedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         featured_post_pks = Feature.objects.values_list('post')
-        featured_posts = Post.objects.filter(pk__in=featured_post_pks)
+        featured_posts = Post.objects.filter(
+            pk__in=featured_post_pks).order_by('-creation_time')
         return featured_posts
 
 
@@ -151,7 +153,7 @@ class FriendPostsView(generics.ListAPIView):
             friend_requested_user=user,
         )
         friend_pks = matched_friend_requests.values_list('friend_requesting_user')
-        return Post.objects.filter(author_id__in=friend_pks)
+        return Post.objects.filter(author_id__in=friend_pks).order_by('-creation_time')
 
 
 class FavoritedPostsView(generics.ListAPIView):
@@ -161,7 +163,7 @@ class FavoritedPostsView(generics.ListAPIView):
     def get_queryset(self):
         user = get_user_from_request(self.request)
         favorited_post_pks = Favorite.objects.filter(favoriting_user=user).values_list('post')
-        return Post.objects.filter(pk__in=favorited_post_pks)
+        return Post.objects.filter(pk__in=favorited_post_pks).order_by('-creation_time')
 
 
 class SubmittedPostsView(generics.ListAPIView):
@@ -170,7 +172,7 @@ class SubmittedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = get_user_from_request(self.request)
-        return Post.objects.filter(author=user)
+        return Post.objects.filter(author=user).order_by('-creation_time')
 
 class TaggedPostsView(generics.ListAPIView):
     permission_classes = (IsAuthenticated, )
@@ -184,7 +186,7 @@ class TaggedPostsView(generics.ListAPIView):
             tags = (tags | tagged_numbers).distinct()
         tagged_comments = Comment.objects.filter(id__in=tags.values_list('comment_id'))
         tagged_posts = Post.objects.filter(id__in=tagged_comments.values_list('post_id'))
-        return tagged_posts
+        return tagged_posts.order_by('-creation_time')
 
 class MistboxView(generics.RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated, )
