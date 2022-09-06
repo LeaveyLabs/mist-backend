@@ -212,6 +212,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.picture = validated_data.get('picture', instance.picture)
         instance.confirm_picture = validated_data.get('confirm_picture', instance.confirm_picture)
+        instance.save()
         if instance.picture and instance.confirm_picture:
             instance.is_pending_verification = True
             self.start_verify_profile_picture_task(instance)
