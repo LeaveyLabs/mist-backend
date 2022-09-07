@@ -70,12 +70,6 @@ class PostView(viewsets.ModelViewSet):
                 q |= Q(body__icontains=word)
                 q |= Q(location_description__icontains=word)
             queryset = Post.objects.filter(q)
-            # for word in words:
-            #     word_postset = Post.objects.filter(
-            #         Q(title__icontains=word)| 
-            #         Q(body__icontains=word)| 
-            #         Q(location_description__icontains=word))
-            #     queryset = queryset.intersection(word_postset)
         if start_timestamp and end_timestamp:
             queryset = queryset.filter(
                 timestamp__gte=start_timestamp,
