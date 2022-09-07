@@ -55,7 +55,8 @@ class PostView(viewsets.ModelViewSet):
         location_description = self.request.query_params.get('location_description')
         author = self.request.query_params.get('author')
         # filter
-        queryset = Post.objects.all().prefetch_related("votes", "comments", "flags")
+        queryset = Post.objects.all().prefetch_related(
+            "votes", "comments", "flags").select_related('author')
         if latitude and longitude:
             queryset = self.get_locations_nearby_coords(
                 latitude, longitude, radius or self.MAX_DISTANCE)
@@ -63,9 +64,15 @@ class PostView(viewsets.ModelViewSet):
             queryset = queryset.filter(pk__in=ids)
         if words:
             for word in words:
-                word_in_title = Post.objects.filter(title__icontains=word)
-                word_in_body = Post.objects.filter(body__icontains=word)
-                word_in_loc = Post.objects.filter(location_description__icontains=word)
+                word_in_title = Post.objects.\
+                    filter(title__icontains=word).\
+                    select_related('author')
+                word_in_body = Post.objects.\
+                    filter(body__icontains=word).\
+                    select_related('author')
+                word_in_loc = Post.objects.\
+                    filter(location_description__icontains=word).\
+                    select_related('author')
                 word_postset = (word_in_title | word_in_body | word_in_loc).distinct()
                 queryset = queryset.intersection(word_postset)
         if start_timestamp and end_timestamp:
