@@ -12,11 +12,21 @@ from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
 
 from ..serializers import MistboxSerializer, PostSerializer
-from ..models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
+from ..models import Favorite, Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
 
 class Order(Enum):
-    VOTE = 0
-    TIME = 1
+    RECENT = 0
+    BEST = 1
+    TRENDING = 2
+
+    def recency_sort_key(post):
+        return post.get('creation_time')
+
+    def best_sort_key(post):
+        return post.get('votecount')
+
+    def trending_sort_key(post):
+        return post.get('trendscore')
 
 class PostView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, PostPermission,)
@@ -35,8 +45,20 @@ class PostView(viewsets.ModelViewSet):
         for serialized_post in serialized_posts:
             if not is_impermissible_post(serialized_post):
                 filtered_posts.append(serialized_post)
-        votes_minus_flags = lambda post: post.get('votecount') - post.get('flagcount')
-        ordered_posts = sorted(filtered_posts, key=votes_minus_flags, reverse=True)
+        
+        order_type = self.request.query_params.get('order')
+        try: order_type = int(order_type)
+        except: order_type = Order.BEST
+
+        sort_key = Order.trending_sort_key
+        if order_type == Order.BEST:
+            sort_key = Order.best_sort_key
+        elif order_type == Order.RECENT:
+            sort_key = Order.recency_sort_key
+        elif order_type == Order.TRENDING:
+            sort_key = Order.trending_sort_key
+
+        ordered_posts = sorted(filtered_posts, key=sort_key, reverse=True)
         return ordered_posts
 
     def get_queryset(self):

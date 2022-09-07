@@ -8,7 +8,7 @@ from rest_framework.test import APIRequestFactory
 
 from mist.models import Comment, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, Word
 from mist.serializers import PostSerializer, PostVoteSerializer
-from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
+from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, Order, PostView, SubmittedPostsView, TaggedPostsView
 from users.models import User
 
 @freeze_time("2020-01-01")
@@ -324,19 +324,127 @@ class PostTest(TestCase):
                 self.assertTrue(correct_vote_id in vote_ids)
         return
     
-    def test_get_should_return_posts_in_vote_minus_flag_order(self):
-        PostVote.objects.create(voter=self.user1, post=self.post2)
-        PostVote.objects.create(voter=self.user2, post=self.post2)
-        PostVote.objects.create(voter=self.user2, post=self.post1)
+    # def test_get_should_return_posts_in_vote_minus_flag_order(self):
+    #     PostVote.objects.create(voter=self.user1, post=self.post2)
+    #     PostVote.objects.create(voter=self.user2, post=self.post2)
+    #     PostVote.objects.create(voter=self.user2, post=self.post1)
+        
+    #     serialized_posts = [
+    #         PostSerializer(self.post2).data,
+    #         PostSerializer(self.post1).data,
+    #         PostSerializer(self.post3).data,
+    #     ]
+        
+    #     request = APIRequestFactory().get(
+    #         '/api/posts',
+    #         format="json",
+    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+    #     )
+
+    #     response = PostView.as_view({'get':'list'})(request)
+    #     response_posts = [post_data for post_data in response.data]
+
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     self.assertEqual(serialized_posts[0], response_posts[0])
+    #     self.assertEqual(serialized_posts[1], response_posts[1])
+    #     self.assertEqual(serialized_posts[2], response_posts[2])
+    #     return
+    
+    def test_get_should_return_posts_in_trending_order_as_default(self):
+        PostVote.objects.create(voter=self.user1, post=self.post2, timestamp=1)
+        PostVote.objects.create(voter=self.user2, post=self.post1)       
+        PostVote.objects.create(voter=self.user2, post=self.post2, timestamp=1)
         
         serialized_posts = [
-            PostSerializer(self.post2).data,
             PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
             PostSerializer(self.post3).data,
         ]
         
         request = APIRequestFactory().get(
             '/api/posts',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts[0], response_posts[0])
+        self.assertEqual(serialized_posts[1], response_posts[1])
+        self.assertEqual(serialized_posts[2], response_posts[2])
+        return
+    
+    def test_get_should_return_posts_in_best_order_given_order_parameter(self):
+        PostVote.objects.create(voter=self.user2, post=self.post1)
+        PostVote.objects.create(voter=self.user2, post=self.post2)
+        PostVote.objects.create(voter=self.user3, post=self.post1)
+        
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
+        
+        request = APIRequestFactory().get(
+            f'/api/posts?order={Order.BEST}',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts[0], response_posts[0])
+        self.assertEqual(serialized_posts[1], response_posts[1])
+        self.assertEqual(serialized_posts[2], response_posts[2])
+        return
+
+    def test_get_should_return_posts_in_trending_order_given_order_parameter(self):
+        PostVote.objects.create(voter=self.user2, post=self.post1)
+        PostVote.objects.create(voter=self.user1, post=self.post2, timestamp=1)
+        PostVote.objects.create(voter=self.user2, post=self.post2, timestamp=1)
+        
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
+        
+        request = APIRequestFactory().get(
+            f'/api/posts?order={Order.TRENDING}',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts[0], response_posts[0])
+        self.assertEqual(serialized_posts[1], response_posts[1])
+        self.assertEqual(serialized_posts[2], response_posts[2])
+        return
+
+    def test_get_should_return_posts_in_recent_order_given_recent_parameter(self):
+        self.post1.creation_time = 4
+        self.post2.creation_time = 3
+        self.post3.creation_time = 2
+
+        self.post1.save()
+        self.post2.save()
+        self.post3.save()
+        
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
+        
+        request = APIRequestFactory().get(
+            f'/api/posts?order={Order.RECENT}',
             format="json",
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )

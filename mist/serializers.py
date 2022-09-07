@@ -1,6 +1,7 @@
 from psycopg2 import IntegrityError
 # from profanity_check import predict
 from rest_framework import serializers
+from users.generics import get_current_time
 from users.models import User
 
 from users.serializers import ReadOnlyUserSerializer
@@ -27,12 +28,13 @@ class PostSerializer(serializers.ModelSerializer):
     commentcount = serializers.SerializerMethodField()
     flagcount = serializers.SerializerMethodField()
     emoji_dict = serializers.SerializerMethodField()
+    trendscore = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = ('id', 'title', 'body', 'latitude', 'longitude', 'location_description',
         'timestamp', 'author', 'commentcount', 'votecount', 'flagcount', 
-        'read_only_author', 'votes', 'emoji_dict')
+        'read_only_author', 'votes', 'emoji_dict', 'creation_time', 'trendscore')
     
     def get_flagcount(self, obj):
         flags = None
@@ -49,6 +51,12 @@ class PostSerializer(serializers.ModelSerializer):
         try: obj.votes
         except: obj.votes = PostVote.objects.filter(post_id=obj.id)
         return sum([vote.rating for vote in obj.votes.all()])/PostVote.AVG_RATING
+
+    def get_trendscore(self, obj):
+        try: obj.votes
+        except: obj.votes = PostVote.objects.filter(post_id=obj.id)
+        return sum([vote.rating*(vote.timestamp/get_current_time()) 
+            for vote in obj.votes.all()])/PostVote.AVG_RATING
 
     def get_read_only_author(self, obj):
         return ReadOnlyUserSerializer(obj.author).data
