@@ -1,5 +1,6 @@
 from decimal import Decimal
 from enum import Enum
+from django.db.models import Q
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
@@ -63,12 +64,18 @@ class PostView(viewsets.ModelViewSet):
         if ids:
             queryset = queryset.filter(pk__in=ids)
         if words:
+            q = Q()
             for word in words:
-                word_in_title = Post.objects.filter(title__icontains=word)
-                word_in_body = Post.objects.filter(body__icontains=word).
-                word_in_loc = Post.objects.filter(location_description__icontains=word)
-                word_postset = (word_in_title | word_in_body | word_in_loc).distinct()
-                queryset = queryset.intersection(word_postset)
+                q |= Q(title__icontains=word)
+                q |= Q(body__icontains=word)
+                q |= Q(location_description__icontains=word)
+            queryset = Post.objects.filter(q)
+            # for word in words:
+            #     word_postset = Post.objects.filter(
+            #         Q(title__icontains=word)| 
+            #         Q(body__icontains=word)| 
+            #         Q(location_description__icontains=word))
+            #     queryset = queryset.intersection(word_postset)
         if start_timestamp and end_timestamp:
             queryset = queryset.filter(
                 timestamp__gte=start_timestamp,
