@@ -47,7 +47,10 @@ class PostSerializer(serializers.ModelSerializer):
         return comments.count()
 
     def get_votecount(self, obj):
-        return len(self.get_votes(obj))
+        votes = []
+        try: votes = obj.votes.all()
+        except: votes = self.get_votes(obj)
+        return len(votes)
 
     def get_read_only_author(self, obj):
         return ReadOnlyUserSerializer(obj.author).data
@@ -56,7 +59,8 @@ class PostSerializer(serializers.ModelSerializer):
         votes = []
         try: votes = obj.votes
         except: votes = PostVote.objects.filter(post_id=obj.id)
-        return [PostVoteSerializer(vote).data for vote in votes.all()]
+        return self.convert_votes_to_emoji_tuple(votes)
+        # return [PostVoteSerializer(vote).data for vote in votes.all()]
 
     def validate_body(self, body):
         # [is_offensive] = predict([body])

@@ -113,7 +113,7 @@ class MatchedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         match_requests = MatchRequest.objects.all()
-        sent_request_pks = match_requests.values_list('match_requested_user_id', 
+        sent_request_pks = match_requests.values_list('match_requested_user_id',
                                                     'match_requesting_user_id')
         matched_requests = MatchRequest.objects.none()
         for requested_user_pk, requesting_user_pk in sent_request_pks:
