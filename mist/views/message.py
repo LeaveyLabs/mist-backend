@@ -49,13 +49,6 @@ class MessageView(viewsets.ModelViewSet):
                     "type": NotificationTypes.MESSAGE,
                     "data": message_response.data
                 })
-        else:
-            receiving_devices.send_message(
-                "someone sent you a special message ❤️",
-                extra={
-                    "type": NotificationTypes.MESSAGE,
-                    "data": message_response.data
-                })
         
         return message_response
 

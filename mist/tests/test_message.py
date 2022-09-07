@@ -258,29 +258,6 @@ class MessageTest(TestCase):
             f"{message.sender.username}: {message.body}",
             NotificationServiceMock.sent_notifications)
         return
-
-    def test_post_should_send_anonymous_notification_given_message_to_unmatched_user(self):
-        message = Message(
-            sender=self.user1,
-            receiver=self.user2,
-            body="TestMessageOne",
-            timestamp=0,
-        )
-        serialized_message = MessageSerializer(message).data
-
-        request = APIRequestFactory().post(
-            '/api/messages/',
-            serialized_message,
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-        )
-        response = MessageView.as_view({'post':'create'})(request)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn(
-            "someone sent you a special message ❤️", 
-            NotificationServiceMock.sent_notifications)
-        return
     
     def test_post_should_not_create_message_given_invalid_message(self):
         message = Message(

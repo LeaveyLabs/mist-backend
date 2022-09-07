@@ -1,4 +1,5 @@
 from datetime import date
+from unittest.mock import patch
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
@@ -11,9 +12,19 @@ from mist.views.match import MatchRequestView, MatchView
 from users.models import User
 from users.serializers import ReadOnlyUserSerializer
 
+class NotificationServiceMock:
+    sent_notifications = []
+
+    def send_fake_notification(self, message, *args, **kwargs):
+        NotificationServiceMock.sent_notifications.append(message)
+
 @freeze_time("2020-01-01")
+@patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
+    NotificationServiceMock.send_fake_notification)
 class MatchRequestTest(TestCase):
     def setUp(self):
+        NotificationServiceMock.sent_notifications = []
+
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
@@ -160,6 +171,32 @@ class MatchRequestTest(TestCase):
             match_requested_user=match_request.match_requested_user,
             post=self.post,
         ))
+        return
+
+    def test_post_should_send_device_notification_given_valid_match_request(self):
+        match_request = MatchRequest(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+        )
+        serialized_match_request = MatchRequestSerializer(match_request).data
+
+        self.assertFalse(MatchRequest.objects.filter(
+            match_requesting_user=match_request.match_requesting_user,
+            match_requested_user=match_request.match_requested_user,
+            post=self.post,
+        ))
+
+        request = APIRequestFactory().post(
+            '/api/match_requests',
+            serialized_match_request,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(NotificationServiceMock.sent_notifications)
         return
     
     def test_post_should_not_create_match_request_given_invalid_match_request(self):

@@ -17,6 +17,7 @@ def get_current_time():
 class NotificationTypes:
     TAG = "tag"
     MESSAGE = "message"
+    MATCH = "match"
 
 # Post Interactions
 class Post(models.Model):
