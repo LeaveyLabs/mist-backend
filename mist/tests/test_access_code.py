@@ -19,6 +19,52 @@ class AccessCodeTest(TestCase):
         AccessCode.objects.create()
         AccessCode.objects.create()
         AccessCode.objects.create()
+
+    def test_get_should_return_empty_list_given_nonexistent_code(self):
+        nonexistent_code = "nonexistentCode"
+        
+        request = APIRequestFactory().get(
+            f'api/access-codes/?code={nonexistent_code}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = ClaimAccessCodeView.as_view()(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)
+        return
+
+    def test_get_should_return_empty_list_given_claimed_code(self):
+        claimed_code = "123456"
+
+        AccessCode.objects.create(
+            code_string=claimed_code,
+            claimed_user=self.user1,
+        )
+        
+        request = APIRequestFactory().get(
+            f'api/access-codes/?code={claimed_code}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = ClaimAccessCodeView.as_view()(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data)
+        return
+
+    def test_get_should_return_list_given_unclaimed_code(self):
+        accessCodes = AccessCode.objects.all()
+        accessCode = random.choice(accessCodes)
+        code = accessCode.code_string
+        
+        request = APIRequestFactory().get(
+            f'api/access-codes/?code={code}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = ClaimAccessCodeView.as_view()(request)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data)
+        return
     
     def test_post_should_claim_code_given_correct_code_and_unclaimed_user(self):
         accessCodes = AccessCode.objects.all()

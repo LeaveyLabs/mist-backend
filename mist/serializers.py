@@ -241,6 +241,11 @@ class MistboxSerializer(serializers.ModelSerializer):
         except: posts = Post.objects.none()
         return [PostSerializer(post).data for post in posts.all()]
 
+class AccessCodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccessCode
+        fields = ('code_string', 'claimed_user')
+
 class AccessCodeClaimSerializer(serializers.Serializer):
     code = serializers.CharField()
 
