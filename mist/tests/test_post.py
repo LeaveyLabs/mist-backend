@@ -304,25 +304,25 @@ class PostTest(TestCase):
             self.assertIn('votes', response_post)
         return
     
-    # def test_get_should_return_correct_votes(self):
-    #     serialized_vote = PostVoteSerializer(self.vote).data
+    def test_get_should_return_correct_votes(self):
+        serialized_vote = PostVoteSerializer(self.vote).data
 
-    #     request = APIRequestFactory().get(
-    #         '/api/posts',
-    #         format="json",
-    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-    #     )
+        request = APIRequestFactory().get(
+            '/api/posts',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
 
-    #     response = PostView.as_view({'get':'list'})(request)
-    #     response_posts = [post_data for post_data in response.data]
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
         
-    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #     for post in response_posts:
-    #         if post.get('id') == self.vote.post.pk:
-    #             vote_ids = [vote.get('id') for vote in post.get('votes')]
-    #             correct_vote_id = serialized_vote.get('id')
-    #             self.assertTrue(correct_vote_id in vote_ids)
-    #     return
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for post in response_posts:
+            if post.get('id') == self.vote.post.pk:
+                vote_ids = [vote.get('id') for vote in post.get('votes')]
+                correct_vote_id = serialized_vote.get('id')
+                self.assertTrue(correct_vote_id in vote_ids)
+        return
     
     def test_get_should_return_posts_in_vote_minus_flag_order(self):
         PostVote.objects.create(voter=self.user1, post=self.post2)

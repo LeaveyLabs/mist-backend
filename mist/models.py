@@ -114,7 +114,7 @@ class PostVote(models.Model):
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postvotes')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='votes')
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=AVG_RATING)
+    rating = models.FloatField(default=AVG_RATING)
     emoji = models.CharField(max_length=5, default=DEFAULT_EMOJI)
 
     class Meta:
@@ -131,13 +131,17 @@ class PostFlag(models.Model):
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postflags')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='flags')
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=AVG_RATING)
+    rating = models.FloatField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('flagger', 'post',)
 
     def _str_(self):
         return self.flagger.pk
+
+    def save(self, *args, **kwargs):
+        if self.flagger.is_superuser: self.rating = float('inf')
+        super(PostFlag, self).save(*args, **kwargs)
 
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
@@ -203,7 +207,7 @@ class CommentVote(models.Model):
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=AVG_RATING)
+    rating = models.FloatField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('voter', 'comment',)
@@ -219,13 +223,17 @@ class CommentFlag(models.Model):
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=AVG_RATING)
+    rating = models.FloatField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('flagger', 'comment',)
 
     def _str_(self):
         return self.flagger.pk
+
+    def save(self, *args, **kwargs):
+        if self.flagger.is_superuser: self.rating = float('inf')
+        super(CommentFlag, self).save(*args, **kwargs)
 
 class Favorite(models.Model):
     timestamp = models.FloatField(default=get_current_time)
@@ -286,7 +294,7 @@ class Mistbox(models.Model):
     opens_used_today = models.IntegerField(default=0)
 
 class AccessCode(models.Model):
-    code_string = models.CharField(max_length=6, default=get_random_code, unique=True)
+    code_string = models.CharField(max_length=6, unique=True)
     claimed_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='access_code', on_delete=models.CASCADE, null=True)
 
 class Badge(models.Model):

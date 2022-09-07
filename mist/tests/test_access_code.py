@@ -6,19 +6,20 @@ from rest_framework.test import APIRequestFactory
 from mist.models import AccessCode, Badge
 from mist.views.access_code import ClaimAccessCodeView
 
-from users.models import User
 from users.tests.generics import create_dummy_user_and_token_given_id
+from users.generics import get_random_code
 
 @freeze_time("2020-01-01")
 class AccessCodeTest(TestCase):
     def setUp(self):
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
 
-        AccessCode.objects.create()
-        AccessCode.objects.create()
-        AccessCode.objects.create()
-        AccessCode.objects.create()
-        AccessCode.objects.create()
+        tried_codes = []
+        for _ in range(6):
+            new_code = get_random_code()
+            while new_code in tried_codes:
+                new_code = get_random_code()
+            AccessCode.objects.create(code_string=new_code)
 
     def test_get_should_return_empty_list_given_nonexistent_code(self):
         nonexistent_code = "nonexistentCode"

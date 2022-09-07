@@ -18,49 +18,51 @@ class WordSerializer(serializers.ModelSerializer):
         return obj.calculate_occurrences()
 
 class PostSerializer(serializers.ModelSerializer):
+    VERY_LARGE_NUMBER = 1_000_000_000_000_000
+
     read_only_author = serializers.SerializerMethodField()
     votes = serializers.SerializerMethodField()
 
     votecount = serializers.SerializerMethodField()
     commentcount = serializers.SerializerMethodField()
     flagcount = serializers.SerializerMethodField()
+    emoji_dict = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = ('id', 'title', 'body', 'latitude', 'longitude', 'location_description',
         'timestamp', 'author', 'commentcount', 'votecount', 'flagcount', 
-        'read_only_author', 'votes', )
+        'read_only_author', 'votes', 'emoji_dict')
     
     def get_flagcount(self, obj):
         flags = None
         try: flags = obj.flags
         except: flags = PostFlag.objects.filter(post_id=self.pk)
-        superusers = User.objects.filter(is_superuser=True)
-        if flags.filter(flagger__in=superusers):
-            return float('inf')
-        return flags.count()
+        return sum([flag.rating for flag in flags.all()])/PostFlag.AVG_RATING
     
     def get_commentcount(self, obj):
-        comments = None
-        try: comments = obj.comments
-        except: comments = Comment.objects.filter(post=self.pk)
-        return comments.count()
+        try: obj.comments
+        except: obj.comments = Comment.objects.filter(post=self.pk)
+        return obj.comments.count()
 
     def get_votecount(self, obj):
-        votes = []
-        try: votes = obj.votes.all()
-        except: votes = self.get_votes(obj)
-        return len(votes)
+        try: obj.votes
+        except: obj.votes = PostVote.objects.filter(post_id=obj.id)
+        return sum([vote.rating for vote in obj.votes.all()])/PostVote.AVG_RATING
 
     def get_read_only_author(self, obj):
         return ReadOnlyUserSerializer(obj.author).data
     
     def get_votes(self, obj):
-        votes = []
+        try: obj.votes
+        except: obj.votes = PostVote.objects.filter(post_id=obj.id)
+        return [PostVoteSerializer(vote).data for vote in obj.votes.all()]
+
+    def get_emoji_dict(self, obj):
+        votes = None
         try: votes = obj.votes
         except: votes = PostVote.objects.filter(post_id=obj.id)
-        return self.convert_votes_to_emoji_tuple(votes)
-        # return [PostVoteSerializer(vote).data for vote in votes.all()]
+        return self.convert_votes_to_emoji_dict(votes)
 
     def validate_body(self, body):
         # [is_offensive] = predict([body])
@@ -68,7 +70,7 @@ class PostSerializer(serializers.ModelSerializer):
         #     raise serializers.ValidationError("Avoid offensive language.")
         return body
 
-    def convert_votes_to_emoji_tuple(self, vote_queryset):
+    def convert_votes_to_emoji_dict(self, vote_queryset):
         emoji_tuple = {}
         for vote in vote_queryset.all().iterator():
             if vote.emoji not in emoji_tuple:

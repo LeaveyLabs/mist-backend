@@ -55,8 +55,7 @@ class PostView(viewsets.ModelViewSet):
         location_description = self.request.query_params.get('location_description')
         author = self.request.query_params.get('author')
         # filter
-        queryset = Post.objects.all().prefetch_related(
-            'votes', 'comments', 'flags').select_related('author')
+        queryset = Post.objects.all().prefetch_related("votes", "comments", "flags")
         if latitude and longitude:
             queryset = self.get_locations_nearby_coords(
                 latitude, longitude, radius or self.MAX_DISTANCE)
