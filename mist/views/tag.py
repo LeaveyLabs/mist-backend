@@ -3,6 +3,7 @@ from push_notifications.models import APNSDevice
 from rest_framework import viewsets
 from mist.permissions import TagPermission
 from rest_framework.permissions import IsAuthenticated
+from users.generics import get_user_from_request
 
 from users.models import User
 
@@ -18,15 +19,21 @@ class TagView(viewsets.ModelViewSet):
     serializer_class = TagSerializer
 
     def get_queryset(self):
-        tagged_user = self.request.query_params.get("tagged_user")
-        tagging_user = self.request.query_params.get("tagging_user")
+        tagged_user_id = self.request.query_params.get("tagged_user")
+        tagging_user_id = self.request.query_params.get("tagging_user")
         tagged_name = self.request.query_params.get("tagged_name")
         comment = self.request.query_params.get("comment")
         queryset = Tag.objects.all().select_related('comment__post')
-        if tagged_user:
-            queryset = queryset.filter(tagged_user=tagged_user)
-        if tagging_user:
-            queryset = queryset.filter(tagging_user=tagging_user)
+        if tagged_user_id:
+            tagged_user_instances = User.objects.filter(id=tagged_user_id)
+            if tagged_user_instances.exists():
+                tagged_user_instance = tagged_user_instances[0]
+                queryset = queryset.filter(
+                    tagged_user=tagged_user_instance,
+                    tagged_phone_number=tagged_user_instance.phone_number,
+                )
+        if tagging_user_id:
+            queryset = queryset.filter(tagging_user_id=tagging_user_id)
         if tagged_name:
             queryset = queryset.filter(tagged_name=tagged_name)
         if comment:
