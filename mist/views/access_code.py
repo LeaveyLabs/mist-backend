@@ -1,13 +1,13 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 
 from mist.serializers import AccessCodeClaimSerializer, AccessCodeSerializer
 from mist.models import AccessCode, Badge
 from users.generics import get_user_from_request
 
 class ClaimAccessCodeView(generics.ListCreateAPIView):
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (AllowAny, )
     serializer_class = AccessCodeSerializer
 
     def get_queryset(self):
@@ -22,6 +22,13 @@ class ClaimAccessCodeView(generics.ListCreateAPIView):
         access_code_claim.is_valid(raise_exception=True)
 
         user = get_user_from_request(request)
+        if not user:
+            return Response(
+            {
+                "detail": "Authentication required"
+            }, 
+            status.HTTP_401_UNAUTHORIZED)
+        
         code_string = access_code_claim.data.get('code')
 
         if AccessCode.objects.filter(claimed_user=user).exists():
