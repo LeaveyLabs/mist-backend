@@ -20,6 +20,7 @@ class AccessCodeTest(TestCase):
             while new_code in tried_codes:
                 new_code = get_random_code()
             AccessCode.objects.create(code_string=new_code)
+            tried_codes.append(new_code)
 
     def test_get_should_return_empty_list_given_nonexistent_code(self):
         nonexistent_code = "nonexistentCode"
