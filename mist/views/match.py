@@ -46,7 +46,7 @@ class MatchRequestView(viewsets.ModelViewSet):
         match_requested_user = match_request_response.get("match_requested_user")
         receiving_devices = APNSDevice.objects.filter(user=match_requested_user)
         receiving_devices.send_message(
-            "someone replied to your mist ❤️",
+            "someone replied to your mist 👀",
             extra={
                 "type": NotificationTypes.MATCH,
                 "data": match_request_response.data
