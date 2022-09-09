@@ -83,7 +83,7 @@ class PostSerializer(serializers.ModelSerializer):
         for vote in vote_queryset.all().iterator():
             if vote.emoji not in emoji_tuple:
                 emoji_tuple[vote.emoji] = 0
-            emoji_tuple[vote.emoji] += 1
+            emoji_tuple[vote.emoji] += vote.rating
         return emoji_tuple
 
 class PostVoteSerializer(serializers.ModelSerializer):
