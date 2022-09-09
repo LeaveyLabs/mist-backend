@@ -2,7 +2,6 @@ from rest_framework import viewsets
 from mist.generics import is_beyond_impermissible_post_limit
 from mist.permissions import FlagPermission
 from rest_framework.permissions import IsAuthenticated
-from mist.views.post import is_impermissible_post
 
 from users.models import Ban
 
@@ -21,7 +20,7 @@ class PostFlagView(viewsets.ModelViewSet):
             queryset = queryset.filter(flagger=flagger)
         if post:
             queryset = queryset.filter(post=post)
-        return queryset
+        return queryset.prefetch_related('flagger', 'post')
 
     def create(self, request, *args, **kwargs):
         post_flag_response = super().create(request, *args, **kwargs)
@@ -32,5 +31,5 @@ class PostFlagView(viewsets.ModelViewSet):
             PostSerializer(post).data for post in posts_by_author
         ]
         if is_beyond_impermissible_post_limit(serialized_posts_by_author):
-            Ban.objects.create(email=post_author.email)
+            Ban.objects.get_or_create(email=post_author.email)
         return post_flag_response

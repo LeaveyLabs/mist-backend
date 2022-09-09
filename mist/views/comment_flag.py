@@ -21,7 +21,7 @@ class CommentFlagView(viewsets.ModelViewSet):
             queryset = queryset.filter(flagger=flagger)
         if comment:
             queryset = queryset.filter(comment=comment)
-        return queryset
+        return queryset.prefetch_related('flagger', 'comment')
 
     def create(self, request, *args, **kwargs):
         comment_flag_response = super().create(request, *args, **kwargs)
@@ -36,5 +36,5 @@ class CommentFlagView(viewsets.ModelViewSet):
             CommentSerializer(comment).data for comment in comments_by_author
         ]
         if is_beyond_impermissible_comment_limit(serialized_comments_by_author):
-            Ban.objects.create(email=comment_author.email)
+            Ban.objects.get_or_create(email=comment_author.email)
         return comment_flag_response

@@ -2,10 +2,10 @@ import os
 import random
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
+from rest_framework.authtoken.models import Token
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 from sorl.thumbnail import get_thumbnail
-from sorl.thumbnail import ImageField as ThumbnailField
 
 from .generics import get_current_time, get_random_code
 
@@ -42,7 +42,7 @@ class User(AbstractUser):
     confirm_picture = models.ImageField(
         upload_to=confirm_profile_picture_filepath, null=True, blank=True
     )
-    thumbnail = ThumbnailField(
+    thumbnail = models.ImageField(
         upload_to=thumbnail_filepath, null=True, blank=True
     )
     phone_number = PhoneNumberField(null=True, unique=True)
@@ -52,6 +52,7 @@ class User(AbstractUser):
     is_verified = models.BooleanField(default=False)
     is_hidden = models.BooleanField(default=False)
     is_pending_verification = models.BooleanField(default=False)
+    is_banned = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'auth_user'
@@ -59,9 +60,7 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if self.picture:
-            self.thumbnail = get_thumbnail(
-                self.picture, '100x100', quality=99).url
-
+            self.thumbnail = get_thumbnail(self.picture, '100x100', quality=99).url
        
 class EmailAuthentication(models.Model):
     def get_random_code():
@@ -118,4 +117,7 @@ class Ban(models.Model):
 
     def save(self, *args, **kwargs):
         super(Ban, self).save(*args, **kwargs)
-        User.objects.filter(email__iexact=self.email).delete()
+        for user in User.objects.filter(email__iexact=self.email).all():
+            Token.objects.filter(user=user).delete()
+            user.is_banned = True
+            user.save()

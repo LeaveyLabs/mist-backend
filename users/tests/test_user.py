@@ -12,6 +12,7 @@ from django.test.client import MULTIPART_CONTENT, encode_multipart, BOUNDARY
 from mist.models import Badge
 from users.models import User
 from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from users.tests.generics import create_simple_uploaded_file_from_image_path
 
@@ -1204,3 +1205,14 @@ class UserPopulationViewTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response_population_size, self.population_size)
+
+
+class BanTest(TestCase):
+    def setUp(self):
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+    
+    def test_ban_will_invalidate_auth_token_and_set_is_banned_on_user(self):
+        Ban.objects.create(email=self.user1.email)
+        
+        self.assertFalse(Token.objects.filter(user=self.user1))
+        self.assertTrue(User.objects.get(pk=self.user1.pk).is_banned)

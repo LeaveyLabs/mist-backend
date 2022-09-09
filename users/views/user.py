@@ -110,11 +110,14 @@ class MatchingPhoneNumbersView(generics.CreateAPIView):
         phone_numbers = search_request.data.get('phone_numbers')
 
         phonebook = {}
-        for phone_number in phone_numbers:
-            matching_users = User.objects.filter(
-                phone_number=phone_number).exclude(is_hidden=True)
-            if matching_users.exists():
-                phonebook[phone_number] = ReadOnlyUserSerializer(matching_users[0]).data
+
+        users = User.objects.\
+            filter(phone_number__in=phone_numbers).\
+            prefetch_related('badges').\
+            exclude(is_hidden=True).all()
+        
+        for user in users.iterator():
+            phonebook[str(user.phone_number)] = ReadOnlyUserSerializer(user).data
             
         return Response(phonebook, status.HTTP_200_OK)
 

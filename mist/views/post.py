@@ -78,10 +78,9 @@ class PostView(viewsets.ModelViewSet):
         location_description = self.request.query_params.get('location_description')
         author = self.request.query_params.get('author')
         # filter
-        queryset = Post.objects.all().prefetch_related(
-            "votes", "comments", "flags")
+        queryset = Post.objects.all()
         if latitude and longitude:
-            queryset = self.get_locations_nearby_coords(
+            return self.get_locations_nearby_coords(
                 latitude, longitude, radius or self.MAX_DISTANCE)
         if ids:
             queryset = queryset.filter(pk__in=ids)
@@ -102,7 +101,10 @@ class PostView(viewsets.ModelViewSet):
                 location_description__icontains=location_description)
         if author:
             queryset = queryset.filter(author=author)
-        return queryset
+        return queryset.\
+            prefetch_related("votes", "comments", "flags").\
+            select_related('author').\
+            prefetch_related("author__badges")
 
     def get_locations_nearby_coords(self, latitude, longitude, max_distance=MAX_DISTANCE):
         """
@@ -147,7 +149,11 @@ class MatchedPostsView(generics.ListAPIView):
             matched_requests = matched_requests | received_requests
         matched_post_pks = matched_requests.values_list('post')
         matched_posts = Post.objects.filter(
-            pk__in=matched_post_pks).order_by('-creation_time')
+            pk__in=matched_post_pks).\
+            prefetch_related("votes", "comments", "flags").\
+            select_related('author').\
+            prefetch_related("author__badges").\
+            order_by('-creation_time')
         return matched_posts
 
 
@@ -158,7 +164,11 @@ class FeaturedPostsView(generics.ListAPIView):
     def get_queryset(self):
         featured_post_pks = Feature.objects.values_list('post')
         featured_posts = Post.objects.filter(
-            pk__in=featured_post_pks).order_by('-creation_time')
+            pk__in=featured_post_pks).\
+            prefetch_related("votes", "comments", "flags").\
+            select_related('author').\
+            prefetch_related("author__badges").\
+            order_by('-creation_time')
         return featured_posts
 
 
@@ -177,7 +187,11 @@ class FriendPostsView(generics.ListAPIView):
             friend_requested_user=user,
         )
         friend_pks = matched_friend_requests.values_list('friend_requesting_user')
-        return Post.objects.filter(author_id__in=friend_pks).order_by('-creation_time')
+        return Post.objects.filter(author_id__in=friend_pks).\
+            prefetch_related("votes", "comments", "flags").\
+            select_related('author').\
+            prefetch_related("author__badges").\
+            order_by('-creation_time')
 
 
 class FavoritedPostsView(generics.ListAPIView):
@@ -186,8 +200,11 @@ class FavoritedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = get_user_from_request(self.request)
-        favorited_post_pks = Favorite.objects.filter(favoriting_user=user).values_list('post')
-        return Post.objects.filter(pk__in=favorited_post_pks).order_by('-creation_time')
+        return Post.objects.filter(favorite__favoriting_user=user).\
+            prefetch_related("votes", "comments", "flags").\
+            select_related('author').\
+            prefetch_related("author__badges").\
+            order_by('-creation_time')
 
 
 class SubmittedPostsView(generics.ListAPIView):
@@ -196,7 +213,11 @@ class SubmittedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = get_user_from_request(self.request)
-        return Post.objects.filter(author=user).order_by('-creation_time')
+        return Post.objects.filter(author=user).\
+            prefetch_related("votes", "comments", "flags").\
+            select_related('author').\
+            prefetch_related("author__badges").\
+            order_by('-creation_time')
 
 class TaggedPostsView(generics.ListAPIView):
     permission_classes = (IsAuthenticated, )
@@ -210,7 +231,9 @@ class TaggedPostsView(generics.ListAPIView):
             tags = (tags | tagged_numbers).distinct()
         tagged_posts = Post.objects.filter(
             comments__tags__in=tags
-        ).order_by('-comments__tags__timestamp')
+        ).prefetch_related("votes", "comments", "flags").\
+            select_related('author').\
+            order_by('-comments__tags__timestamp')
         return tagged_posts
 
 class MistboxView(generics.RetrieveUpdateAPIView):

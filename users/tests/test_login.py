@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from django.test import TestCase
 from users.generics import get_current_time
-from users.models import User
+from users.models import Ban, User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
@@ -54,6 +54,31 @@ class RequestLoginCodeViewTest(TestCase):
             'api/request-login-code/',
             {
                 'phone_number': invalid_phone_number,
+            },
+        )
+        response = RequestLoginCodeView.as_view()(request)
+        messages = TwillioTestClientMessages.created
+        matching_messages = [
+            message.get('to') == self.user1.phone_number
+            for message in messages
+        ]
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(matching_messages)
+        return
+
+    def test_post_should_not_send_code_given_banned_phone_number(self):
+        banned_phone_number = "+13108741292"
+
+        self.user1.phone_number = banned_phone_number
+        self.user1.save()
+
+        Ban.objects.create(email=self.user1.email)
+
+        request = APIRequestFactory().post(
+            'api/request-login-code/',
+            {
+                'phone_number': banned_phone_number,
             },
         )
         response = RequestLoginCodeView.as_view()(request)

@@ -16,9 +16,9 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges',)
+        'picture', 'is_verified', 'badges', 'thumbnail',)
         read_only_fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges',)
+        'picture', 'is_verified', 'badges', 'thumbnail',)
 
     def get_badges(self, obj):
         badges = []
@@ -40,7 +40,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         'confirm_picture', 'phone_number', 
         'date_of_birth', 'sex', 'latitude', 'longitude',
         'is_verified', 'is_pending_verification', 'badges', 'keywords',
-        'is_superuser',)
+        'is_superuser', 'thumbnail',)
         read_only_fields = ('badges', 'is_verified', 'is_pending_verification',)
         extra_kwargs = {
             'picture': {'required': True},
@@ -341,6 +341,9 @@ class LoginCodeRequestSerializer(serializers.Serializer):
         matching_users = User.objects.filter(phone_number=phone_number)
         if not matching_users:
             raise ValidationError("User does not exist")
+        matching_user = matching_users[0]
+        if matching_user.is_banned:
+            raise ValidationError("User is banned")
         return phone_number
 
 class PhoneNumberValidationSerializer(serializers.Serializer):
@@ -381,6 +384,9 @@ class ResetEmailRequestSerializer(serializers.Serializer):
         matching_emails = User.objects.filter(email__iexact=email)
         if not matching_emails:
             raise ValidationError("Email does not exist")
+        matching_user = matching_emails[0]
+        if matching_user.is_banned:
+            raise ValidationError("User is banned")
         return email
 
 class ResetEmailValidationSerializer(serializers.Serializer):

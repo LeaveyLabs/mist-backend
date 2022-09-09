@@ -1,9 +1,10 @@
-from mist.permissions import MessagePermission
+from django.db.models import Q
 from push_notifications.models import APNSDevice
 from rest_framework import viewsets, generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from mist.permissions import MessagePermission
 from users.generics import get_user_from_request
 from users.models import User
 
@@ -60,33 +61,30 @@ class ConversationView(generics.ListAPIView):
 
         conversations = {}
 
-        blocking_users = Block.objects.filter(
-            blocked_user=requesting_user).select_related('blocked_user')
-        blocked_users = Block.objects.filter(
-            blocking_user=requesting_user).select_related('blocking_user')
-        cannot_message = blocking_users | blocked_users
+        sender_or_receiver_query = Q(sender=requesting_user) | Q(receiver=requesting_user)
+        exclude_blocks_query = Q(sender__blockings__blocking_user=requesting_user) | \
+            Q(receiver__blockings__blocking_user=requesting_user) | \
+            Q(sender__blocks__blocked_user=requesting_user) | \
+            Q(sender__blocks__blocked_user=requesting_user)\
 
-        sent_messages = Message.objects.filter(
-            sender=requesting_user).select_related('receiver')
-        for sent_message in sent_messages.iterator():
-            pk = sent_message.receiver.pk
-            message_data = MessageSerializer(sent_message).data
-            if blocking_users.filter(blocking_user_id=pk).exists(): continue
-            if blocked_users.filter(blocked_user_id=pk).exists(): continue
-            if pk not in conversations:
-                conversations[pk] = []
-            conversations[pk].append(message_data)
+        sent_or_received_messages = Message.objects.\
+            filter(sender_or_receiver_query).\
+            exclude(exclude_blocks_query).\
+            select_related('receiver').\
+            select_related('sender')
+            
+        for message in sent_or_received_messages.iterator():
+            opposite_pk = None
 
-        received_messages = Message.objects.filter(
-            receiver=requesting_user).select_related('sender')
-        for received_message in received_messages.iterator():
-            if received_message.sender in cannot_message: continue
-            pk = received_message.sender.pk
-            message_data = MessageSerializer(received_message).data
-            if blocking_users.filter(blocking_user_id=pk).exists(): continue
-            if blocked_users.filter(blocked_user_id=pk).exists(): continue
-            if pk not in conversations:
-                conversations[pk] = []
-            conversations[pk].append(message_data)
+            if requesting_user == message.sender:
+                opposite_pk = message.receiver.pk
+            else:
+                opposite_pk = message.sender.pk
+
+            if opposite_pk not in conversations:
+                conversations[opposite_pk] = []
+            
+            message_data = MessageSerializer(message).data
+            conversations[opposite_pk].append(message_data)
 
         return Response(conversations, status.HTTP_200_OK)

@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from django.core import mail
 from django.test import TestCase
 from users.generics import get_current_time
-from users.models import User
+from users.models import Ban, User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
@@ -51,6 +51,25 @@ class RequestResetEmailViewTest(TestCase):
         response = RequestResetEmailView.as_view()(request)
         reset_requests = PasswordReset.objects.filter(
             email=self.unused_email,
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(reset_requests)
+        self.assertFalse(mail.outbox)
+        return
+
+    def test_post_should_not_send_email_given_banned_phone_number(self):
+        Ban.objects.create(email=self.user1.email)
+
+        request = APIRequestFactory().post(
+            'api/request-reset-email/',
+            {
+                'email': self.user1.email,
+            }
+        )
+        response = RequestResetEmailView.as_view()(request)
+        reset_requests = PasswordReset.objects.filter(
+            email=self.user1.email,
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
