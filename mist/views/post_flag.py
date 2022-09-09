@@ -2,7 +2,6 @@ from rest_framework import viewsets
 from mist.generics import is_beyond_impermissible_post_limit
 from mist.permissions import FlagPermission
 from rest_framework.permissions import IsAuthenticated
-from mist.views.post import is_impermissible_post
 
 from users.models import Ban
 
