@@ -52,6 +52,7 @@ class User(AbstractUser):
     is_verified = models.BooleanField(default=False)
     is_hidden = models.BooleanField(default=False)
     is_pending_verification = models.BooleanField(default=False)
+    is_banned = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'auth_user'
@@ -116,4 +117,6 @@ class Ban(models.Model):
 
     def save(self, *args, **kwargs):
         super(Ban, self).save(*args, **kwargs)
-        User.objects.filter(email__iexact=self.email).delete()
+        for user in User.objects.filter(email__iexact=self.email).all():
+            user.is_banned = True
+            user.save()

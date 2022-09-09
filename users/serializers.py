@@ -341,6 +341,9 @@ class LoginCodeRequestSerializer(serializers.Serializer):
         matching_users = User.objects.filter(phone_number=phone_number)
         if not matching_users:
             raise ValidationError("User does not exist")
+        matching_user = matching_users[0]
+        if matching_user.is_banned:
+            raise ValidationError("User is banned")
         return phone_number
 
 class PhoneNumberValidationSerializer(serializers.Serializer):
@@ -381,6 +384,9 @@ class ResetEmailRequestSerializer(serializers.Serializer):
         matching_emails = User.objects.filter(email__iexact=email)
         if not matching_emails:
             raise ValidationError("Email does not exist")
+        matching_user = matching_emails[0]
+        if matching_user.is_banned:
+            raise ValidationError("User is banned")
         return email
 
 class ResetEmailValidationSerializer(serializers.Serializer):

@@ -192,12 +192,10 @@ class CommentFlagTest(TestCase):
         # Configured test
         test_users = [create_dummy_user_with_token(i) for i in range(MANY_FLAGS)]
 
-        self.assertTrue(User.objects.filter(id=self.user.id))
         self.assertFalse(Ban.objects.filter(email=self.user.email))
 
         post_flags_to_many_impermissible_comments()
 
-        self.assertFalse(User.objects.filter(id=self.user.id))
         self.assertTrue(Ban.objects.filter(email=self.user.email))
     
     def test_delete_should_delete_flag(self):
