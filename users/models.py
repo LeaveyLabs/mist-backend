@@ -2,10 +2,10 @@ import os
 import random
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
+from django.core.files.base import ContentFile
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 from sorl.thumbnail import get_thumbnail
-from sorl.thumbnail import ImageField as ThumbnailField
 
 from .generics import get_current_time, get_random_code
 
@@ -42,7 +42,7 @@ class User(AbstractUser):
     confirm_picture = models.ImageField(
         upload_to=confirm_profile_picture_filepath, null=True, blank=True
     )
-    thumbnail = ThumbnailField(
+    thumbnail = models.ImageField(
         upload_to=thumbnail_filepath, null=True, blank=True
     )
     phone_number = PhoneNumberField(null=True, unique=True)
@@ -56,12 +56,11 @@ class User(AbstractUser):
     class Meta:
         db_table = 'auth_user'
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
+    def save(self, *args, **kwargs):        
         if self.picture:
-            self.thumbnail = get_thumbnail(
-                self.picture, '100x100', quality=99).url
-
+            super().save(*args, **kwargs)
+            self.thumbnail = get_thumbnail(self.picture, '100x100', quality=99).url
+        super().save(*args, **kwargs)
        
 class EmailAuthentication(models.Model):
     def get_random_code():

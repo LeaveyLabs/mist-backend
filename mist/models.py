@@ -7,7 +7,7 @@ from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
 import string
-from users.generics import get_empty_keywords, get_random_code
+from users.generics import get_empty_keywords
 
 from users.models import User
 
