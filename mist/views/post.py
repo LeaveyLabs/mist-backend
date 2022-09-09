@@ -200,8 +200,7 @@ class FavoritedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = get_user_from_request(self.request)
-        favorited_post_pks = Favorite.objects.filter(favoriting_user=user).values_list('post')
-        return Post.objects.filter(pk__in=favorited_post_pks).\
+        return Post.objects.filter(favorite__favoriting_user=user).\
             prefetch_related("votes", "comments", "flags").\
             select_related('author').\
             prefetch_related("author__badges").\
