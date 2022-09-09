@@ -242,8 +242,8 @@ class Feature(models.Model):
 
 # User Interactions
 class Block(models.Model):
-    blocking_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocking_user', on_delete=models.CASCADE)
-    blocked_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocked_user', on_delete=models.CASCADE)
+    blocking_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blockings', on_delete=models.CASCADE)
+    blocked_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='blocks', on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time, null=True)
 
     class Meta:
