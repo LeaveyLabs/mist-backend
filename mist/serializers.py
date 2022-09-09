@@ -1,10 +1,11 @@
 from psycopg2 import IntegrityError
 # from profanity_check import predict
 from rest_framework import serializers
+from users.generics import get_current_time
 from users.models import User
 
 from users.serializers import ReadOnlyUserSerializer
-from .models import AccessCode, Badge, Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
+from .models import AccessCode, Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.SerializerMethodField()
@@ -18,28 +19,58 @@ class WordSerializer(serializers.ModelSerializer):
         return obj.calculate_occurrences()
 
 class PostSerializer(serializers.ModelSerializer):
+    VERY_LARGE_NUMBER = 1_000_000_000_000_000
+
     read_only_author = serializers.SerializerMethodField()
     votes = serializers.SerializerMethodField()
 
-    votecount = serializers.ReadOnlyField(source='calculate_votecount')
-    averagerating = serializers.ReadOnlyField(source='calculate_averagerating')
-    commentcount = serializers.ReadOnlyField(source='calculate_commentcount')
-    flagcount = serializers.ReadOnlyField(source='calculate_flagcount')
+    votecount = serializers.SerializerMethodField()
+    commentcount = serializers.SerializerMethodField()
+    flagcount = serializers.SerializerMethodField()
+    emoji_dict = serializers.SerializerMethodField()
+    trendscore = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = ('id', 'title', 'body', 'latitude', 'longitude', 'location_description',
-        'timestamp', 'author', 'averagerating', 'commentcount', 'votecount', 'flagcount', 
-        'read_only_author', 'votes', )
+        'timestamp', 'author', 'commentcount', 'votecount', 'flagcount', 
+        'read_only_author', 'votes', 'emoji_dict', 'creation_time', 'trendscore')
     
+    def get_flagcount(self, obj):
+        flags = None
+        try: flags = obj.flags
+        except: flags = PostFlag.objects.filter(post_id=self.pk)
+        return sum([flag.rating for flag in flags.all()])/PostFlag.AVG_RATING
+    
+    def get_commentcount(self, obj):
+        try: obj.comments
+        except: obj.comments = Comment.objects.filter(post=self.pk)
+        return obj.comments.count()
+
+    def get_votecount(self, obj):
+        try: obj.votes
+        except: obj.votes = PostVote.objects.filter(post_id=obj.id)
+        return sum([vote.rating for vote in obj.votes.all()])/PostVote.AVG_RATING
+
+    def get_trendscore(self, obj):
+        try: obj.votes
+        except: obj.votes = PostVote.objects.filter(post_id=obj.id)
+        return sum([vote.rating*(vote.timestamp/get_current_time()) 
+            for vote in obj.votes.all()])/PostVote.AVG_RATING
+
     def get_read_only_author(self, obj):
         return ReadOnlyUserSerializer(obj.author).data
     
     def get_votes(self, obj):
-        votes = []
+        try: obj.votes
+        except: obj.votes = PostVote.objects.filter(post_id=obj.id)
+        return [PostVoteSerializer(vote).data for vote in obj.votes.all()]
+
+    def get_emoji_dict(self, obj):
+        votes = None
         try: votes = obj.votes
         except: votes = PostVote.objects.filter(post_id=obj.id)
-        return [PostVoteSerializer(vote).data for vote in votes.all()]
+        return self.convert_votes_to_emoji_dict(votes)
 
     def validate_body(self, body):
         # [is_offensive] = predict([body])
@@ -47,7 +78,7 @@ class PostSerializer(serializers.ModelSerializer):
         #     raise serializers.ValidationError("Avoid offensive language.")
         return body
 
-    def convert_votes_to_emoji_tuple(self, vote_queryset):
+    def convert_votes_to_emoji_dict(self, vote_queryset):
         emoji_tuple = {}
         for vote in vote_queryset.all().iterator():
             if vote.emoji not in emoji_tuple:
@@ -66,14 +97,19 @@ class PostFlagSerializer(serializers.ModelSerializer):
         fields = ('id', 'flagger', 'post', 'timestamp', 'rating')
 
 class TagSerializer(serializers.ModelSerializer):
+    post = serializers.SerializerMethodField()
+
     class Meta:
         model = Tag
         fields = ('id', 'comment', 'tagged_name', 'tagged_phone_number',
-        'tagged_user', 'tagging_user', 'timestamp')
+        'tagged_user', 'tagging_user', 'timestamp', 'post')
         extra_kwargs = {
             'tagged_phone_number': {'required': False},
             'tagged_user': {'required': False},
         }
+
+    def get_post(self, obj):
+        return PostSerializer(obj.comment.post).data
     
     def validate(self, data):
         tagged_phone_number = data.get('tagged_phone_number')
@@ -218,6 +254,11 @@ class MistboxSerializer(serializers.ModelSerializer):
         try: posts = obj.posts
         except: posts = Post.objects.none()
         return [PostSerializer(post).data for post in posts.all()]
+
+class AccessCodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccessCode
+        fields = ('code_string', 'claimed_user')
 
 class AccessCodeClaimSerializer(serializers.Serializer):
     code = serializers.CharField()

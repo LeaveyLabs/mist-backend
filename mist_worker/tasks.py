@@ -10,7 +10,7 @@ def send_mistbox_notifications_task():
 def send_mistbox_notifications():
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
-        "Your mistbox is ready! See who wrote about you today 👀")
+        "your 5 mistbox opens have refreshed! see who wrote about you today 👀")
 
 @shared_task(name="reset_mistbox_opens_task")
 def reset_mistbox_opens_task():
@@ -18,7 +18,7 @@ def reset_mistbox_opens_task():
 
 def reset_mistbox_opens():
     from mist.models import Mistbox
-    for mistbox in Mistbox.objects.all():
+    for mistbox in Mistbox.objects.all().iterator():
         mistbox.opens_used_today = 0
         mistbox.save()
 
@@ -89,7 +89,7 @@ def verify_profile_picture(user_id):
     VERIFICATION_SERVER = os.environ.get('VERIFICATION_SERVER')
     
     matching_users = User.objects.filter(id=user_id)
-    if not matching_users: return False
+    if not matching_users.exists(): return False
     
     matching_user = matching_users[0]
     

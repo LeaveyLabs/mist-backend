@@ -7,7 +7,7 @@ IMPERMISSIBLE_COMMENT_LIMIT = 10
 def is_impermissible_comment(serialized_comment):
     votecount = serialized_comment.get('votecount')
     flagcount = serialized_comment.get('flagcount')
-    return flagcount > LOWER_COMMENT_FLAG_BOUND and flagcount > math.sqrt(votecount)
+    return flagcount > LOWER_COMMENT_FLAG_BOUND and flagcount*flagcount > votecount
 
 def is_beyond_impermissible_comment_limit(serialized_comments):
     impermissible_comments = 0
@@ -23,7 +23,7 @@ IMPERMISSIBLE_POST_LIMIT = 10
 def is_impermissible_post(serialized_post):
     votecount = serialized_post.get('votecount')
     flagcount = serialized_post.get('flagcount')
-    return flagcount > LOWER_POST_FLAG_BOUND and flagcount > math.sqrt(votecount)
+    return flagcount > LOWER_POST_FLAG_BOUND and flagcount*flagcount > votecount
 
 def is_beyond_impermissible_post_limit(serialized_posts):
     impermissible_posts = 0

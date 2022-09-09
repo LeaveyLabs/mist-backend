@@ -1,25 +1,34 @@
-from decimal import Decimal
-from enum import Enum
-from django.db.models.expressions import RawSQL
-from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, generics, status
+from rest_framework import generics, status
 from rest_framework.response import Response
-from mist.generics import is_impermissible_post
-from mist.permissions import PostPermission
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 
-from mist.serializers import AccessCodeClaimSerializer
+from mist.serializers import AccessCodeClaimSerializer, AccessCodeSerializer
 from mist.models import AccessCode, Badge
 from users.generics import get_user_from_request
 
-class ClaimAccessCodeView(generics.CreateAPIView):
-    permission_classes = (IsAuthenticated, )
+class ClaimAccessCodeView(generics.ListCreateAPIView):
+    permission_classes = (AllowAny, )
+    serializer_class = AccessCodeSerializer
+
+    def get_queryset(self):
+        code = self.request.query_params.get('code')
+        if not code: return AccessCode.objects.none()
+        return AccessCode.objects.filter(
+            code_string=code, 
+            claimed_user__isnull=True)
 
     def post(self, request, *args, **kwargs):
         access_code_claim = AccessCodeClaimSerializer(data=request.data)
         access_code_claim.is_valid(raise_exception=True)
 
         user = get_user_from_request(request)
+        if not user:
+            return Response(
+            {
+                "detail": "Authentication required"
+            }, 
+            status.HTTP_401_UNAUTHORIZED)
+        
         code_string = access_code_claim.data.get('code')
 
         if AccessCode.objects.filter(claimed_user=user).exists():

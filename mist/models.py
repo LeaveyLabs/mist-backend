@@ -14,6 +14,11 @@ from users.models import User
 def get_current_time():
     return datetime.now().timestamp()
 
+class NotificationTypes:
+    TAG = "tag"
+    MESSAGE = "message"
+    MATCH = "match"
+
 # Post Interactions
 class Post(models.Model):
     USC_LATITUDE = Decimal(34.0224)
@@ -35,11 +40,6 @@ class Post(models.Model):
     def calculate_votecount(self):
         return PostVote.objects.filter(post_id=self.pk).count()
     
-    def calculate_averagerating(self):
-        votes = PostVote.objects.filter(post_id=self.pk)
-        if len(votes) == 0: return 0
-        return sum(vote.rating for vote in votes)/float(len(votes))
-    
     def calculate_commentcount(self):
         return Comment.objects.filter(post=self.pk).count()
     
@@ -58,13 +58,24 @@ class Post(models.Model):
         # generate word
         if is_new:
             # gather all words in the post
-            words_in_text = self.body.translate(
-                str.maketrans('', '', string.punctuation)
-                ).split()
-            words_in_title = self.title.translate(
-                str.maketrans('', '', string.punctuation)
-                ).split()
-            words_in_post = words_in_text + words_in_title
+            words_in_text = []
+            words_in_title = []
+            words_in_loc = []
+
+            if self.body:
+                words_in_text = self.body.translate(
+                    str.maketrans('', '', string.punctuation)
+                    ).split()
+            if self.title:
+                words_in_title = self.title.translate(
+                    str.maketrans('', '', string.punctuation)
+                    ).split()
+            if self.location_description:
+                words_in_loc = self.location_description.translate(
+                    str.maketrans('', '', string.punctuation)
+                    ).split()
+            
+            words_in_post = words_in_text + words_in_title + words_in_loc
             mistboxes = Mistbox.objects.all().exclude(user=self.author)
             # for each word ...
             for word in words_in_post:
@@ -104,7 +115,7 @@ class PostVote(models.Model):
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postvotes')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='votes')
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=AVG_RATING)
+    rating = models.FloatField(default=AVG_RATING)
     emoji = models.CharField(max_length=5, default=DEFAULT_EMOJI)
 
     class Meta:
@@ -118,10 +129,10 @@ class PostFlag(models.Model):
     MAX_RATING = 10
     AVG_RATING = (MIN_RATING+MAX_RATING)//2
 
-    flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postflags')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='flags')
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=AVG_RATING)
+    rating = models.FloatField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('flagger', 'post',)
@@ -129,11 +140,15 @@ class PostFlag(models.Model):
     def _str_(self):
         return self.flagger.pk
 
+    def save(self, *args, **kwargs):
+        if self.flagger.is_superuser: self.rating = float('inf')
+        super().save(*args, **kwargs)
+
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     body = models.CharField(max_length=500)
     timestamp = models.FloatField(default=get_current_time)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def _str_(self):
@@ -193,7 +208,7 @@ class CommentVote(models.Model):
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=AVG_RATING)
+    rating = models.FloatField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('voter', 'comment',)
@@ -209,13 +224,17 @@ class CommentFlag(models.Model):
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.IntegerField(default=AVG_RATING)
+    rating = models.FloatField(default=AVG_RATING)
 
     class Meta:
         unique_together = ('flagger', 'comment',)
 
     def _str_(self):
         return self.flagger.pk
+
+    def save(self, *args, **kwargs):
+        if self.flagger.is_superuser: self.rating = float('inf')
+        super().save(*args, **kwargs)
 
 class Favorite(models.Model):
     timestamp = models.FloatField(default=get_current_time)
@@ -276,7 +295,7 @@ class Mistbox(models.Model):
     opens_used_today = models.IntegerField(default=0)
 
 class AccessCode(models.Model):
-    code_string = models.CharField(max_length=6, default=get_random_code, unique=True)
+    code_string = models.CharField(max_length=6, unique=True)
     claimed_user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='access_code', on_delete=models.CASCADE, null=True)
 
 class Badge(models.Model):

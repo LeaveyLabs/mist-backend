@@ -15,7 +15,7 @@ from users.models import User
 class NotificationServiceMock:
     sent_notifications = []
 
-    def send_fake_notification(self, message):
+    def send_fake_notification(self, message, *args, **kwargs):
         NotificationServiceMock.sent_notifications.append(message)
 
 @freeze_time("2020-01-01")
@@ -23,6 +23,8 @@ class NotificationServiceMock:
     NotificationServiceMock.send_fake_notification)
 class MessageTest(TestCase):
     def setUp(self):
+        NotificationServiceMock.sent_notifications = []
+        
         self.user1 = User(
             email='TestUser1@usc.edu',
             username='TestUser1',
@@ -254,29 +256,6 @@ class MessageTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn(
             f"{message.sender.username}: {message.body}",
-            NotificationServiceMock.sent_notifications)
-        return
-
-    def test_post_should_send_anonymous_notification_given_message_to_unmatched_user(self):
-        message = Message(
-            sender=self.user1,
-            receiver=self.user2,
-            body="TestMessageOne",
-            timestamp=0,
-        )
-        serialized_message = MessageSerializer(message).data
-
-        request = APIRequestFactory().post(
-            '/api/messages/',
-            serialized_message,
-            format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-        )
-        response = MessageView.as_view({'post':'create'})(request)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertIn(
-            "Someone sent you a special message ❤️", 
             NotificationServiceMock.sent_notifications)
         return
     

@@ -8,7 +8,7 @@ from rest_framework.test import APIRequestFactory
 
 from mist.models import Comment, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, Word
 from mist.serializers import PostSerializer, PostVoteSerializer
-from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, PostView, SubmittedPostsView, TaggedPostsView
+from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, Order, PostView, SubmittedPostsView, TaggedPostsView
 from users.models import User
 
 @freeze_time("2020-01-01")
@@ -81,17 +81,13 @@ class PostTest(TestCase):
         return
     
     def test_calculate_votecount_should_return_votecount(self):
-        return self.assertEquals(self.post1.calculate_votecount(), 1)
-
-    def test_calculate_averagerating_should_return_average_rating(self):
-        return self.assertEquals(self.post1.calculate_averagerating(), 
-            self.vote.rating)
+        return self.assertEqual(PostSerializer().get_votecount(self.post1), 1)
     
     def test_calculate_commentcount_should_return_number_of_comments(self):
-        return self.assertEquals(self.post1.calculate_commentcount(), 1)
+        return self.assertEqual(PostSerializer().get_commentcount(self.post1), 1)
     
     def test_calculate_flagcount_should_return_number_of_flags(self):
-        return self.assertEquals(self.post1.calculate_flagcount(), 1)
+        return self.assertEqual(PostSerializer().get_flagcount(self.post1), 1)
 
     def test_save_should_create_words_in_post(self):
         Post.objects.create(
@@ -141,10 +137,17 @@ class PostTest(TestCase):
             body='keywords',
             author=self.user2,
         )
+        post3 = Post.objects.create(
+            title='definitely',
+            body='not the droids your looking for',
+            author=self.user2,
+            location_description="keywords"
+        )
         test_mistbox = Mistbox.objects.get(id=mistbox.id)
 
         self.assertIn(post1, test_mistbox.posts.all())
         self.assertIn(post2, test_mistbox.posts.all())
+        self.assertIn(post3, test_mistbox.posts.all())
         return
 
     def test_save_should_not_add_to_author_mistboxes(self):
@@ -294,11 +297,11 @@ class PostTest(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for response_post in response_posts:
-            self.assertTrue('votecount' in response_post)
-            self.assertTrue('commentcount' in response_post)
-            self.assertTrue('averagerating' in response_post)
-            self.assertTrue('read_only_author' in response_post)
-            self.assertTrue('votes' in response_post)
+            self.assertIn('votecount', response_post)
+            self.assertIn('flagcount', response_post)
+            self.assertIn('commentcount', response_post)
+            self.assertIn('read_only_author', response_post)
+            self.assertIn('votes', response_post)
         return
     
     def test_get_should_return_correct_votes(self):
@@ -321,19 +324,127 @@ class PostTest(TestCase):
                 self.assertTrue(correct_vote_id in vote_ids)
         return
     
-    def test_get_should_return_posts_in_vote_minus_flag_order(self):
-        PostVote.objects.create(voter=self.user1, post=self.post2)
-        PostVote.objects.create(voter=self.user2, post=self.post2)
-        PostVote.objects.create(voter=self.user2, post=self.post1)
+    # def test_get_should_return_posts_in_vote_minus_flag_order(self):
+    #     PostVote.objects.create(voter=self.user1, post=self.post2)
+    #     PostVote.objects.create(voter=self.user2, post=self.post2)
+    #     PostVote.objects.create(voter=self.user2, post=self.post1)
+        
+    #     serialized_posts = [
+    #         PostSerializer(self.post2).data,
+    #         PostSerializer(self.post1).data,
+    #         PostSerializer(self.post3).data,
+    #     ]
+        
+    #     request = APIRequestFactory().get(
+    #         '/api/posts',
+    #         format="json",
+    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+    #     )
+
+    #     response = PostView.as_view({'get':'list'})(request)
+    #     response_posts = [post_data for post_data in response.data]
+
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     self.assertEqual(serialized_posts[0], response_posts[0])
+    #     self.assertEqual(serialized_posts[1], response_posts[1])
+    #     self.assertEqual(serialized_posts[2], response_posts[2])
+    #     return
+    
+    def test_get_should_return_posts_in_trending_order_as_default(self):
+        PostVote.objects.create(voter=self.user1, post=self.post2, timestamp=1)
+        PostVote.objects.create(voter=self.user2, post=self.post1)       
+        PostVote.objects.create(voter=self.user2, post=self.post2, timestamp=1)
         
         serialized_posts = [
-            PostSerializer(self.post2).data,
             PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
             PostSerializer(self.post3).data,
         ]
         
         request = APIRequestFactory().get(
             '/api/posts',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts[0], response_posts[0])
+        self.assertEqual(serialized_posts[1], response_posts[1])
+        self.assertEqual(serialized_posts[2], response_posts[2])
+        return
+    
+    def test_get_should_return_posts_in_best_order_given_order_parameter(self):
+        PostVote.objects.create(voter=self.user2, post=self.post1)
+        PostVote.objects.create(voter=self.user2, post=self.post2)
+        PostVote.objects.create(voter=self.user3, post=self.post1)
+        
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
+        
+        request = APIRequestFactory().get(
+            f'/api/posts?order={Order.BEST}',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts[0], response_posts[0])
+        self.assertEqual(serialized_posts[1], response_posts[1])
+        self.assertEqual(serialized_posts[2], response_posts[2])
+        return
+
+    def test_get_should_return_posts_in_trending_order_given_order_parameter(self):
+        PostVote.objects.create(voter=self.user2, post=self.post1)
+        PostVote.objects.create(voter=self.user1, post=self.post2, timestamp=1)
+        PostVote.objects.create(voter=self.user2, post=self.post2, timestamp=1)
+        
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
+        
+        request = APIRequestFactory().get(
+            f'/api/posts?order={Order.TRENDING}',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts[0], response_posts[0])
+        self.assertEqual(serialized_posts[1], response_posts[1])
+        self.assertEqual(serialized_posts[2], response_posts[2])
+        return
+
+    def test_get_should_return_posts_in_recent_order_given_recent_parameter(self):
+        self.post1.creation_time = 4
+        self.post2.creation_time = 3
+        self.post3.creation_time = 2
+
+        self.post1.save()
+        self.post2.save()
+        self.post3.save()
+        
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
+        
+        request = APIRequestFactory().get(
+            f'/api/posts?order={Order.RECENT}',
             format="json",
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
@@ -1212,7 +1323,7 @@ class MistboxViewTest(TestCase):
         self.auth_token2 = Token.objects.create(user=self.user2)
 
         user1_mistbox = Mistbox.objects.create(user=self.user1)
-        user1_mistbox.keywords.append('FakeTitleForFirstPost')
+        user1_mistbox.keywords.append('FakeTitleForFirstPost'.lower())
         user1_mistbox.save()
 
         self.post1 = Post.objects.create(
@@ -1404,7 +1515,7 @@ class DeleteMistboxPostViewTest(TestCase):
         self.auth_token2 = Token.objects.create(user=self.user2)
 
         user1_mistbox = Mistbox.objects.create(user=self.user1)
-        user1_mistbox.keywords.append('FakeTitleForFirstPost')
+        user1_mistbox.keywords.append('FakeTitleForFirstPost'.lower())
         user1_mistbox.save()
 
         self.post1 = Post.objects.create(
@@ -1453,11 +1564,11 @@ class DeleteMistboxPostViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(mistbox_before_delete, mistbox_after_delete)
 
-    def test_delete_should_return_404_given_post_not_in_mistbox(self):
+    def test_delete_should_return_404_given_opened_post_not_in_mistbox(self):
         mistbox_before_delete = Mistbox.objects.get(user=self.user1)
 
         request = APIRequestFactory().delete(
-            f'api/delete-mistbox-posts/?post={self.post2.id}',
+            f'api/delete-mistbox-posts/?post={self.post2.id}&opened=1',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = DeleteMistboxPostView.as_view()(request)
@@ -1467,7 +1578,23 @@ class DeleteMistboxPostViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(mistbox_before_delete, mistbox_after_delete)
 
-    def test_delete_should_return_400_given_exceeded_daily_limit(self):
+    def test_delete_should_return_400_given_opened_post_and_exceeded_daily_limit(self):
+        mistbox_before_delete = Mistbox.objects.get(user=self.user1)
+        mistbox_before_delete.opens_used_today = Mistbox.MAX_DAILY_SWIPES
+        mistbox_before_delete.save()
+
+        request = APIRequestFactory().delete(
+            f'api/delete-mistbox-posts/?post={self.post1.id}&opened=1',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = DeleteMistboxPostView.as_view()(request)
+
+        mistbox_after_delete = Mistbox.objects.get(user=self.user1)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(mistbox_before_delete, mistbox_after_delete)
+
+    def test_delete_should_delete_post_given_unopened_post_and_exceeded_daily_limit(self):
         mistbox_before_delete = Mistbox.objects.get(user=self.user1)
         mistbox_before_delete.opens_used_today = Mistbox.MAX_DAILY_SWIPES
         mistbox_before_delete.save()
@@ -1480,18 +1607,20 @@ class DeleteMistboxPostViewTest(TestCase):
 
         mistbox_after_delete = Mistbox.objects.get(user=self.user1)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(mistbox_before_delete, mistbox_after_delete)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertNotIn(self.post1, mistbox_after_delete.posts.all())
+        self.assertEqual(mistbox_before_delete.opens_used_today, mistbox_after_delete.opens_used_today)
 
-    def test_delete_should_delete_post_from_mistbox_given_existing_post(self):
-        self.assertIn(self.post1, Mistbox.objects.get(user=self.user1).posts.all())
+    def test_delete_should_delete_post_from_mistbox_given_opened_post_and_below_daily_limit(self):
+        mistbox_before_delete = Mistbox.objects.get(user=self.user1)
         
         request = APIRequestFactory().delete(
-            f'api/delete-mistbox-posts/?post={self.post1.id}',
+            f'api/delete-mistbox-posts/?post={self.post1.id}&opened=1',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = DeleteMistboxPostView.as_view()(request)
-        mistbox = Mistbox.objects.get(user=self.user1)
+        mistbox_after_delete = Mistbox.objects.get(user=self.user1)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertNotIn(self.post1, mistbox.posts.all())
+        self.assertNotIn(self.post1, mistbox_after_delete.posts.all())
+        self.assertEqual(mistbox_before_delete.opens_used_today+1, mistbox_after_delete.opens_used_today)

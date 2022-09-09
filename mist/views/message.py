@@ -8,7 +8,7 @@ from users.generics import get_user_from_request
 from users.models import User
 
 from ..serializers import MessageSerializer
-from ..models import Block, MatchRequest, Message
+from ..models import Block, MatchRequest, Message, NotificationTypes
 
 class MessageView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MessagePermission)
@@ -43,9 +43,12 @@ class MessageView(viewsets.ModelViewSet):
 
         if sender_match_request.exists() and receiver_match_request.exists():
             username = User.objects.get(id=sender).username
-            receiving_devices.send_message(f"{username}: {body}")
-        else:
-            receiving_devices.send_message("Someone sent you a special message ❤️")
+            receiving_devices.send_message(
+                f"{username}: {body}",
+                extra={
+                    "type": NotificationTypes.MESSAGE,
+                    "data": message_response.data
+                })
         
         return message_response
 

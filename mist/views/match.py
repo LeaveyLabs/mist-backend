@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from push_notifications.models import APNSDevice
 from rest_framework import viewsets
 from mist.permissions import MatchRequestPermission
 from rest_framework import generics
@@ -7,7 +8,7 @@ from users.generics import get_user_from_request
 from users.models import User
 
 from ..serializers import MatchRequestSerializer, ReadOnlyUserSerializer
-from ..models import MatchRequest
+from ..models import MatchRequest, NotificationTypes
 
 class MatchRequestView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MatchRequestPermission)
@@ -39,6 +40,18 @@ class MatchRequestView(viewsets.ModelViewSet):
         if match_requested_user:
             queryset = queryset.filter(match_requested_user=match_requested_user)
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        match_request_response = super().create(request, *args, **kwargs)
+        match_requested_user = match_request_response.get("match_requested_user")
+        receiving_devices = APNSDevice.objects.filter(user=match_requested_user)
+        receiving_devices.send_message(
+            "someone replied to your mist ❤️",
+            extra={
+                "type": NotificationTypes.MATCH,
+                "data": match_request_response.data
+            })
+        return match_request_response
 
 class MatchView(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)

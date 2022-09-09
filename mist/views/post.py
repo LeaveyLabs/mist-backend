@@ -1,5 +1,6 @@
 from decimal import Decimal
 from enum import Enum
+from django.db.models import Q
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
@@ -11,11 +12,21 @@ from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
 
 from ..serializers import MistboxSerializer, PostSerializer
-from ..models import Comment, Favorite, Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
+from ..models import Favorite, Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
 
 class Order(Enum):
-    VOTE = 0
-    TIME = 1
+    RECENT = 0
+    BEST = 1
+    TRENDING = 2
+
+    def recency_sort_key(post):
+        return post.get('creation_time')
+
+    def best_sort_key(post):
+        return post.get('votecount')
+
+    def trending_sort_key(post):
+        return post.get('trendscore')
 
 class PostView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, PostPermission,)
@@ -34,8 +45,20 @@ class PostView(viewsets.ModelViewSet):
         for serialized_post in serialized_posts:
             if not is_impermissible_post(serialized_post):
                 filtered_posts.append(serialized_post)
-        votes_minus_flags = lambda post: post.get('votecount') - post.get('flagcount')
-        ordered_posts = sorted(filtered_posts, key=votes_minus_flags, reverse=True)
+        
+        order_type = self.request.query_params.get('order')
+        try: order_type = int(order_type)
+        except: order_type = Order.BEST
+
+        sort_key = Order.trending_sort_key
+        if order_type == Order.BEST:
+            sort_key = Order.best_sort_key
+        elif order_type == Order.RECENT:
+            sort_key = Order.recency_sort_key
+        elif order_type == Order.TRENDING:
+            sort_key = Order.trending_sort_key
+
+        ordered_posts = sorted(filtered_posts, key=sort_key, reverse=True)
         return ordered_posts
 
     def get_queryset(self):
@@ -55,18 +78,20 @@ class PostView(viewsets.ModelViewSet):
         location_description = self.request.query_params.get('location_description')
         author = self.request.query_params.get('author')
         # filter
-        queryset = Post.objects.all().prefetch_related('votes')
+        queryset = Post.objects.all().prefetch_related(
+            "votes", "comments", "flags")
         if latitude and longitude:
             queryset = self.get_locations_nearby_coords(
                 latitude, longitude, radius or self.MAX_DISTANCE)
         if ids:
             queryset = queryset.filter(pk__in=ids)
         if words:
+            q = Q()
             for word in words:
-                word_in_title = Post.objects.filter(title__icontains=word)
-                word_in_body = Post.objects.filter(body__icontains=word)
-                word_postset = (word_in_title | word_in_body).distinct()
-                queryset = queryset.intersection(word_postset)
+                q |= Q(title__icontains=word)
+                q |= Q(body__icontains=word)
+                q |= Q(location_description__icontains=word)
+            queryset = Post.objects.filter(q)
         if start_timestamp and end_timestamp:
             queryset = queryset.filter(
                 timestamp__gte=start_timestamp,
@@ -112,7 +137,7 @@ class MatchedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         match_requests = MatchRequest.objects.all()
-        sent_request_pks = match_requests.values_list('match_requested_user_id', 
+        sent_request_pks = match_requests.values_list('match_requested_user_id',
                                                     'match_requesting_user_id')
         matched_requests = MatchRequest.objects.none()
         for requested_user_pk, requesting_user_pk in sent_request_pks:
@@ -121,7 +146,8 @@ class MatchedPostsView(generics.ListAPIView):
                                 match_requested_user=requesting_user_pk)
             matched_requests = matched_requests | received_requests
         matched_post_pks = matched_requests.values_list('post')
-        matched_posts = Post.objects.filter(pk__in=matched_post_pks)
+        matched_posts = Post.objects.filter(
+            pk__in=matched_post_pks).order_by('-creation_time')
         return matched_posts
 
 
@@ -131,7 +157,8 @@ class FeaturedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         featured_post_pks = Feature.objects.values_list('post')
-        featured_posts = Post.objects.filter(pk__in=featured_post_pks)
+        featured_posts = Post.objects.filter(
+            pk__in=featured_post_pks).order_by('-creation_time')
         return featured_posts
 
 
@@ -150,7 +177,7 @@ class FriendPostsView(generics.ListAPIView):
             friend_requested_user=user,
         )
         friend_pks = matched_friend_requests.values_list('friend_requesting_user')
-        return Post.objects.filter(author_id__in=friend_pks)
+        return Post.objects.filter(author_id__in=friend_pks).order_by('-creation_time')
 
 
 class FavoritedPostsView(generics.ListAPIView):
@@ -160,7 +187,7 @@ class FavoritedPostsView(generics.ListAPIView):
     def get_queryset(self):
         user = get_user_from_request(self.request)
         favorited_post_pks = Favorite.objects.filter(favoriting_user=user).values_list('post')
-        return Post.objects.filter(pk__in=favorited_post_pks)
+        return Post.objects.filter(pk__in=favorited_post_pks).order_by('-creation_time')
 
 
 class SubmittedPostsView(generics.ListAPIView):
@@ -169,7 +196,7 @@ class SubmittedPostsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = get_user_from_request(self.request)
-        return Post.objects.filter(author=user)
+        return Post.objects.filter(author=user).order_by('-creation_time')
 
 class TaggedPostsView(generics.ListAPIView):
     permission_classes = (IsAuthenticated, )
@@ -181,8 +208,9 @@ class TaggedPostsView(generics.ListAPIView):
         if user.phone_number:
             tagged_numbers = Tag.objects.filter(tagged_phone_number=user.phone_number)
             tags = (tags | tagged_numbers).distinct()
-        tagged_comments = Comment.objects.filter(id__in=tags.values_list('comment_id'))
-        tagged_posts = Post.objects.filter(id__in=tagged_comments.values_list('post_id'))
+        tagged_posts = Post.objects.filter(
+            comments__tags__in=tags
+        ).order_by('-comments__tags__timestamp')
         return tagged_posts
 
 class MistboxView(generics.RetrieveUpdateAPIView):
@@ -220,6 +248,8 @@ class DeleteMistboxPostView(generics.DestroyAPIView):
     def destroy(self, request, *args, **kwargs):
         user = get_user_from_request(self.request)
         post_id = self.request.query_params.get("post")
+        opened = self.request.query_params.get("opened")
+
         post = get_object_or_404(
             Post.objects.all(),
             id=post_id,
@@ -231,15 +261,18 @@ class DeleteMistboxPostView(generics.DestroyAPIView):
 
         if post not in mistbox.posts.all():
             return Response(None, status.HTTP_404_NOT_FOUND)
-
-        if mistbox.opens_used_today + 1 > Mistbox.MAX_DAILY_SWIPES:
-            return Response(
-            {
-                "detail": "no swipes left today"
-            }, 
-            status.HTTP_400_BAD_REQUEST)
         
         mistbox.posts.remove(post)
-        mistbox.opens_used_today += 1
+
+        if opened: mistbox.opens_used_today += 1
+
+        if opened and mistbox.opens_used_today + 1 > Mistbox.MAX_DAILY_SWIPES:
+            return Response(
+            {
+                "detail": "no opens left today"
+            }, 
+            status.HTTP_400_BAD_REQUEST)
+
         mistbox.save()
+        
         return Response(None, status.HTTP_204_NO_CONTENT)
