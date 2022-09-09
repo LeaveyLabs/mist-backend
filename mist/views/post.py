@@ -78,12 +78,9 @@ class PostView(viewsets.ModelViewSet):
         location_description = self.request.query_params.get('location_description')
         author = self.request.query_params.get('author')
         # filter
-        queryset = Post.objects.all().\
-            prefetch_related("votes", "comments", "flags").\
-            select_related('author').\
-            prefetch_related("author__badges")
+        queryset = Post.objects.all()
         if latitude and longitude:
-            queryset = self.get_locations_nearby_coords(
+            return self.get_locations_nearby_coords(
                 latitude, longitude, radius or self.MAX_DISTANCE)
         if ids:
             queryset = queryset.filter(pk__in=ids)
@@ -104,7 +101,10 @@ class PostView(viewsets.ModelViewSet):
                 location_description__icontains=location_description)
         if author:
             queryset = queryset.filter(author=author)
-        return queryset
+        return queryset.\
+            prefetch_related("votes", "comments", "flags").\
+            select_related('author').\
+            prefetch_related("author__badges")
 
     def get_locations_nearby_coords(self, latitude, longitude, max_distance=MAX_DISTANCE):
         """
