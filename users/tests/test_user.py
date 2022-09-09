@@ -902,7 +902,7 @@ class UserViewPatchTest(TestCase):
         self.assertFalse(patched_user.picture)
         return
 
-    def test_patch_should_update_picture_given_valid_picture(self):
+    def test_patch_should_update_picture_and_save_thumbnail_given_valid_picture(self):
         pre_patched_user = User.objects.get(pk=self.user1.pk)
         self.assertFalse(pre_patched_user.picture)
 
@@ -919,6 +919,7 @@ class UserViewPatchTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(patched_user.picture)
+        self.assertTrue(patched_user.thumbnail)
         self.assertEqual(self.user1.email, patched_user.email)
         self.assertEqual(self.user1.username, patched_user.username)
         self.assertEqual(self.user1.first_name, patched_user.first_name)

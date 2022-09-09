@@ -32,6 +32,7 @@ django-redis = "*"
 django-celery-beat = "*"
 python-dateutil = "*"
 django-cleanup = "*"
+sorl-thumbnail = "*"
 
 [dev-packages]
 

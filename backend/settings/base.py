@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'push_notifications',
     'rest_framework',
     'rest_framework.authtoken',
+    'sorl.thumbnail',
     'storages',
     'users.apps.UsersConfig',
 ]
