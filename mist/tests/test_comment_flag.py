@@ -11,6 +11,7 @@ from mist.serializers import CommentFlagSerializer
 from mist.views.comment_flag import CommentFlagView
 
 from users.models import Ban, User
+from users.tests.generics import create_dummy_user_and_token_given_id
 
 @freeze_time("2020-01-01")
 class CommentFlagTest(TestCase):
@@ -152,20 +153,10 @@ class CommentFlagTest(TestCase):
 
         MANY_IMPERMISSIBLE_COMMENTS = 11
         MANY_FLAGS = 11
+
+        LOWER_BOUND_FOR_IDS = 30
         
         # Generalized functions
-        def create_dummy_user_with_token(id):
-            username_handle = f'testUser{id}'
-            user = User.objects.create(
-                email=f'{username_handle}@usc.edu',
-                username=username_handle,
-                date_of_birth=date(2000, 1, 1),
-            )
-            token = Token.objects.create(
-                user=user
-            )
-            return (user, token)
-
         def post_flag(comment, user, token):
             flag = CommentFlag(
                 comment=comment,
@@ -190,7 +181,8 @@ class CommentFlagTest(TestCase):
                     post_flag(impermissible_comment, user, token)
 
         # Configured test
-        test_users = [create_dummy_user_with_token(i) for i in range(MANY_FLAGS)]
+        test_users = [create_dummy_user_and_token_given_id(i) 
+        for i in range(LOWER_BOUND_FOR_IDS, LOWER_BOUND_FOR_IDS+MANY_FLAGS)]
 
         self.assertFalse(Ban.objects.filter(email=self.user.email))
 
