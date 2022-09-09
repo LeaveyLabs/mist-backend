@@ -81,7 +81,7 @@ class PostTest(TestCase):
         return
     
     def test_calculate_votecount_should_return_votecount(self):
-        return self.assertEquals(PostSerializer().get_votecount(self.post1), 1)
+        return self.assertEqual(PostSerializer().get_votecount(self.post1), 1)
     
     def test_calculate_commentcount_should_return_number_of_comments(self):
         return self.assertEquals(PostSerializer().get_commentcount(self.post1), 1)
