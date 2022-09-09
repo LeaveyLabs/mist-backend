@@ -22,7 +22,7 @@ class TagView(viewsets.ModelViewSet):
         tagging_user_id = self.request.query_params.get("tagging_user")
         tagged_name = self.request.query_params.get("tagged_name")
         comment = self.request.query_params.get("comment")
-        queryset = Tag.objects.all().select_related('comment__post')
+        queryset = Tag.objects.all()
         if tagged_user_id:
             tagged_user_instances = User.objects.filter(id=tagged_user_id)
             if tagged_user_instances.exists():
@@ -37,7 +37,7 @@ class TagView(viewsets.ModelViewSet):
             queryset = queryset.filter(tagged_name=tagged_name)
         if comment:
             queryset = queryset.filter(comment=comment)
-        return queryset
+        return queryset.select_related('comment').select_related('comment__post')
     
     def get_first_twenty_or_less_words(self, post_id):
         tagged_post = Post.objects.get(id=post_id)
