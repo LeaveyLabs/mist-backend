@@ -32,5 +32,5 @@ class PostFlagView(viewsets.ModelViewSet):
             PostSerializer(post).data for post in posts_by_author
         ]
         if is_beyond_impermissible_post_limit(serialized_posts_by_author):
-            Ban.objects.create(email=post_author.email)
+            Ban.objects.get_or_create(email=post_author.email)
         return post_flag_response
