@@ -234,7 +234,7 @@ class CommentFlag(models.Model):
 
     def save(self, *args, **kwargs):
         if self.flagger.is_superuser: self.rating = float('inf')
-        super(CommentFlag, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 class Favorite(models.Model):
     timestamp = models.FloatField(default=get_current_time)
