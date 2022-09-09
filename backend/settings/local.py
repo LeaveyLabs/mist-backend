@@ -9,6 +9,8 @@ DEBUG = True
 # Any host is allowed
 ALLOWED_HOSTS = ['*']
 
+INSTALLED_APPS += ["silk"]
+
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 if os.getenv('GITHUB_WORKFLOW'):
