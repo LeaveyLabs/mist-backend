@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'push_notifications',
     'rest_framework',
     'rest_framework.authtoken',
+    'silk',
     'sorl.thumbnail',
     'storages',
     'users.apps.UsersConfig',
@@ -67,6 +68,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # cors headers
     'corsheaders.middleware.CorsMiddleware',
+    # profiling
+    'silk.middleware.SilkyMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'

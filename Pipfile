@@ -34,6 +34,7 @@ python-dateutil = "*"
 django-cleanup = "*"
 sorl-thumbnail = "*"
 uvicorn = "*"
+django-silk = "*"
 
 [dev-packages]
 
