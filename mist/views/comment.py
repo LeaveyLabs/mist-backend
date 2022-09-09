@@ -35,5 +35,6 @@ class CommentView(viewsets.ModelViewSet):
         queryset = queryset.annotate(votecount=Count('commentvote'))
         queryset = queryset.annotate(flagcount=Count('commentflag'))
         queryset = queryset.prefetch_related('tags')
+        queryset = queryset.select_related('author')
         queryset = queryset.order_by('timestamp')
         return queryset
