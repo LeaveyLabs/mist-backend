@@ -16,9 +16,9 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges',)
+        'picture', 'is_verified', 'badges', 'thumbnail',)
         read_only_fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges',)
+        'picture', 'is_verified', 'badges', 'thumbnail',)
 
     def get_badges(self, obj):
         badges = []
@@ -40,7 +40,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         'confirm_picture', 'phone_number', 
         'date_of_birth', 'sex', 'latitude', 'longitude',
         'is_verified', 'is_pending_verification', 'badges', 'keywords',
-        'is_superuser',)
+        'is_superuser', 'thumbnail',)
         read_only_fields = ('badges', 'is_verified', 'is_pending_verification',)
         extra_kwargs = {
             'picture': {'required': True},
