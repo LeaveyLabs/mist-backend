@@ -40,7 +40,7 @@ class PostSerializer(serializers.ModelSerializer):
         flags = None
         try: flags = obj.flags
         except: flags = PostFlag.objects.filter(post_id=self.pk)
-        return sum([flag.rating for flag in flags.all()])/PostFlag.AVG_RATING
+        return sum([flag.rating for flag in flags.all()])
     
     def get_commentcount(self, obj):
         try: obj.comments
@@ -50,13 +50,13 @@ class PostSerializer(serializers.ModelSerializer):
     def get_votecount(self, obj):
         try: obj.votes
         except: obj.votes = PostVote.objects.filter(post_id=obj.id)
-        return sum([vote.rating for vote in obj.votes.all()])/PostVote.AVG_RATING
+        return sum([vote.rating for vote in obj.votes.all()])
 
     def get_trendscore(self, obj):
         try: obj.votes
         except: obj.votes = PostVote.objects.filter(post_id=obj.id)
         return sum([vote.rating*(vote.timestamp/get_current_time()) 
-            for vote in obj.votes.all()])/PostVote.AVG_RATING
+            for vote in obj.votes.all()])
 
     def get_read_only_author(self, obj):
         return ReadOnlyUserSerializer(obj.author).data

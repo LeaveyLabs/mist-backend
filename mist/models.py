@@ -107,15 +107,13 @@ class Word(models.Model):
         return postset.count()
 
 class PostVote(models.Model):
-    MIN_RATING = 0
-    MAX_RATING = 10
-    AVG_RATING = (MIN_RATING+MAX_RATING)//2
+    DEFAULT_RATING = 1
     DEFAULT_EMOJI = "❤️"
 
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postvotes')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='votes')
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.FloatField(default=AVG_RATING)
+    rating = models.FloatField(default=DEFAULT_RATING)
     emoji = models.CharField(max_length=5, default=DEFAULT_EMOJI)
 
     class Meta:
@@ -125,14 +123,12 @@ class PostVote(models.Model):
         return self.voter.pk
 
 class PostFlag(models.Model):
-    MIN_RATING = 0
-    MAX_RATING = 10
-    AVG_RATING = (MIN_RATING+MAX_RATING)//2
+    DEFAULT_RATING = 1
 
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postflags')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='flags')
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.FloatField(default=AVG_RATING)
+    rating = models.FloatField(default=DEFAULT_RATING)
 
     class Meta:
         unique_together = ('flagger', 'post',)
@@ -201,14 +197,12 @@ class Tag(models.Model):
     #     super(Tag, self).save(*args, **kwargs)
 
 class CommentVote(models.Model):
-    MIN_RATING = 0
-    MAX_RATING = 10
-    AVG_RATING = (MIN_RATING+MAX_RATING)//2
+    DEFAULT_RATING = 1
 
     voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.FloatField(default=AVG_RATING)
+    rating = models.FloatField(default=DEFAULT_RATING)
 
     class Meta:
         unique_together = ('voter', 'comment',)
@@ -217,14 +211,12 @@ class CommentVote(models.Model):
         return self.voter.pk
 
 class CommentFlag(models.Model):
-    MIN_RATING = 0
-    MAX_RATING = 10
-    AVG_RATING = (MIN_RATING+MAX_RATING)//2
+    DEFAULT_RATING = 1
 
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-    rating = models.FloatField(default=AVG_RATING)
+    rating = models.FloatField(default=DEFAULT_RATING)
 
     class Meta:
         unique_together = ('flagger', 'comment',)
