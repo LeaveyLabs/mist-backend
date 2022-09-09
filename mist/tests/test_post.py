@@ -87,7 +87,7 @@ class PostTest(TestCase):
         return self.assertEqual(PostSerializer().get_commentcount(self.post1), 1)
     
     def test_calculate_flagcount_should_return_number_of_flags(self):
-        return self.assertEquals(PostSerializer().get_flagcount(self.post1), 1)
+        return self.assertEqual(PostSerializer().get_flagcount(self.post1), 1)
 
     def test_save_should_create_words_in_post(self):
         Post.objects.create(
