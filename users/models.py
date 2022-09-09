@@ -56,11 +56,10 @@ class User(AbstractUser):
     class Meta:
         db_table = 'auth_user'
 
-    def save(self, *args, **kwargs):        
-        if self.picture:
-            super().save(*args, **kwargs)
-            self.thumbnail = get_thumbnail(self.picture, '100x100', quality=99).url
+    def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        if self.picture:
+            self.thumbnail = get_thumbnail(self.picture, '100x100', quality=99).url
        
 class EmailAuthentication(models.Model):
     def get_random_code():
