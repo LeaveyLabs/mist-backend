@@ -39,7 +39,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         'first_name', 'last_name', 'picture', 
         'confirm_picture', 'phone_number', 
         'date_of_birth', 'sex', 'latitude', 'longitude',
-        'is_verified', 'is_pending_verification', 'badges', 'keywords')
+        'is_verified', 'is_pending_verification', 'badges', 'keywords',
+        'is_superuser',)
         read_only_fields = ('badges', 'is_verified', 'is_pending_verification',)
         extra_kwargs = {
             'picture': {'required': True},
