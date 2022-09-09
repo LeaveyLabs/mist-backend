@@ -21,7 +21,7 @@ class PostFlagView(viewsets.ModelViewSet):
             queryset = queryset.filter(flagger=flagger)
         if post:
             queryset = queryset.filter(post=post)
-        return queryset
+        return queryset.prefetch_related('flagger', 'post')
 
     def create(self, request, *args, **kwargs):
         post_flag_response = super().create(request, *args, **kwargs)

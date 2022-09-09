@@ -21,7 +21,7 @@ class CommentFlagView(viewsets.ModelViewSet):
             queryset = queryset.filter(flagger=flagger)
         if comment:
             queryset = queryset.filter(comment=comment)
-        return queryset
+        return queryset.prefetch_related('flagger', 'comment')
 
     def create(self, request, *args, **kwargs):
         comment_flag_response = super().create(request, *args, **kwargs)
