@@ -142,7 +142,7 @@ class PostFlag(models.Model):
 
     def save(self, *args, **kwargs):
         if self.flagger.is_superuser: self.rating = float('inf')
-        super(PostFlag, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 class Comment(models.Model):
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
