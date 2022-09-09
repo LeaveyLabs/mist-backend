@@ -3,7 +3,6 @@ from push_notifications.models import APNSDevice
 from rest_framework import viewsets
 from mist.permissions import TagPermission
 from rest_framework.permissions import IsAuthenticated
-from users.generics import get_user_from_request
 
 from users.models import User
 
