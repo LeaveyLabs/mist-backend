@@ -2,7 +2,7 @@ import os
 import random
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
-from django.core.files.base import ContentFile
+from rest_framework.authtoken.models import Token
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 from sorl.thumbnail import get_thumbnail
@@ -118,5 +118,6 @@ class Ban(models.Model):
     def save(self, *args, **kwargs):
         super(Ban, self).save(*args, **kwargs)
         for user in User.objects.filter(email__iexact=self.email).all():
+            Token.objects.filter(user=user).delete()
             user.is_banned = True
             user.save()
