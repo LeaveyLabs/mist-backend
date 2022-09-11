@@ -64,7 +64,7 @@ class User(AbstractUser):
 def create_thumbnail(sender, instance, **kwargs):
     if instance.picture and not instance.thumbnail:
         resized = get_thumbnail(instance.picture, '100x100', quality=99)
-        instance.thumbnail.save(resized.name, ContentFile(resized.read()), True)
+        instance.thumbnail.save(os.path.basename(resized.name), ContentFile(resized.read()), True)
         instance.save()
 
 class EmailAuthentication(models.Model):
