@@ -7,7 +7,9 @@ from rest_framework.authtoken.models import Token
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from io import BytesIO
 from phonenumber_field.modelfields import PhoneNumberField
+from PIL import Image
 from sorl.thumbnail import get_thumbnail
 
 from .generics import get_current_time, get_random_code
@@ -37,7 +39,7 @@ class User(AbstractUser):
         (female, female),
         (other, other),
     )
-    SETTING_THUMBNAIL_KWARG = "setting_thumbnail"
+    MAX_IMAGE_SIZE = (100, 100)
 
     date_of_birth = models.DateField()
     picture = models.ImageField(
@@ -62,20 +64,10 @@ class User(AbstractUser):
         db_table = 'auth_user'
     
     def save(self, *args, **kwargs):
-        # print(kwargs)
         super().save(*args, **kwargs)
         if self.picture:
             resized = get_thumbnail(self.picture, '100x100', quality=99)
-            self.thumbnail = resized.url
-
-# @receiver(post_save, sender=User)
-# def create_thumbnail(sender, instance, **kwargs):
-#     if instance.picture:
-#         resized = get_thumbnail(instance.picture, '100x100', quality=99)
-#         post_save.disconnect(create_thumbnail, sender=User)
-#         instance.thumbnail.save(resized.name, ContentFile(resized.read()), True)
-#         post_save.connect(create_thumbnail, sender=User)
-
+            self.thumbnail.save(resized.name, ContentFile(resized.read()), False)
 
 class EmailAuthentication(models.Model):
     def get_random_code():
