@@ -37,6 +37,7 @@ class User(AbstractUser):
         (female, female),
         (other, other),
     )
+    SETTING_THUMBNAIL_KWARG = "setting_thumbnail"
 
     date_of_birth = models.DateField()
     picture = models.ImageField(
@@ -60,12 +61,21 @@ class User(AbstractUser):
     class Meta:
         db_table = 'auth_user'
     
-@receiver(post_save, sender=User)
-def create_thumbnail(sender, instance, **kwargs):
-    if instance.picture and not instance.thumbnail:
-        resized = get_thumbnail(instance.picture, '100x100', quality=99)
-        instance.thumbnail.save(os.path.basename(resized.name), ContentFile(resized.read()), True)
-        instance.save()
+    def save(self, *args, **kwargs):
+        # print(kwargs)
+        super().save(*args, **kwargs)
+        if self.picture:
+            resized = get_thumbnail(self.picture, '100x100', quality=99)
+            self.thumbnail = resized.url
+
+# @receiver(post_save, sender=User)
+# def create_thumbnail(sender, instance, **kwargs):
+#     if instance.picture:
+#         resized = get_thumbnail(instance.picture, '100x100', quality=99)
+#         post_save.disconnect(create_thumbnail, sender=User)
+#         instance.thumbnail.save(resized.name, ContentFile(resized.read()), True)
+#         post_save.connect(create_thumbnail, sender=User)
+
 
 class EmailAuthentication(models.Model):
     def get_random_code():
