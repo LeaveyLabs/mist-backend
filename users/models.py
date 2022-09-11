@@ -2,7 +2,6 @@ import os
 import random
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
-from django.core.files.base import ContentFile
 from rest_framework.authtoken.models import Token
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
@@ -61,8 +60,7 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if self.picture:
-            resized = get_thumbnail(self.picture, '100x100', quality=99)
-            self.thumbnail.save(resized.name, ContentFile(resized.read()), True)
+            self.thumbnail = get_thumbnail(self.picture, '100x100', quality=99).url
        
 class EmailAuthentication(models.Model):
     def get_random_code():
