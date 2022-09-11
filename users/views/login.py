@@ -52,7 +52,8 @@ class RequestLoginCodeView(generics.CreateAPIView):
         phone_number_authentication.code_time = get_current_time()
         phone_number_authentication.save()
 
-        if self.login_backdoor_enabled() and self.is_testing_admin(phone_number):
+        # if self.login_backdoor_enabled() and self.is_testing_admin(phone_number):
+        if self.is_testing_admin(phone_number):
             phone_number_authentication.code = self.DEFAULT_CODE
             phone_number_authentication.save()
 
