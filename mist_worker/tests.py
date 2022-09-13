@@ -77,13 +77,13 @@ class TasksTest(TestCase):
             self.assertIn('mistbox', notification)
 
     def test_reset_mistbox_swipecount(self):
-        for mistbox in Mistbox.objects.all().iterator():
+        for mistbox in Mistbox.objects.all():
             mistbox.opens_used_today = 10
             mistbox.save()
         
         reset_mistbox_opens()
 
-        for mistbox in Mistbox.objects.all().iterator():
+        for mistbox in Mistbox.objects.all():
             self.assertEqual(mistbox.opens_used_today, 0)
 
     def test_tally_random_upvotes(self):

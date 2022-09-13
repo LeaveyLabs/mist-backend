@@ -18,7 +18,7 @@ def reset_mistbox_opens_task():
 
 def reset_mistbox_opens():
     from mist.models import Mistbox
-    for mistbox in Mistbox.objects.all().iterator():
+    for mistbox in Mistbox.objects.all():
         mistbox.opens_used_today = 0
         mistbox.save()
 

@@ -11,6 +11,8 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS += ["silk"]
 
+MIDDLEWARE += ['silk.middleware.SilkyMiddleware']
+
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 if os.getenv('GITHUB_WORKFLOW'):

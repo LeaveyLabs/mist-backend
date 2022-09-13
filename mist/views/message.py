@@ -73,7 +73,7 @@ class ConversationView(generics.ListAPIView):
             select_related('receiver').\
             select_related('sender')
             
-        for message in sent_or_received_messages.iterator():
+        for message in sent_or_received_messages:
             opposite_pk = None
 
             if requesting_user == message.sender:
