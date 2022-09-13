@@ -145,7 +145,7 @@ class Comment(models.Model):
     body = models.CharField(max_length=500)
     timestamp = models.FloatField(default=get_current_time)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments')
 
     def _str_(self):
         return self.text
@@ -199,8 +199,8 @@ class Tag(models.Model):
 class CommentVote(models.Model):
     DEFAULT_RATING = 1
 
-    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='commentvotes')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='votes')
     timestamp = models.FloatField(default=get_current_time)
     rating = models.FloatField(default=DEFAULT_RATING)
 
@@ -213,8 +213,8 @@ class CommentVote(models.Model):
 class CommentFlag(models.Model):
     DEFAULT_RATING = 1
 
-    flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='commentflags')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='flags')
     timestamp = models.FloatField(default=get_current_time)
     rating = models.FloatField(default=DEFAULT_RATING)
 

@@ -32,9 +32,8 @@ class CommentView(viewsets.ModelViewSet):
         queryset = None
         if post: queryset = Comment.objects.filter(post=post)
         else: queryset = Comment.objects.all()
-        queryset = queryset.annotate(votecount=Count('commentvote'))
-        queryset = queryset.annotate(flagcount=Count('commentflag'))
-        queryset = queryset.prefetch_related('tags')
-        queryset = queryset.select_related('author')
-        queryset = queryset.order_by('timestamp')
-        return queryset
+        return queryset.\
+            prefetch_related("votes", "flags", "tags").\
+            select_related('author').\
+            prefetch_related("author__badges").\
+            order_by('timestamp')

@@ -196,17 +196,19 @@ class CommentSerializer(serializers.ModelSerializer):
     
     def get_tags(self, obj):
         tags = []
-        try: tags = obj.tags.all()
+        try: tags = obj.tags
         except: tags = Tag.objects.filter(comment_id=obj.id)
-        return [TagSerializer(tag).data for tag in tags]
-    
-    def get_votecount(self, obj):
-        try: return obj.votecount
-        except: return obj.calculate_votecount()
-    
+        return [TagSerializer(tag).data for tag in tags.all()]
+
     def get_flagcount(self, obj):
-        try: return obj.flagcount
-        except: return obj.calculate_flagcount()
+        try: obj.flags
+        except: obj.flags = CommentFlag.objects.filter(comment_id=self.pk)
+        return sum([flag.rating for flag in obj.flags.all()])
+
+    def get_votecount(self, obj):
+        try: obj.votes
+        except: obj.votes = CommentVote.objects.filter(comment_id=obj.id)
+        return sum([vote.rating for vote in obj.votes.all()])
     
     def validate_body(self, body):
         # [is_offensive] = predict([body])
