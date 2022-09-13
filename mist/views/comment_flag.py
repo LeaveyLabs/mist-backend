@@ -28,10 +28,10 @@ class CommentFlagView(viewsets.ModelViewSet):
         comment_id = comment_flag_response.data.get("comment")
         comment_author = Comment.objects.get(id=comment_id).author
         comments_by_author = Comment.objects.filter(
-            author=comment_author).annotate(
-                votecount=Count('commentvote'),
-                flagcount=Count('commentflag'),
-            )
+            author=comment_author).\
+            prefetch_related("votes", "flags", "tags").\
+            select_related('author').\
+            prefetch_related("author__badges")
         serialized_comments_by_author = [
             CommentSerializer(comment).data for comment in comments_by_author
         ]
