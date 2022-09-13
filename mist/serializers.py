@@ -33,8 +33,9 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ('id', 'title', 'body', 'latitude', 'longitude', 'location_description',
-        'timestamp', 'author', 'commentcount', 'votecount', 'flagcount', 
-        'read_only_author', 'votes', 'emoji_dict', 'creation_time', 'trendscore')
+        'timestamp', 'author', 'read_only_author', 'votes',
+        'commentcount', 'flagcount', 'votecount', 'emoji_dict',
+        'trendscore',)
     
     def get_flagcount(self, obj):
         flags = None
@@ -68,8 +69,8 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_emoji_dict(self, obj):
         votes = None
-        try: votes = obj.votes
-        except: votes = PostVote.objects.filter(post_id=obj.id)
+        try: votes = obj.votes.all()
+        except: votes = PostVote.objects.filter(post_id=obj.id).all()
         return self.convert_votes_to_emoji_dict(votes)
 
     def validate_body(self, body):
@@ -78,9 +79,9 @@ class PostSerializer(serializers.ModelSerializer):
         #     raise serializers.ValidationError("Avoid offensive language.")
         return body
 
-    def convert_votes_to_emoji_dict(self, vote_queryset):
+    def convert_votes_to_emoji_dict(self, votes):
         emoji_tuple = {}
-        for vote in vote_queryset.all().iterator():
+        for vote in votes:
             if vote.emoji not in emoji_tuple:
                 emoji_tuple[vote.emoji] = 0
             emoji_tuple[vote.emoji] += vote.rating
@@ -197,7 +198,7 @@ class CommentSerializer(serializers.ModelSerializer):
         tags = []
         try: tags = obj.tags.all()
         except: tags = Tag.objects.filter(comment_id=obj.id)
-        return [TagSerializer(tag).data for tag in tags.iterator()]
+        return [TagSerializer(tag).data for tag in tags]
     
     def get_votecount(self, obj):
         try: return obj.votecount

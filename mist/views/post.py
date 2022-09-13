@@ -12,7 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
 
 from ..serializers import MistboxSerializer, PostSerializer
-from ..models import Favorite, Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
+from ..models import Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
 
 class Order(Enum):
     RECENT = 0

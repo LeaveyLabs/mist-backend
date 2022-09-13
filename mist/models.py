@@ -85,7 +85,7 @@ class Post(models.Model):
                 if not matching_word:
                     matching_word = Word.objects.create(text=lowercased_word)
 
-                for mistbox in mistboxes.iterator():
+                for mistbox in mistboxes:
                     for keyword in mistbox.keywords:
                         if lowercased_word in keyword:
                             mistbox.posts.add(self)
