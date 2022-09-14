@@ -42,7 +42,7 @@ class UserView(viewsets.ModelViewSet):
         requesting_user = get_user_from_request(self.request)
 
         # default is to return all users
-        queryset = User.objects.all().exclude(is_hidden=True).prefetch_related('badges')
+        queryset = User.objects.all()
 
         # filter by words...
         if words:
@@ -77,7 +77,7 @@ class UserView(viewsets.ModelViewSet):
         # set serializers based on requesting user + method
         object_level_methods = ["DELETE", "PUT", "PATCH",]
         if self.request.method in object_level_methods:
-            return queryset
+            return queryset.exclude(is_hidden=True).prefetch_related('badges', 'badges__badge_type')
         else:
             non_matching_users = ~Q(id=requesting_user.id)
             readonly_users = queryset.filter(non_matching_users)
@@ -87,7 +87,7 @@ class UserView(viewsets.ModelViewSet):
             else:
                 self.serializer_class = CompleteUserSerializer
 
-        return queryset
+        return queryset.exclude(is_hidden=True).prefetch_related('badges', 'badges__badge_type')
 
     def create(self, request, *args, **kwargs):
         user_response = super().create(request, *args, **kwargs)
