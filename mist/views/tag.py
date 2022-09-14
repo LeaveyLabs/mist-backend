@@ -38,9 +38,7 @@ class TagView(viewsets.ModelViewSet):
         if comment:
             queryset = queryset.filter(comment=comment)
         return queryset.select_related('comment', 'comment__post').\
-            prefetch_related("comment__post__votes", "comment__post__comments", "comment__post__flags").\
-            select_related('comment__post__author').\
-            prefetch_related("comment__post__author__badges")
+            prefetch_related("comment__post__votes", "comment__post__comments", "comment__post__flags")
     
     def get_first_twenty_or_less_words(self, post_id):
         tagged_post = Post.objects.get(id=post_id)

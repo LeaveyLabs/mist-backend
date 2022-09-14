@@ -19,11 +19,7 @@ class WordSerializer(serializers.ModelSerializer):
         return obj.calculate_occurrences()
 
 class PostSerializer(serializers.ModelSerializer):
-    VERY_LARGE_NUMBER = 1_000_000_000_000_000
-
-    read_only_author = serializers.SerializerMethodField()
     votes = serializers.SerializerMethodField()
-
     votecount = serializers.SerializerMethodField()
     commentcount = serializers.SerializerMethodField()
     flagcount = serializers.SerializerMethodField()
@@ -32,8 +28,9 @@ class PostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'title', 'body', 'latitude', 'longitude', 'location_description',
-        'timestamp', 'author', 'read_only_author', 'votes',
+        fields = ('id', 'title', 'body', 
+        'latitude', 'longitude', 'location_description',
+        'timestamp', 'author', 'votes',
         'commentcount', 'flagcount', 'votecount', 'emoji_dict',
         'trendscore',)
     
@@ -58,9 +55,6 @@ class PostSerializer(serializers.ModelSerializer):
         except: obj.votes = PostVote.objects.filter(post_id=obj.id)
         return sum([vote.rating*(vote.timestamp/get_current_time()) 
             for vote in obj.votes.all()])
-
-    def get_read_only_author(self, obj):
-        return ReadOnlyUserSerializer(obj.author).data
     
     def get_votes(self, obj):
         try: obj.votes
@@ -110,8 +104,6 @@ class TagSerializer(serializers.ModelSerializer):
         }
 
     def get_post(self, obj):
-        # a = obj.comment.post
-        # print(a)
         return PostSerializer(obj.comment.post).data
     
     def validate(self, data):

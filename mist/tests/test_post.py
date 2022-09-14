@@ -300,7 +300,6 @@ class PostTest(TestCase):
             self.assertIn('votecount', response_post)
             self.assertIn('flagcount', response_post)
             self.assertIn('commentcount', response_post)
-            self.assertIn('read_only_author', response_post)
             self.assertIn('votes', response_post)
         return
     
