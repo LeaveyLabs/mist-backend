@@ -62,10 +62,11 @@ class ConversationView(generics.ListAPIView):
         conversations = {}
 
         sender_or_receiver_query = Q(sender=requesting_user) | Q(receiver=requesting_user)
-        exclude_blocks_query = Q(sender__blockings__blocking_user=requesting_user) | \
-            Q(receiver__blockings__blocking_user=requesting_user) | \
-            Q(sender__blocks__blocked_user=requesting_user) | \
-            Q(sender__blocks__blocked_user=requesting_user)\
+        exclude_blocks_query = \
+            Q(sender__blockings__blocked_user=requesting_user) | \
+            Q(receiver__blockings__blocked_user=requesting_user) | \
+            Q(sender__blocks__blocking_user=requesting_user) | \
+            Q(receiver__blocks__blocking_user=requesting_user)
 
         sent_or_received_messages = Message.objects.\
             filter(sender_or_receiver_query).\
