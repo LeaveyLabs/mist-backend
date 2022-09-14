@@ -18,7 +18,6 @@ class WordSerializer(serializers.ModelSerializer):
         return obj.calculate_occurrences()
 
 class PostSerializer(serializers.ModelSerializer):
-    votes = serializers.SerializerMethodField()
     votecount = serializers.SerializerMethodField()
     commentcount = serializers.SerializerMethodField()
     flagcount = serializers.SerializerMethodField()
@@ -29,7 +28,7 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = ('id', 'title', 'body', 
         'latitude', 'longitude', 'location_description',
-        'timestamp', 'author', 'votes',
+        'timestamp', 'author',
         'commentcount', 'flagcount', 'votecount', 'emoji_dict',
         'trendscore',)
     
@@ -54,11 +53,6 @@ class PostSerializer(serializers.ModelSerializer):
         except: obj.votes = PostVote.objects.filter(post_id=obj.id)
         return sum([vote.rating*(vote.timestamp/get_current_time()) 
             for vote in obj.votes.all()])
-    
-    def get_votes(self, obj):
-        try: obj.votes
-        except: obj.votes = PostVote.objects.filter(post_id=obj.id)
-        return [PostVoteSerializer(vote).data for vote in obj.votes.all()]
 
     def get_emoji_dict(self, obj):
         votes = None
