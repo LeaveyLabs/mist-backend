@@ -12,6 +12,21 @@ def send_mistbox_notifications():
     APNSDevice.objects.all().send_message(
         "your mistbox opens have refreshed! pick out 5 new mists containing your keywords 💌")
 
+@shared_task(name="schedule_make_your_day_mist_notifications_task")
+def schedule_make_your_day_mist_notifications_task():
+    import random
+    t = random.randint(3600*1, 3600*8)
+    send_make_your_day_mist_notifications_task.apply_async(countdown=t)
+
+@shared_task(name="send_make_your_day_mist_notifications_task")
+def send_make_your_day_mist_notifications_task():
+    send_make_your_day_mist_notifications()
+
+def send_make_your_day_mist_notifications():
+    from push_notifications.models import APNSDevice
+    APNSDevice.objects.all().send_message(
+        "did anyone make your day today? make theirs back with a mist 💞")
+
 @shared_task(name="reset_mistbox_opens_task")
 def reset_mistbox_opens_task():
     reset_mistbox_opens()
