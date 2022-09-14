@@ -9,7 +9,7 @@ from users.generics import get_user_from_request
 from users.models import User
 
 from ..serializers import MessageSerializer
-from ..models import Block, MatchRequest, Message, NotificationTypes
+from ..models import MatchRequest, Message, NotificationTypes
 
 class MessageView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MessagePermission)
