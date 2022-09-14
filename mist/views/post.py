@@ -229,10 +229,10 @@ class TaggedPostsView(generics.ListAPIView):
         if user.phone_number:
             tagged_numbers = Tag.objects.filter(tagged_phone_number=user.phone_number)
             tags = (tags | tagged_numbers).distinct()
-        tagged_posts = Post.objects.filter(
-            comments__tags__in=tags
-        ).prefetch_related("votes", "comments", "flags").\
+        tagged_posts = Post.objects.filter(comments__tags__in=tags).\
+            prefetch_related("votes", "comments", "flags").\
             select_related('author').\
+            prefetch_related("author__badges").\
             order_by('-comments__tags__timestamp')
         return tagged_posts
 
