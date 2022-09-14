@@ -13,6 +13,8 @@ from users.models import User
 
 @freeze_time("2020-01-01")
 class PostTest(TestCase):
+    maxDiff = None
+    
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)
 
@@ -395,6 +397,7 @@ class PostTest(TestCase):
         response_posts = [post_data for post_data in response.data]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        print(serialized_posts[0], response_posts[0])
         self.assertEqual(serialized_posts[0], response_posts[0])
         self.assertEqual(serialized_posts[1], response_posts[1])
         self.assertEqual(serialized_posts[2], response_posts[2])

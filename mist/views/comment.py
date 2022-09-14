@@ -14,6 +14,8 @@ class CommentView(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
+        # serialized_posts = response.data.get('results')
+        # response.data['results'] = self.filter_serialized_comments(serialized_posts)
         response.data = self.filter_serialized_comments(response.data)
         return response
     

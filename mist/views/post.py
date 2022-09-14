@@ -1,6 +1,7 @@
 from decimal import Decimal
 from enum import Enum
-from django.db.models import Q
+from django.db.models import Count, Q, Sum
+from django.db.models.functions import Coalesce
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
@@ -12,21 +13,33 @@ from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
 
 from ..serializers import MistboxSerializer, PostSerializer
-from ..models import Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag
+from ..models import Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag, get_current_time
 
 class Order(Enum):
     RECENT = 0
     BEST = 1
     TRENDING = 2
 
-    def recency_sort_key(post):
-        return post.get('creation_time')
+    def creation_time(post):
+        return post.creation_time
 
-    def best_sort_key(post):
-        return post.get('votecount')
+    def votecount(post):
+        return sum([vote.rating for vote in post.votes.all()])
 
-    def trending_sort_key(post):
-        return post.get('trendscore')
+    def commentcount(post):
+        return post.comments.count()
+    
+    def flagcount(post):
+        return post.flags.count()
+
+    def trendscore(post):
+        return sum(
+            [vote.rating*(vote.timestamp/get_current_time())
+            for vote in post.votes.all()])
+
+    def permissible_post(post):
+        if Order.flagcount(post) < 2: return True
+        return Order.votecount(post)*Order.votecount(post) >= Order.flagcount(post)
 
 class PostView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, PostPermission,)
@@ -36,30 +49,41 @@ class PostView(viewsets.ModelViewSet):
     MAX_DISTANCE = Decimal(5)
 
     def list(self, request, *args, **kwargs):
-        response = super().list(request, *args, **kwargs)
-        response.data = self.filter_and_order_serialized_posts(response.data)
-        return response
-    
-    def filter_and_order_serialized_posts(self, serialized_posts):
-        filtered_posts = []
-        for serialized_post in serialized_posts:
-            if not is_impermissible_post(serialized_post):
-                filtered_posts.append(serialized_post)
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset = queryset.\
+            prefetch_related("votes", "comments", "flags")
+
+        queryset = self.paginate_queryset(queryset)
+        queryset = self.remove_impermissible_posts(queryset)
+        queryset = self.order_queryset(queryset)
         
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def paginate_queryset(self, queryset):
+        page = self.request.query_params.get('page')
+        
+        page_num = 0
+        if page: page_num = int(page)
+        return queryset[
+            min(0, (page_num)*100):
+            min(queryset.count(), (page_num+1)*100)]
+
+    def order_queryset(self, queryset):
         order_type = self.request.query_params.get('order')
-        try: order_type = int(order_type)
-        except: order_type = Order.BEST
 
-        sort_key = Order.trending_sort_key
+        sort_key = Order.trendscore
         if order_type == Order.BEST:
-            sort_key = Order.best_sort_key
+            sort_key = Order.votecount
         elif order_type == Order.RECENT:
-            sort_key = Order.recency_sort_key
+            sort_key = Order.creation_time
         elif order_type == Order.TRENDING:
-            sort_key = Order.trending_sort_key
+            sort_key = Order.trendscore
+        
+        return sorted(queryset, key=sort_key, reverse=True)
 
-        ordered_posts = sorted(filtered_posts, key=sort_key, reverse=True)
-        return ordered_posts
+    def remove_impermissible_posts(self, queryset):
+        return filter(Order.permissible_post, queryset)
 
     def get_queryset(self):
         """
@@ -101,6 +125,7 @@ class PostView(viewsets.ModelViewSet):
                 location_description__icontains=location_description)
         if author:
             queryset = queryset.filter(author=author)
+        
         return queryset.\
             prefetch_related("votes", "comments", "flags")
 

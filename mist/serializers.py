@@ -22,21 +22,19 @@ class PostSerializer(serializers.ModelSerializer):
     commentcount = serializers.SerializerMethodField()
     flagcount = serializers.SerializerMethodField()
     emoji_dict = serializers.SerializerMethodField()
-    trendscore = serializers.SerializerMethodField()
+    # trendscore = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
         fields = ('id', 'title', 'body', 
         'latitude', 'longitude', 'location_description',
-        'timestamp', 'author',
-        'commentcount', 'flagcount', 'votecount', 'emoji_dict',
-        'trendscore',)
+        'timestamp', 'author', 'creation_time',
+        'emoji_dict', 'commentcount', 'flagcount', 'votecount',)
     
     def get_flagcount(self, obj):
-        flags = None
-        try: flags = obj.flags
-        except: flags = PostFlag.objects.filter(post_id=self.pk)
-        return sum([flag.rating for flag in flags.all()])
+        try: obj.flags
+        except: obj.flags = PostFlag.objects.filter(post_id=self.pk)
+        return sum([flag.rating for flag in obj.flags.all()])
     
     def get_commentcount(self, obj):
         try: obj.comments
@@ -55,10 +53,9 @@ class PostSerializer(serializers.ModelSerializer):
             for vote in obj.votes.all()])
 
     def get_emoji_dict(self, obj):
-        votes = None
-        try: votes = obj.votes.all()
-        except: votes = PostVote.objects.filter(post_id=obj.id).all()
-        return self.convert_votes_to_emoji_dict(votes)
+        try: votes = obj.votes
+        except: votes = PostVote.objects.filter(post_id=obj.id)
+        return self.convert_votes_to_emoji_dict(votes.all())
 
     def validate_body(self, body):
         # [is_offensive] = predict([body])
