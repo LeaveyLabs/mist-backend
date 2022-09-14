@@ -34,6 +34,9 @@ class CommentView(viewsets.ModelViewSet):
         else: queryset = Comment.objects.all()
         return queryset.\
             prefetch_related("votes", "flags", "tags").\
-            select_related('author').\
+            prefetch_related("post__votes").\
+            prefetch_related("post__flags").\
+            prefetch_related("post__comments").\
+            select_related('author', 'post', 'post__author',).\
             prefetch_related("author__badges").\
             order_by('timestamp')

@@ -2,7 +2,6 @@ from psycopg2 import IntegrityError
 # from profanity_check import predict
 from rest_framework import serializers
 from users.generics import get_current_time
-from users.models import User
 
 from users.serializers import ReadOnlyUserSerializer
 from .models import AccessCode, Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word

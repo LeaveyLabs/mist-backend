@@ -31,7 +31,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     MEGABYTE_LIMIT = 10
 
     badges = serializers.SerializerMethodField()
-    keywords = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -39,7 +38,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         'first_name', 'last_name', 'picture', 
         'confirm_picture', 'phone_number', 
         'date_of_birth', 'sex', 'latitude', 'longitude',
-        'is_verified', 'is_pending_verification', 'badges', 'keywords',
+        'is_verified', 'is_pending_verification', 'badges',
         'is_superuser', 'thumbnail',)
         read_only_fields = ('badges', 'is_verified', 'is_pending_verification',)
         extra_kwargs = {
@@ -52,11 +51,6 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         try: badges = obj.badges
         except: badges = Badge.objects.filter(user_id=obj.id)
         return [badge.badge_type for badge in badges.all()]
-
-    def get_keywords(self, obj):
-        mistbox_exists = Mistbox.objects.filter(user_id=obj.id).exists()
-        if not mistbox_exists: return []
-        return Mistbox.objects.get(user_id=obj.id).keywords
     
     def email_matches_name(email, first_name, last_name):
         first_name_in_email = email.find(first_name) != -1
