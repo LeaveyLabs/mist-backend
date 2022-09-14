@@ -110,6 +110,8 @@ class TagSerializer(serializers.ModelSerializer):
         }
 
     def get_post(self, obj):
+        # a = obj.comment.post
+        # print(a)
         return PostSerializer(obj.comment.post).data
     
     def validate(self, data):

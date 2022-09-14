@@ -5,6 +5,7 @@ from mist.permissions import TagPermission
 from rest_framework.permissions import IsAuthenticated
 
 from users.models import User
+from django.db.models import Q
 
 from ..models import Comment, NotificationTypes, Post, Tag
 from ..serializers import TagSerializer
@@ -27,17 +28,19 @@ class TagView(viewsets.ModelViewSet):
             tagged_user_instances = User.objects.filter(id=tagged_user_id)
             if tagged_user_instances.exists():
                 tagged_user_instance = tagged_user_instances[0]
-                queryset = queryset.filter(
-                    tagged_user=tagged_user_instance,
-                    tagged_phone_number=tagged_user_instance.phone_number,
-                )
+                q = Q(tagged_user=tagged_user_instance) | \
+                    Q(tagged_phone_number=tagged_user_instance.phone_number)
+                queryset = queryset.filter(q)
         if tagging_user_id:
             queryset = queryset.filter(tagging_user_id=tagging_user_id)
         if tagged_name:
             queryset = queryset.filter(tagged_name=tagged_name)
         if comment:
             queryset = queryset.filter(comment=comment)
-        return queryset.select_related('comment').select_related('comment__post')
+        return queryset.select_related('comment', 'comment__post').\
+            prefetch_related("comment__post__votes", "comment__post__comments", "comment__post__flags").\
+            select_related('comment__post__author').\
+            prefetch_related("comment__post__author__badges")
     
     def get_first_twenty_or_less_words(self, post_id):
         tagged_post = Post.objects.get(id=post_id)
