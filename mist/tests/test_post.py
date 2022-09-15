@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 
-from mist.models import Comment, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, Word
+from mist.models import Comment, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, View, Word
 from mist.serializers import PostSerializer, PostVoteSerializer
 from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, Order, PostView, SubmittedPostsView, TaggedPostsView
 from users.models import User

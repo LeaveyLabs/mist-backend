@@ -1,10 +1,12 @@
+import random
+
 from psycopg2 import IntegrityError
 # from profanity_check import predict
 from rest_framework import serializers
 from users.generics import get_current_time
 
 from users.serializers import ReadOnlyUserSerializer
-from .models import AccessCode, Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, Word
+from .models import AccessCode, Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, View, Word
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.SerializerMethodField()
@@ -22,7 +24,6 @@ class PostSerializer(serializers.ModelSerializer):
     commentcount = serializers.SerializerMethodField()
     flagcount = serializers.SerializerMethodField()
     emoji_dict = serializers.SerializerMethodField()
-    # trendscore = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -238,9 +239,11 @@ class MistboxSerializer(serializers.ModelSerializer):
     
     def get_posts(self, obj):
         posts = []
-        try: posts = obj.posts
-        except: posts = Post.objects.none()
-        return [PostSerializer(post).data for post in posts.all()]
+        try: obj.posts
+        except: obj.posts = Post.objects.none()
+        posts = [PostSerializer(post).data for post in obj.posts.all()]
+        random.shuffle(posts)
+        return posts
 
 class AccessCodeSerializer(serializers.ModelSerializer):
     class Meta:

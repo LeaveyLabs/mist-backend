@@ -1,12 +1,10 @@
 from decimal import Decimal
 from enum import Enum
-from django.db.models import Count, Q, Sum
-from django.db.models.functions import Coalesce
+from django.db.models import Q
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
 from rest_framework.response import Response
-from mist.generics import is_impermissible_post
 from mist.permissions import PostPermission
 from rest_framework.permissions import IsAuthenticated
 
@@ -66,7 +64,7 @@ class PostView(viewsets.ModelViewSet):
         page_num = 0
         if page: page_num = int(page)
         return queryset[
-            min(0, (page_num)*100):
+            max(0, (page_num)*100):
             min(queryset.count(), (page_num+1)*100)]
 
     def order_queryset(self, queryset):
@@ -79,7 +77,7 @@ class PostView(viewsets.ModelViewSet):
             sort_key = Order.creation_time
         elif order_type == Order.TRENDING:
             sort_key = Order.trendscore
-        
+
         return sorted(queryset, key=sort_key, reverse=True)
 
     def remove_impermissible_posts(self, queryset):
