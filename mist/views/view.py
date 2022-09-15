@@ -15,9 +15,10 @@ class ViewPost(generics.CreateAPIView):
         post_views.is_valid(raise_exception=True)
 
         user = get_user_from_request(request)
-        for post_id in post_views.data.get('posts'):
-            if Post.objects.filter(id=post_id).exists():
-                View.objects.create(post_id=post_id, user=user)
+        post_ids = post_views.data.get('posts')
+        posts = Post.objects.filter(id__in=post_ids).all()
+        for post in posts:
+            View.objects.create(post=post, user=user)
         
         return Response(
             {
