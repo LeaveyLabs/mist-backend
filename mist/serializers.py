@@ -258,3 +258,8 @@ class AccessCodeClaimSerializer(serializers.Serializer):
         if access_code.claimed_user:
             raise serializers.ValidationError("Already claimed")
         return code
+
+class ViewPostSerializer(serializers.Serializer):
+    posts = serializers.ListField(
+        child = serializers.IntegerField()
+    )

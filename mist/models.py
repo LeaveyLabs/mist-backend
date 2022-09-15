@@ -299,3 +299,8 @@ class Badge(models.Model):
 
     badge_type = models.CharField(max_length=2, choices=BADGE_OPTIONS,)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='badges', on_delete=models.CASCADE)
+
+class View(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='views', on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, related_name='views', on_delete=models.CASCADE)
+    timestamp = models.FloatField(default=get_current_time)
