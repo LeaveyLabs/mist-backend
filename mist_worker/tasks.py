@@ -3,6 +3,8 @@ import uuid
 import requests
 from celery import shared_task
 
+from mist.models import NotificationTypes
+
 @shared_task(name="send_mistbox_notifications_task")
 def send_mistbox_notifications_task():
     send_mistbox_notifications()
@@ -10,7 +12,10 @@ def send_mistbox_notifications_task():
 def send_mistbox_notifications():
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
-        "your mistbox opens have refreshed! pick out 5 new mists containing your keywords 💌")
+        "your mistbox opens have refreshed! pick out 5 new mists containing your keywords 💌",
+        extra={
+            "type": NotificationTypes.DAILY_MISTBOX,
+        })
 
 @shared_task(name="schedule_make_your_day_mist_notifications_task")
 def schedule_make_your_day_mist_notifications_task():
@@ -25,7 +30,10 @@ def send_make_your_day_mist_notifications_task():
 def send_make_your_day_mist_notifications():
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
-        "did anyone make your day today? make theirs back with a mist 💞")
+        "did anyone make your day today? make theirs back with a mist 💞",
+        extra={
+            "type": NotificationTypes.MAKE_SOMEONES_DAY,
+        })
 
 @shared_task(name="reset_mistbox_opens_task")
 def reset_mistbox_opens_task():

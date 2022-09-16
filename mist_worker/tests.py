@@ -16,7 +16,7 @@ from users.tests.generics import create_dummy_user_and_token_given_id, create_si
 class NotificationServiceMock:
     sent_notifications = []
 
-    def send_fake_notification(self, message):
+    def send_fake_notification(self, message, extra):
         NotificationServiceMock.sent_notifications.append(message)
 
 @patch('push_notifications.models.APNSDeviceQuerySet.send_message', 

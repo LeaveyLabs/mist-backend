@@ -18,6 +18,8 @@ class NotificationTypes:
     TAG = "tag"
     MESSAGE = "message"
     MATCH = "match"
+    DAILY_MISTBOX = "dailymistbox"
+    MAKE_SOMEONES_DAY = "makesomeonesday"
 
 # Post Interactions
 class Post(models.Model):
