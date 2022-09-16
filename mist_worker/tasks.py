@@ -20,8 +20,9 @@ def send_mistbox_notifications():
 @shared_task(name="schedule_make_your_day_mist_notifications_task")
 def schedule_make_your_day_mist_notifications_task():
     import random
+    from backend import celery_app
     t = random.randint(3600*1, 3600*8)
-    send_make_your_day_mist_notifications_task.apply_async(countdown=t)
+    celery_app.send_task(name="send_make_your_day_mist_notifications_task", countdown=t)
 
 @shared_task(name="send_make_your_day_mist_notifications_task")
 def send_make_your_day_mist_notifications_task():
