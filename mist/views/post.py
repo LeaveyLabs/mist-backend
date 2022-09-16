@@ -109,8 +109,12 @@ class PostView(viewsets.ModelViewSet):
         # filter
         queryset = Post.objects.all()
         if latitude and longitude:
-            queryset = self.get_locations_nearby_coords(
-                latitude, longitude, radius or self.MAX_DISTANCE)
+            if radius:
+                queryset = self.get_locations_nearby_coords(
+                    latitude, longitude, radius)
+            else: 
+                queryset = self.get_locations_nearby_coords(
+                    latitude, longitude)
         if ids:
             queryset = queryset.filter(pk__in=ids)
         if words:
