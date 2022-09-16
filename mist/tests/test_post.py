@@ -378,6 +378,7 @@ class PostTest(TestCase):
 
     def test_get_should_return_viewed_posts_later_in_the_order(self):
         PostVote.objects.create(voter=self.user2, post=self.post1)
+        PostVote.objects.create(voter=self.user3, post=self.post1)
         PostVote.objects.create(voter=self.user1, post=self.post2)
         PostVote.objects.create(voter=self.user2, post=self.post2)
 
