@@ -238,12 +238,9 @@ class MistboxSerializer(serializers.ModelSerializer):
         return [keyword.lower() for keyword in keywords]
     
     def get_posts(self, obj):
-        posts = []
         try: obj.posts
         except: obj.posts = Post.objects.none()
-        posts = [PostSerializer(post).data for post in obj.posts.all()]
-        random.shuffle(posts)
-        return posts
+        return [PostSerializer(post).data for post in obj.posts.all()]
 
 class AccessCodeSerializer(serializers.ModelSerializer):
     class Meta:

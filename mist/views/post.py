@@ -1,6 +1,6 @@
 from decimal import Decimal
 from enum import Enum
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
 
 from ..serializers import MistboxSerializer, PostSerializer
-from ..models import Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag, get_current_time
+from ..models import Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag, View, get_current_time
 
 class Order(Enum):
     RECENT = 0
@@ -31,8 +31,12 @@ class Order(Enum):
         return post.flags.count()
 
     def trendscore(post):
+        try: post.viewcount
+        except: post.viewcount = 0
         return sum(
-            [vote.rating*(vote.timestamp/get_current_time())
+            [vote.rating*
+            (vote.timestamp/get_current_time())*
+            (1/(post.viewcount+1))
             for vote in post.votes.all()])
 
     def permissible_post(post):
@@ -47,9 +51,12 @@ class PostView(viewsets.ModelViewSet):
     MAX_DISTANCE = Decimal(5)
 
     def list(self, request, *args, **kwargs):
+        user = get_user_from_request(request)
+
         queryset = self.filter_queryset(self.get_queryset())
         queryset = queryset.\
-            prefetch_related("votes", "comments", "flags")
+            prefetch_related("votes", "comments", "flags", "views").\
+            annotate(viewcount=Count("views", filter=Q(views__user=user)))
 
         queryset = self.paginate_queryset(queryset)
         queryset = self.remove_impermissible_posts(queryset)
@@ -248,6 +255,26 @@ class TaggedPostsView(generics.ListAPIView):
 class MistboxView(generics.RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated, )
     serializer_class = MistboxSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        mistbox = self.get_object()
+        user = get_user_from_request(request)
+        
+        self.filter_mistbox_posts(mistbox, user)
+
+        serializer = self.get_serializer(mistbox)
+        return Response(serializer.data)
+
+    def filter_mistbox_posts(self, mistbox, user):
+        mistbox.posts.set(
+            sorted(
+                mistbox.posts.exclude(
+                    views__user=user
+                ).all(), 
+                key=Order.creation_time, 
+                reverse=True
+            )
+        )
 
     def get_object(self):
         user = get_user_from_request(self.request)
