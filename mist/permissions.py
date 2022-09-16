@@ -50,6 +50,7 @@ class PostPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         requesting_user = get_user_from_request(request)
         if not requesting_user: return False
+        if request.method == "GET": return True
         return requesting_user == obj.author
 
 class CommentPermission(permissions.BasePermission):
