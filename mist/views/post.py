@@ -270,7 +270,7 @@ class MistboxView(generics.RetrieveUpdateAPIView):
             sorted(
                 mistbox.posts.exclude(
                     views__user=user
-                ).all(), 
+                ).all(),
                 key=Order.creation_time, 
                 reverse=True
             )

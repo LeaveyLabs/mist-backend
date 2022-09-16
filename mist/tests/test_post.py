@@ -126,7 +126,7 @@ class PostTest(TestCase):
 
     def test_save_should_add_to_mistboxes_with_keywords_in_post(self):
         mistbox = Mistbox.objects.create(user=self.user1)
-        mistbox.keywords = ['these', 'are', 'cool', 'keywords']
+        mistbox.keywords = ['these', 'are', 'cool', 'keywords', 'key']
         mistbox.save()
 
         post1 = Post.objects.create(
@@ -145,11 +145,18 @@ class PostTest(TestCase):
             author=self.user2,
             location_description="keywords"
         )
+        post4 = Post.objects.create(
+            title='a',
+            body='post that does not contain any of the words',
+            author=self.user2,
+            location_description="at all"
+        )
         test_mistbox = Mistbox.objects.get(id=mistbox.id)
 
         self.assertIn(post1, test_mistbox.posts.all())
         self.assertIn(post2, test_mistbox.posts.all())
         self.assertIn(post3, test_mistbox.posts.all())
+        self.assertNotIn(post4, test_mistbox.posts.all())
         return
 
     def test_save_should_not_add_to_author_mistboxes(self):

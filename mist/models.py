@@ -89,7 +89,7 @@ class Post(models.Model):
 
                 for mistbox in mistboxes:
                     for keyword in mistbox.keywords:
-                        if lowercased_word in keyword:
+                        if keyword in lowercased_word:
                             mistbox.posts.add(self)
                             mistbox.save()
 
