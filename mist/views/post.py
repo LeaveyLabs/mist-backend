@@ -36,6 +36,7 @@ class Order(Enum):
         return sum(
             [vote.rating*
             (vote.timestamp/get_current_time())*
+            (post.creation_time/get_current_time())*
             (1/(post.viewcount+1))
             for vote in post.votes.all()])
 
