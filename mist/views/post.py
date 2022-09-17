@@ -70,6 +70,10 @@ class PostView(viewsets.ModelViewSet):
         
         page_num = 0
         if page: page_num = int(page)
+        if page_num*100 >= queryset.count(): 
+            return Post.objects.none()
+        if page_num*100 < 0:
+            return Post.objects.none()
         return queryset[
             max(0, (page_num)*100):
             min(queryset.count(), (page_num+1)*100)]
