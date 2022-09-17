@@ -6,13 +6,15 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 
-from mist.models import Comment, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, Word
+from mist.models import Comment, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, View, Word
 from mist.serializers import PostSerializer, PostVoteSerializer
 from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, Order, PostView, SubmittedPostsView, TaggedPostsView
 from users.models import User
 
 @freeze_time("2020-01-01")
 class PostTest(TestCase):
+    maxDiff = None
+    
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)
 
@@ -124,7 +126,7 @@ class PostTest(TestCase):
 
     def test_save_should_add_to_mistboxes_with_keywords_in_post(self):
         mistbox = Mistbox.objects.create(user=self.user1)
-        mistbox.keywords = ['these', 'are', 'cool', 'keywords']
+        mistbox.keywords = ['these', 'are', 'cool', 'keywords', 'key']
         mistbox.save()
 
         post1 = Post.objects.create(
@@ -143,11 +145,18 @@ class PostTest(TestCase):
             author=self.user2,
             location_description="keywords"
         )
+        post4 = Post.objects.create(
+            title='a',
+            body='post that does not contain any of the words',
+            author=self.user2,
+            location_description="at all"
+        )
         test_mistbox = Mistbox.objects.get(id=mistbox.id)
 
         self.assertIn(post1, test_mistbox.posts.all())
         self.assertIn(post2, test_mistbox.posts.all())
         self.assertIn(post3, test_mistbox.posts.all())
+        self.assertNotIn(post4, test_mistbox.posts.all())
         return
 
     def test_save_should_not_add_to_author_mistboxes(self):
@@ -300,29 +309,27 @@ class PostTest(TestCase):
             self.assertIn('votecount', response_post)
             self.assertIn('flagcount', response_post)
             self.assertIn('commentcount', response_post)
-            self.assertIn('read_only_author', response_post)
-            self.assertIn('votes', response_post)
         return
     
-    def test_get_should_return_correct_votes(self):
-        serialized_vote = PostVoteSerializer(self.vote).data
+    # def test_get_should_return_correct_votes(self):
+    #     serialized_vote = PostVoteSerializer(self.vote).data
 
-        request = APIRequestFactory().get(
-            '/api/posts',
-            format="json",
-            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-        )
+    #     request = APIRequestFactory().get(
+    #         '/api/posts',
+    #         format="json",
+    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+    #     )
 
-        response = PostView.as_view({'get':'list'})(request)
-        response_posts = [post_data for post_data in response.data]
+    #     response = PostView.as_view({'get':'list'})(request)
+    #     response_posts = [post_data for post_data in response.data]
         
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        for post in response_posts:
-            if post.get('id') == self.vote.post.pk:
-                vote_ids = [vote.get('id') for vote in post.get('votes')]
-                correct_vote_id = serialized_vote.get('id')
-                self.assertTrue(correct_vote_id in vote_ids)
-        return
+    #     self.assertEqual(response.status_code, status.HTTP_200_OK)
+    #     for post in response_posts:
+    #         if post.get('id') == self.vote.post.pk:
+    #             vote_ids = [vote.get('id') for vote in post.get('votes')]
+    #             correct_vote_id = serialized_vote.get('id')
+    #             self.assertTrue(correct_vote_id in vote_ids)
+    #     return
     
     # def test_get_should_return_posts_in_vote_minus_flag_order(self):
     #     PostVote.objects.create(voter=self.user1, post=self.post2)
@@ -358,6 +365,35 @@ class PostTest(TestCase):
         serialized_posts = [
             PostSerializer(self.post1).data,
             PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
+        
+        request = APIRequestFactory().get(
+            '/api/posts',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(serialized_posts[0], response_posts[0])
+        self.assertEqual(serialized_posts[1], response_posts[1])
+        self.assertEqual(serialized_posts[2], response_posts[2])
+        return
+
+    def test_get_should_return_viewed_posts_later_in_the_order(self):
+        PostVote.objects.create(voter=self.user2, post=self.post1)
+        PostVote.objects.create(voter=self.user3, post=self.post1)
+        PostVote.objects.create(voter=self.user1, post=self.post2)
+        PostVote.objects.create(voter=self.user2, post=self.post2)
+
+        View.objects.create(post=self.post1, user=self.user1)
+
+        serialized_posts = [
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post1).data,
             PostSerializer(self.post3).data,
         ]
         
@@ -1408,11 +1444,54 @@ class MistboxViewTest(TestCase):
 
     def test_get_should_not_return_anything_given_stranger(self):
         request = APIRequestFactory().get(
-            '/api/mistbox-posts/',
+            '/api/mistbox/',
         )
         response = MistboxView.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        return
+
+    def test_get_should_not_return_viewed_posts(self):
+        View.objects.create(post=self.post1, user=self.user1)
+        
+        request = APIRequestFactory().get(
+            '/api/mistbox/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MistboxView.as_view()(request)
+        response_mistbox = response.data
+        response_posts = response_mistbox.get('posts')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_posts)
+        return
+
+    def test_get_should_return_posts_in_recency_order(self):
+        self.post4 = Post.objects.create(
+            title='FakeTitleForFirstPost',
+            body='FakeTextForFirstPost',
+            author=self.user2,
+            timestamp=0,
+            creation_time=0,
+        )
+
+        serialized_posts = [
+            PostSerializer(self.post1).data,
+            PostSerializer(self.post4).data,
+        ]
+        
+        request = APIRequestFactory().get(
+            '/api/mistbox/',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MistboxView.as_view()(request)
+        response_mistbox = response.data
+        response_posts = response_mistbox.get('posts')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_posts, serialized_posts)
         return
 
     def test_patch_should_update_keywords_given_user_with_mistbox_and_keywords(self):

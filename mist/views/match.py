@@ -43,14 +43,16 @@ class MatchRequestView(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         match_request_response = super().create(request, *args, **kwargs)
-        match_requested_user = match_request_response.get("match_requested_user")
-        receiving_devices = APNSDevice.objects.filter(user=match_requested_user)
-        receiving_devices.send_message(
-            "someone replied to your mist 👀",
-            extra={
-                "type": NotificationTypes.MATCH,
-                "data": match_request_response.data
-            })
+        match_requested_user = match_request_response.data.get("match_requested_user")
+        if not MatchRequest.objects.filter(
+            match_requesting_user=match_requested_user).exists():
+            receiving_devices = APNSDevice.objects.filter(user=match_requested_user)
+            receiving_devices.send_message(
+                "someone replied to your mist 👀",
+                extra={
+                    "type": NotificationTypes.MATCH,
+                    "data": match_request_response.data
+                })
         return match_request_response
 
 class MatchView(generics.ListAPIView):

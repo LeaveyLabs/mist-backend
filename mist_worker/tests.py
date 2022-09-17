@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.test import TestCase
 from unittest.mock import patch
 
-from mist_worker.tasks import reset_mistbox_opens, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
+from mist_worker.tasks import reset_mistbox_opens, send_make_your_day_mist_notifications, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
 from mist.models import Mistbox, Post, PostVote
 from push_notifications.models import APNSDevice
 from users.tests.generics import create_dummy_user_and_token_given_id, create_simple_uploaded_file_from_image_path
@@ -16,7 +16,7 @@ from users.tests.generics import create_dummy_user_and_token_given_id, create_si
 class NotificationServiceMock:
     sent_notifications = []
 
-    def send_fake_notification(self, message):
+    def send_fake_notification(self, message, extra):
         NotificationServiceMock.sent_notifications.append(message)
 
 @patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
@@ -109,3 +109,9 @@ class TasksTest(TestCase):
 
         self.assertFalse(self.user1.is_pending_verification)
         self.assertFalse(self.user2.is_pending_verification)
+
+    def test_send_write_mist_notifications(self):
+        send_make_your_day_mist_notifications()
+        self.assertTrue(NotificationServiceMock.sent_notifications)
+        for notification in NotificationServiceMock.sent_notifications:
+            self.assertIn('mist', notification)

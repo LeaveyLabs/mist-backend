@@ -14,6 +14,8 @@ class CommentView(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
+        # serialized_posts = response.data.get('results')
+        # response.data['results'] = self.filter_serialized_comments(serialized_posts)
         response.data = self.filter_serialized_comments(response.data)
         return response
     
@@ -32,9 +34,11 @@ class CommentView(viewsets.ModelViewSet):
         queryset = None
         if post: queryset = Comment.objects.filter(post=post)
         else: queryset = Comment.objects.all()
-        queryset = queryset.annotate(votecount=Count('commentvote'))
-        queryset = queryset.annotate(flagcount=Count('commentflag'))
-        queryset = queryset.prefetch_related('tags')
-        queryset = queryset.select_related('author')
-        queryset = queryset.order_by('timestamp')
-        return queryset
+        return queryset.\
+            prefetch_related("votes", "flags", "tags").\
+            prefetch_related("post__votes").\
+            prefetch_related("post__flags").\
+            prefetch_related("post__comments").\
+            select_related('author', 'post', 'post__author',).\
+            prefetch_related("author__badges").\
+            order_by('timestamp')

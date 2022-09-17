@@ -18,6 +18,8 @@ class NotificationTypes:
     TAG = "tag"
     MESSAGE = "message"
     MATCH = "match"
+    DAILY_MISTBOX = "dailymistbox"
+    MAKE_SOMEONES_DAY = "makesomeonesday"
 
 # Post Interactions
 class Post(models.Model):
@@ -87,7 +89,7 @@ class Post(models.Model):
 
                 for mistbox in mistboxes:
                     for keyword in mistbox.keywords:
-                        if lowercased_word in keyword:
+                        if keyword in lowercased_word:
                             mistbox.posts.add(self)
                             mistbox.save()
 
@@ -145,7 +147,7 @@ class Comment(models.Model):
     body = models.CharField(max_length=500)
     timestamp = models.FloatField(default=get_current_time)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments')
 
     def _str_(self):
         return self.text
@@ -199,8 +201,8 @@ class Tag(models.Model):
 class CommentVote(models.Model):
     DEFAULT_RATING = 1
 
-    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    voter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='commentvotes')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='votes')
     timestamp = models.FloatField(default=get_current_time)
     rating = models.FloatField(default=DEFAULT_RATING)
 
@@ -213,8 +215,8 @@ class CommentVote(models.Model):
 class CommentFlag(models.Model):
     DEFAULT_RATING = 1
 
-    flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='commentflags')
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='flags')
     timestamp = models.FloatField(default=get_current_time)
     rating = models.FloatField(default=DEFAULT_RATING)
 
@@ -299,3 +301,8 @@ class Badge(models.Model):
 
     badge_type = models.CharField(max_length=2, choices=BADGE_OPTIONS,)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='badges', on_delete=models.CASCADE)
+
+class View(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='views', on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, related_name='views', on_delete=models.CASCADE)
+    timestamp = models.FloatField(default=get_current_time)

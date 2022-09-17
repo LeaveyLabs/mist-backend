@@ -186,6 +186,7 @@ class MatchRequestTest(TestCase):
             match_requested_user=match_request.match_requested_user,
             post=self.post,
         ))
+        self.assertFalse(NotificationServiceMock.sent_notifications)
 
         request = APIRequestFactory().post(
             '/api/match_requests',
