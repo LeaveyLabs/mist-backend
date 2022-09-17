@@ -1,6 +1,7 @@
 from decimal import Decimal
 from enum import Enum
-from django.db.models import Q, Count
+from django.core.paginator import Paginator
+from django.db.models import F, Q, Count
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
@@ -11,14 +12,14 @@ from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
 
 from ..serializers import MistboxSerializer, PostSerializer
-from ..models import Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag, View, get_current_time
+from ..models import Feature, FriendRequest, MatchRequest, Mistbox, Post, Tag, get_current_time
 
 class Order(Enum):
     RECENT = 0
     BEST = 1
     TRENDING = 2
 
-    def creation_time(post):
+    def recent(post):
         return post.creation_time
 
     def votecount(post):
@@ -58,39 +59,36 @@ class PostView(viewsets.ModelViewSet):
         queryset = queryset.\
             prefetch_related("votes", "comments", "flags", "views").\
             annotate(viewcount=Count("views", filter=Q(views__user=user)))
-
+       
+        queryset = self.order_queryset(queryset)
         queryset = self.paginate_queryset(queryset)
         queryset = self.remove_impermissible_posts(queryset)
-        queryset = self.order_queryset(queryset)
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     def paginate_queryset(self, queryset):
         page = self.request.query_params.get('page')
-        
-        page_num = 0
-        if page: page_num = int(page)
-        if page_num*100 >= queryset.count(): 
+        paginator = Paginator(queryset, 100)
+        try:
+            if page: return paginator.page(page).object_list
+            else: return paginator.page(1).object_list
+        except:
             return Post.objects.none()
-        if page_num*100 < 0:
-            return Post.objects.none()
-        return queryset[
-            max(0, (page_num)*100):
-            min(queryset.count(), (page_num+1)*100)]
 
     def order_queryset(self, queryset):
-        order_type = self.request.query_params.get('order')
+        order = self.request.query_params.get('order')
 
-        sort_key = Order.trendscore
-        if order_type == Order.BEST:
-            sort_key = Order.votecount
-        elif order_type == Order.RECENT:
-            sort_key = Order.creation_time
-        elif order_type == Order.TRENDING:
-            sort_key = Order.trendscore
-
-        return sorted(queryset, key=sort_key, reverse=True)
+        try:
+            order_num = int(order)
+            if order_num == Order.BEST.value:
+                return sorted(queryset, key=Order.votecount, reverse=True)
+            elif order_num == Order.RECENT.value:
+                return sorted(queryset, key=Order.recent, reverse=True)
+            else:
+                return sorted(queryset, key=Order.trendscore, reverse=True)
+        except:
+            return sorted(queryset, key=Order.trendscore, reverse=True)
 
     def remove_impermissible_posts(self, queryset):
         return filter(Order.permissible_post, queryset)
@@ -280,7 +278,7 @@ class MistboxView(generics.RetrieveUpdateAPIView):
                 mistbox.posts.exclude(
                     views__user=user
                 ).all(),
-                key=Order.creation_time, 
+                key=Order.recent, 
                 reverse=True
             )
         )
