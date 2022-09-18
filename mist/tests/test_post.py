@@ -424,7 +424,7 @@ class PostTest(TestCase):
         ]
         
         request = APIRequestFactory().get(
-            f'/api/posts?order={Order.BEST}',
+            f'/api/posts?order={Order.BEST.value}',
             format="json",
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
@@ -450,7 +450,7 @@ class PostTest(TestCase):
         ]
         
         request = APIRequestFactory().get(
-            f'/api/posts?order={Order.TRENDING}',
+            f'/api/posts?order={Order.TRENDING.value}',
             format="json",
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
@@ -480,7 +480,7 @@ class PostTest(TestCase):
         ]
         
         request = APIRequestFactory().get(
-            f'/api/posts?order={Order.RECENT}',
+            f'/api/posts?order={Order.RECENT.value}',
             format="json",
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
