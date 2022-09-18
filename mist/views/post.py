@@ -59,10 +59,11 @@ class PostView(viewsets.ModelViewSet):
         queryset = queryset.\
             prefetch_related("votes", "comments", "flags", "views").\
             annotate(viewcount=Count("views", filter=Q(views__user=user)))
+        
        
-        queryset = self.order_queryset(queryset)
-        queryset = self.paginate_queryset(queryset)
-        queryset = self.remove_impermissible_posts(queryset)
+        # queryset = self.order_queryset(queryset)
+        # queryset = self.paginate_queryset(queryset)
+        # queryset = self.remove_impermissible_posts(queryset)
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
