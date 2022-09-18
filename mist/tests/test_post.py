@@ -673,12 +673,15 @@ class PostTest(TestCase):
         return
     
     def test_get_should_return_posts_within_latitude_longitude_range_given_latitude_longitude(self):
-        post_from_usc = Post.objects.create(
+        test_latitude = 1
+        test_longitude = 1
+
+        post_from_test_location = Post.objects.create(
             title='FakeTitleOfUSCPost',
             body='HereIsAPostFromUSC',
             timestamp=0,
-            latitude=self.USC_LATITUDE,
-            longitude=self.USC_LONGITUDE,
+            latitude=test_latitude,
+            longitude=test_longitude,
             author=self.user1,
         )
         post_from_north_pole = Post.objects.create(
@@ -690,13 +693,13 @@ class PostTest(TestCase):
             author=self.user1,
         )
 
-        serialized_posts_from_usc = [PostSerializer(post_from_usc).data]
+        serialized_posts_from_usc = [PostSerializer(post_from_test_location).data]
 
         request = APIRequestFactory().get(
             '/api/posts',
             {
-                'latitude': self.USC_LATITUDE,
-                'longitude': self.USC_LONGITUDE,
+                'latitude': test_latitude,
+                'longitude': test_longitude,
             },
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
@@ -710,22 +713,24 @@ class PostTest(TestCase):
         return
     
     def test_get_should_return_posts_on_exact_coordinates_given_latitude_longitude_radius_zero(self):
+        test_latitude = 1
+        test_longitude = 1
         super_small_radius = 0.00000000001
 
         post_from_usc_exact = Post.objects.create(
             title='FakeTitleOfUSCPost',
             body='HereIsAPostFromUSC',
             timestamp=0,
-            latitude=self.USC_LATITUDE,
-            longitude=self.USC_LONGITUDE,
+            latitude=test_latitude,
+            longitude=test_longitude,
             author=self.user1,
         )
         post_from_usc_inexact = Post.objects.create(
             title='FakeTitleOfUSCPost',
             body='HereIsAPostFromUSC',
             timestamp=0,
-            latitude=self.USC_LATITUDE+Decimal(.001),
-            longitude=self.USC_LONGITUDE+Decimal(.001),
+            latitude=test_latitude+Decimal(.001),
+            longitude=test_longitude+Decimal(.001),
             author=self.user1,
         )
         
@@ -734,8 +739,8 @@ class PostTest(TestCase):
         request = APIRequestFactory().get(
             '/api/posts',
             {
-                'latitude': self.USC_LATITUDE,
-                'longitude': self.USC_LONGITUDE,
+                'latitude': test_latitude,
+                'longitude': test_longitude,
                 'radius': super_small_radius,
             },
             format='json',

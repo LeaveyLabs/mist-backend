@@ -1,7 +1,7 @@
 from decimal import Decimal
 from enum import Enum
 from django.core.paginator import Paginator
-from django.db.models import F, Q, Count
+from django.db.models import Q, Count
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
