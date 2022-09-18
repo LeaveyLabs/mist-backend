@@ -126,6 +126,7 @@ class PostVote(models.Model):
 
 class PostFlag(models.Model):
     DEFAULT_RATING = 1
+    VERY_LARGE_RATING = 1000
 
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='postflags')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='flags')
@@ -139,7 +140,8 @@ class PostFlag(models.Model):
         return self.flagger.pk
 
     def save(self, *args, **kwargs):
-        if self.flagger.is_superuser: self.rating = float('inf')
+        if self.flagger.is_superuser: 
+            self.rating = self.VERY_LARGE_RATING
         super().save(*args, **kwargs)
 
 class Comment(models.Model):
@@ -214,6 +216,7 @@ class CommentVote(models.Model):
 
 class CommentFlag(models.Model):
     DEFAULT_RATING = 1
+    VERY_LARGE_RATING = 1000
 
     flagger = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='commentflags')
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='flags')
@@ -227,7 +230,8 @@ class CommentFlag(models.Model):
         return self.flagger.pk
 
     def save(self, *args, **kwargs):
-        if self.flagger.is_superuser: self.rating = float('inf')
+        if self.flagger.is_superuser:
+            self.rating = self.VERY_LARGE_RATING
         super().save(*args, **kwargs)
 
 class Favorite(models.Model):
