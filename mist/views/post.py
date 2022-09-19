@@ -75,7 +75,7 @@ class PostView(viewsets.ModelViewSet):
             if page_num > 0: return paginator.page(page_num).object_list
             else: return paginator.page(1).object_list
         except:
-            return Post.objects.all()
+            return queryset
 
     def order_queryset(self, queryset):
         order = self.request.query_params.get('order')
