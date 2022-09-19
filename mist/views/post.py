@@ -29,7 +29,7 @@ class Order(Enum):
         return post.comments.count()
     
     def flagcount(post):
-        return post.flags.count()
+        return sum([flag.rating for flag in post.flags.all()])
 
     def trendscore(post):
         try: post.viewcount
