@@ -1,7 +1,7 @@
 from decimal import Decimal
 from enum import Enum
 from django.core.paginator import Paginator
-from django.db.models import F, Q, Count
+from django.db.models import Q, Count
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
@@ -29,7 +29,7 @@ class Order(Enum):
         return post.comments.count()
     
     def flagcount(post):
-        return post.flags.count()
+        return sum([flag.rating for flag in post.flags.all()])
 
     def trendscore(post):
         try: post.viewcount
@@ -71,10 +71,11 @@ class PostView(viewsets.ModelViewSet):
         page = self.request.query_params.get('page')
         paginator = Paginator(queryset, 100)
         try:
-            if page: return paginator.page(page).object_list
+            page_num = int(page)
+            if page_num > 0: return paginator.page(page_num).object_list
             else: return paginator.page(1).object_list
         except:
-            return Post.objects.none()
+            return queryset
 
     def order_queryset(self, queryset):
         order = self.request.query_params.get('order')

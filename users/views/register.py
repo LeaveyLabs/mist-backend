@@ -35,9 +35,9 @@ class RegisterUserEmailView(generics.CreateAPIView):
         email_auth = EmailAuthentication.objects.create(email=email)
 
         send_mail(
-            "Your code awaits",
-            f"Your email verification code for Mist is {email_auth.code}",
-            "getmist.app@gmail.com",
+            "your code awaits",
+            f"your email verification code for mist is {email_auth.code}",
+            "whatsup@getmist.app",
             [email],
             fail_silently=False,
         )
@@ -113,7 +113,7 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
             email=email, phone_number=phone_number)
 
         twilio_client.messages.create(
-            body=f"Your phone number verification code for Mist is {phone_number_authentication.code}",
+            body=f"your phone number verification code for Mist is {phone_number_authentication.code}",
             from_=twilio_phone_number,
             to=str(phone_number_authentication.phone_number),
         )

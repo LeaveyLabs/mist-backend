@@ -1,5 +1,3 @@
-import random
-
 from psycopg2 import IntegrityError
 # from profanity_check import predict
 from rest_framework import serializers
