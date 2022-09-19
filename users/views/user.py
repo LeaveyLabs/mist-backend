@@ -168,7 +168,7 @@ class UserPopulationView(generics.RetrieveAPIView):
     def retrieve(self, request, *args, **kwargs):
         return Response(
             {
-                "population": User.objects.count()/4,
+                "population": User.objects.count(),
             },
             status.HTTP_200_OK,
         )
