@@ -34,9 +34,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'email', 'username',
-        'first_name', 'last_name', 'picture', 
-        'confirm_picture', 'phone_number', 
+        fields = ('id', 'username',
+        'first_name', 'last_name', 'picture',
+        'confirm_picture', 'phone_number',
         'date_of_birth', 'sex', 'latitude', 'longitude',
         'is_verified', 'is_pending_verification', 'badges',
         'is_superuser', 'thumbnail',)
@@ -95,61 +95,60 @@ class CompleteUserSerializer(serializers.ModelSerializer):
             raise ValidationError("Users must be over 18 years old")
         return date_of_birth
     
-    def validate_email(self, email):
-        users_with_matching_email = User.objects.filter(email__iexact=email)
-        if users_with_matching_email:
-            raise ValidationError("Email is already registered")
-        email_is_banned = Ban.objects.filter(email__iexact=email)
-        if email_is_banned:
-             raise ValidationError("Email's been banned")
-        return email
+    # def validate_email(self, email):
+    #     users_with_matching_email = User.objects.filter(email__iexact=email)
+    #     if users_with_matching_email:
+    #         raise ValidationError("Email is already registered")
+    #     email_is_banned = Ban.objects.filter(email__iexact=email)
+    #     if email_is_banned:
+    #          raise ValidationError("Email's been banned")
+    #     return email
 
     def validate_picture(self, picture):
         if self.picture_below_size_limit(picture):
             raise ValidationError(f"Max file size is {self.MEGABYTE_LIMIT}MB")
         return picture
 
-    def verify_email_authentication(self, validated_data):
-        email = validated_data.get('email').lower()
-        validations_with_matching_email = EmailAuthentication.objects.filter(
-            email__iexact=email)
-        email_auth_requests = validations_with_matching_email.order_by('-validation_time')
+    # def verify_email_authentication(self, validated_data):
+    #     email = validated_data.get('email').lower()
+    #     validations_with_matching_email = EmailAuthentication.objects.filter(
+    #         email__iexact=email)
+    #     email_auth_requests = validations_with_matching_email.order_by('-validation_time')
 
-        if not email_auth_requests:
-            raise serializers.ValidationError({"email": "Email was not registered"})
+    #     if not email_auth_requests:
+    #         raise serializers.ValidationError({"email": "Email was not registered"})
 
-        most_recent_auth_request = email_auth_requests[0]
+    #     most_recent_auth_request = email_auth_requests[0]
 
-        if not most_recent_auth_request.validated:
-            raise serializers.ValidationError({"email": "Email was not validated"})
+    #     if not most_recent_auth_request.validated:
+    #         raise serializers.ValidationError({"email": "Email was not validated"})
 
-        current_time = datetime.now().timestamp()
-        time_since_validation = current_time - most_recent_auth_request.validation_time
-        validation_expired = time_since_validation > self.EXPIRATION_TIME
+    #     current_time = datetime.now().timestamp()
+    #     time_since_validation = current_time - most_recent_auth_request.validation_time
+    #     validation_expired = time_since_validation > self.EXPIRATION_TIME
 
-        if validation_expired:
-            raise serializers.ValidationError({"email": "Email validation expired"})
+    #     if validation_expired:
+    #         raise serializers.ValidationError({"email": "Email validation expired"})
 
-        users_with_matching_email = User.objects.filter(email__iexact=email)
-        if len(users_with_matching_email):
-            raise serializers.ValidationError({"email": "Email already taken"})
+    #     users_with_matching_email = User.objects.filter(email__iexact=email)
+    #     if len(users_with_matching_email):
+    #         raise serializers.ValidationError({"email": "Email already taken"})
     
     def verify_phone_number(self, validated_data):
-        email = validated_data.get('email')
+        # email = validated_data.get('email')
         phone_number = validated_data.get('phone_number')
 
-        if not email:
-            raise serializers.ValidationError({"email": "Email was not registered"})
+        # if not email:
+        #     raise serializers.ValidationError({"email": "Email was not registered"})
 
         if not phone_number:
             raise serializers.ValidationError({"phone_number": "Phone number was not registered"})
         
-        email = email.lower()
+        # email = email.lower()
         phone_number = phone_number.lower()
         
         matching_validations = PhoneNumberAuthentication.objects.filter(
-            phone_number=phone_number,
-            email__iexact=email).order_by('-validation_time')
+            phone_number=phone_number)
 
         if not matching_validations:
             raise serializers.ValidationError({"phone_number": "Phone number was not registered"})
@@ -185,7 +184,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
             raise ValidationError({"username": "Username is not unique"})
 
     def create(self, validated_data):
-        self.verify_email_authentication(validated_data)
+        # self.verify_email_authentication(validated_data)
         self.verify_phone_number(validated_data)
         self.verify_username(validated_data)
         user = User.objects.create(**validated_data)
@@ -289,32 +288,32 @@ class UsernameValidationRequestSerializer(serializers.Serializer):
         return username
 
 class PhoneNumberRegistrationSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    # email = serializers.EmailField()
     phone_number = PhoneNumberField()
 
     EXPIRATION_TIME = timedelta(minutes=0).total_seconds()
 
-    def validate(self, data):
-        email = data.get('email').lower()
-        phone_number = data.get('phone_number')
+    # def validate(self, data):
+    #     # email = data.get('email').lower()
+    #     phone_number = data.get('phone_number')
 
-        matching_regsitrations = PhoneNumberAuthentication.objects.filter(
-            phone_number=phone_number,
-        ).order_by('-code_time')
+    #     matching_regsitrations = PhoneNumberAuthentication.objects.filter(
+    #         phone_number=phone_number,
+    #     ).order_by('-code_time')
 
-        if not matching_regsitrations:
-            return data
+    #     if not matching_regsitrations:
+    #         return data
         
-        matching_regsitration = matching_regsitrations[0]
+    #     matching_regsitration = matching_regsitrations[0]
 
-        current_time = datetime.now().timestamp()
-        time_since_registration = current_time - matching_regsitration.code_time
-        registration_expired = time_since_registration > self.EXPIRATION_TIME
+        # current_time = datetime.now().timestamp()
+        # time_since_registration = current_time - matching_regsitration.code_time
+        # registration_expired = time_since_registration > self.EXPIRATION_TIME
 
-        if not registration_expired and matching_regsitration.email != email:
-            raise ValidationError({"phone_number": "Phone's being registered by someone else"})
+        # if not registration_expired:
+        #     raise ValidationError({"phone_number": "Phone's being registered by someone else"})
 
-        return data
+        # return data
 
     def validate_email(self, email):
         matching_emails = User.objects.filter(email__iexact=email)

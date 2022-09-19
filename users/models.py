@@ -41,7 +41,7 @@ class User(AbstractUser):
     )
     MAX_IMAGE_SIZE = (100, 100)
 
-    date_of_birth = models.DateField()
+    date_of_birth = models.DateField(null=True, blank=True)
     picture = models.ImageField(
         upload_to=profile_picture_filepath, null=True, blank=True
     )

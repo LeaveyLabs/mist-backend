@@ -361,26 +361,26 @@ class RegisterPhoneNumberViewTest(TestCase):
         self.assertTrue(matching_messages)
         return
     
-    def test_post_should_not_send_code_given_used_email(self):
-        valid_phone_number = "+12136569000"
+    # def test_post_should_not_send_code_given_used_email(self):
+    #     valid_phone_number = "+12136569000"
 
-        request = APIRequestFactory().post(
-            'api/register-phone-number/',
-            {
-                'email': self.user1.email,
-                'phone_number': valid_phone_number,
-            },
-        )
-        response = RegisterPhoneNumberView.as_view()(request)
+    #     request = APIRequestFactory().post(
+    #         'api/register-phone-number/',
+    #         {
+    #             'email': self.user1.email,
+    #             'phone_number': valid_phone_number,
+    #         },
+    #     )
+    #     response = RegisterPhoneNumberView.as_view()(request)
 
-        messages = TwillioTestClientMessages.created
-        matching_messages = [
-            message.get('to') == valid_phone_number
-            for message in messages
-        ]
+    #     messages = TwillioTestClientMessages.created
+    #     matching_messages = [
+    #         message.get('to') == valid_phone_number
+    #         for message in messages
+    #     ]
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(matching_messages)
+    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    #     self.assertFalse(matching_messages)
     
     def test_post_should_not_send_code_given_invalid_phone_number(self):
         invalid_phone_number = "invalidPhoneNumber"

@@ -190,9 +190,8 @@ class UserViewPostTest(TestCase):
             content_type=MULTIPART_CONTENT,
         )
         response = UserView.as_view({'post':'create'})(request)
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(User.objects.filter(email=self.email_auth.email))
+        self.assertTrue(User.objects.filter(phone_number=self.phone_auth.phone_number))
         self.assertTrue('token' in response.data)
         return
 
@@ -213,8 +212,9 @@ class UserViewPostTest(TestCase):
         )
         response = UserView.as_view({'post':'create'})(request)
         
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(User.objects.filter(email='thisEmailDoesNotExist@usc.edu'))
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(User.objects.filter(phone_number=self.phone_auth.phone_number))
+        self.assertTrue('token' in response.data)
         return
     
     def test_post_should_not_create_user_given_unvalidated_phone_number(self):
