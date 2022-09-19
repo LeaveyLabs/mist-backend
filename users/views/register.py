@@ -37,7 +37,7 @@ class RegisterUserEmailView(generics.CreateAPIView):
         send_mail(
             "Your code awaits",
             f"Your email verification code for Mist is {email_auth.code}",
-            "getmist.app@gmail.com",
+            "whatsup@getmist.app",
             [email],
             fail_silently=False,
         )
