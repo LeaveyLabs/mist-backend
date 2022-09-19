@@ -466,8 +466,11 @@ class PostTest(TestCase):
 
     def test_get_should_return_posts_in_recent_order_given_recent_parameter(self):
         self.post1.creation_time = 4
+        self.post1.timestamp = 4
         self.post2.creation_time = 3
+        self.post2.timestamp = 4
         self.post3.creation_time = 2
+        self.post3.timestamp = 4
 
         self.post1.save()
         self.post2.save()
@@ -1473,6 +1476,9 @@ class MistboxViewTest(TestCase):
         return
 
     def test_get_should_return_posts_in_recency_order(self):
+        self.post1.timestamp = 1000
+        self.post1.save()
+        
         self.post4 = Post.objects.create(
             title='FakeTitleForFirstPost',
             body='FakeTextForFirstPost',
