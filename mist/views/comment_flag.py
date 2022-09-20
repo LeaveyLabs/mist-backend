@@ -1,4 +1,3 @@
-from django.db.models import Count
 from rest_framework import viewsets
 from mist.generics import is_beyond_impermissible_comment_limit
 from mist.permissions import FlagPermission
