@@ -5,11 +5,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.files.base import ContentFile
 from rest_framework.authtoken.models import Token
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from io import BytesIO
 from phonenumber_field.modelfields import PhoneNumberField
-from PIL import Image
 from sorl.thumbnail import get_thumbnail
 
 from .generics import get_current_time, get_default_date_of_birth, get_random_code, get_random_email
