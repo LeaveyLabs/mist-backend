@@ -33,7 +33,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username',
+        fields = ('id', 'email', 'username',
         'first_name', 'last_name', 'picture',
         'confirm_picture', 'phone_number',
         'date_of_birth', 'sex', 'latitude', 'longitude',
