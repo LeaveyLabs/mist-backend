@@ -61,13 +61,13 @@ class PostView(viewsets.ModelViewSet):
             annotate(viewcount=Count("views", filter=Q(views__user=user)))
        
         queryset = self.order_queryset(queryset)
-        queryset = self.paginate_queryset(queryset)
+        queryset = self.custom_paginate_queryset(queryset)
         queryset = self.remove_impermissible_posts(queryset)
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    def paginate_queryset(self, queryset):
+    def custom_paginate_queryset(self, queryset):
         page = self.request.query_params.get('page')
         paginator = Paginator(queryset, 100)
         try:
@@ -75,7 +75,7 @@ class PostView(viewsets.ModelViewSet):
             if page_num > 0: return paginator.page(page_num).object_list
             else: return paginator.page(1).object_list
         except:
-            return queryset
+            return paginator.page(1).object_list
 
     def order_queryset(self, queryset):
         order = self.request.query_params.get('order')
