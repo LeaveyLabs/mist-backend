@@ -120,12 +120,12 @@ class PhoneNumberReset(models.Model):
     phone_number_validation_time = models.FloatField(null=True)
 
 class Ban(models.Model):
-    email = models.EmailField(unique=True)
+    phone_number = PhoneNumberField(null=True)
     timestamp = models.FloatField(default=get_current_time)
 
     def save(self, *args, **kwargs):
         super(Ban, self).save(*args, **kwargs)
-        for user in User.objects.filter(email__iexact=self.email).all():
+        for user in User.objects.filter(phone_number=self.phone_number).all():
             Token.objects.filter(user=user).delete()
             user.is_banned = True
             user.save()

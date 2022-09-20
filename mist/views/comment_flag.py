@@ -36,5 +36,5 @@ class CommentFlagView(viewsets.ModelViewSet):
             CommentSerializer(comment).data for comment in comments_by_author
         ]
         if is_beyond_impermissible_comment_limit(serialized_comments_by_author):
-            Ban.objects.get_or_create(email=comment_author.email)
+            Ban.objects.get_or_create(phone_number=comment_author.phone_number)
         return comment_flag_response

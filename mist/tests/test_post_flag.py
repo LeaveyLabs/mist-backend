@@ -174,11 +174,11 @@ class PostFlagTest(TestCase):
         test_users = [create_dummy_user_and_token_given_id(i) 
         for i in range(LOWER_BOUND_FOR_IDS, LOWER_BOUND_FOR_IDS+MANY_FLAGS)]
 
-        self.assertFalse(Ban.objects.filter(email=self.user1.email))
+        self.assertFalse(Ban.objects.filter(phone_number=self.user1.phone_number))
 
         post_flags_to_many_impermissible_posts()
 
-        self.assertTrue(Ban.objects.filter(email=self.user1.email))
+        self.assertTrue(Ban.objects.filter(phone_number=self.user1.phone_number))
     
     def test_delete_should_delete_flag(self):
         flag = PostFlag.objects.create(

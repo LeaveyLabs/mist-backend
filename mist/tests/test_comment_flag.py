@@ -178,11 +178,11 @@ class CommentFlagTest(TestCase):
         test_users = [create_dummy_user_and_token_given_id(i) 
         for i in range(LOWER_BOUND_FOR_IDS, LOWER_BOUND_FOR_IDS+MANY_FLAGS)]
 
-        self.assertFalse(Ban.objects.filter(email=self.user.email))
+        self.assertFalse(Ban.objects.filter(phone_number=self.user.phone_number))
 
         post_flags_to_many_impermissible_comments()
 
-        self.assertTrue(Ban.objects.filter(email=self.user.email))
+        self.assertTrue(Ban.objects.filter(phone_number=self.user.phone_number))
     
     def test_delete_should_delete_flag(self):
         flag = CommentFlag.objects.create(

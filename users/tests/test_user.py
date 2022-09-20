@@ -317,7 +317,7 @@ class UserViewPostTest(TestCase):
         return
 
     def test_post_should_not_create_user_given_banned_email(self):
-        Ban.objects.create(email=self.email_auth.email.lower())
+        Ban.objects.create(phone_number=self.phone_auth.phone_number)
 
         request = APIRequestFactory().post(
             'api/users/',
@@ -1212,7 +1212,7 @@ class BanTest(TestCase):
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
     
     def test_ban_will_invalidate_auth_token_and_set_is_banned_on_user(self):
-        Ban.objects.create(email=self.user1.email)
+        Ban.objects.create(phone_number=self.user1.phone_number)
         
         self.assertFalse(Token.objects.filter(user=self.user1))
         self.assertTrue(User.objects.get(pk=self.user1.pk).is_banned)

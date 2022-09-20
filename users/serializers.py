@@ -3,8 +3,7 @@ import re
 from django.forms import ValidationError
 # from profanity_check import predict
 from rest_framework import serializers
-from mist.models import Badge, Mistbox
-from mist_worker.tasks import verify_profile_picture_task
+from mist.models import Badge
 
 from users.generics import get_current_time
 from .models import Ban, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
@@ -231,9 +230,9 @@ class UserEmailRegistrationSerializer(serializers.Serializer):
         if users_with_matching_email:
             raise ValidationError("Email is already registered")
 
-        email_is_banned = Ban.objects.filter(email__iexact=lowercased_email)
-        if email_is_banned:
-            raise ValidationError("Email's been banned")
+        # email_is_banned = Ban.objects.filter(email__iexact=lowercased_email)
+        # if email_is_banned:
+        #     raise ValidationError("Email's been banned")
 
         domain = email.split('@')[1]
         if domain not in self.ACCEPTABLE_DOMAINS:
@@ -325,6 +324,10 @@ class PhoneNumberRegistrationSerializer(serializers.Serializer):
         matching_phone_numbers = User.objects.filter(phone_number=phone_number)
         if matching_phone_numbers:
             raise ValidationError("Phone number is in use")
+
+        phone_number_is_banned = Ban.objects.filter(phone_number=phone_number)
+        if phone_number_is_banned:
+            raise ValidationError("Phone number is banned")
         return phone_number
 
 class LoginCodeRequestSerializer(serializers.Serializer):
