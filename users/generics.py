@@ -1,3 +1,4 @@
+import uuid
 from rest_framework.authtoken.models import Token
 from datetime import datetime
 import random
@@ -20,3 +21,9 @@ def get_current_time():
 
 def get_empty_keywords():
     return []
+
+def get_random_email():
+    return f'{uuid.uuid4()}@usc.edu'
+
+def get_default_date_of_birth():
+    return datetime(2000, 1, 1).date()
