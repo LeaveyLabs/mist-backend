@@ -69,13 +69,15 @@ class PostView(viewsets.ModelViewSet):
 
     def custom_paginate_queryset(self, queryset):
         page = self.request.query_params.get('page')
+        order = self.request.query_params.get('order')
         paginator = Paginator(queryset, 100)
         try:
             page_num = int(page)
             if page_num > 0: return paginator.page(page_num).object_list
             else: return paginator.page(1).object_list
         except:
-            return queryset
+            if not order: return queryset
+            return paginator.page(1).object_list
 
     def order_queryset(self, queryset):
         order = self.request.query_params.get('order')
