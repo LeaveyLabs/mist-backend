@@ -41,8 +41,8 @@ class User(AbstractUser):
     )
     MAX_IMAGE_SIZE = (100, 100)
 
-    email = models.EmailField(default=get_random_email, null=True, blank=True)
-    date_of_birth = models.DateField(default=get_default_date_of_birth, null=True, blank=True)
+    email = models.EmailField(default=get_random_email)
+    date_of_birth = models.DateField(default=get_default_date_of_birth)
     picture = models.ImageField(
         upload_to=profile_picture_filepath, null=True, blank=True
     )

@@ -58,7 +58,7 @@ class RequestLoginCodeView(generics.CreateAPIView):
             phone_number_authentication.save()
 
         twilio_client.messages.create(
-            body=f"Your verification code for Mist is {phone_number_authentication.code}",
+            body=f"your verification code for mist is {phone_number_authentication.code}",
             from_=twilio_phone_number,
             to=str(phone_number_authentication.phone_number),
         )

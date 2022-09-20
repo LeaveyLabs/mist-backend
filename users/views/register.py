@@ -112,7 +112,7 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
         phone_number_authentication = PhoneNumberAuthentication.objects.create(phone_number=phone_number)
 
         twilio_client.messages.create(
-            body=f"your phone number verification code for Mist is {phone_number_authentication.code}",
+            body=f"your phone number verification code for mist is {phone_number_authentication.code}",
             from_=twilio_phone_number,
             to=str(phone_number_authentication.phone_number),
         )
