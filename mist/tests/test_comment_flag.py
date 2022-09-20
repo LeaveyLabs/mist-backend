@@ -10,26 +10,20 @@ from mist.models import Comment, CommentFlag, Post
 from mist.serializers import CommentFlagSerializer
 from mist.views.comment_flag import CommentFlagView
 
-from users.models import Ban, User
+from users.models import Ban
 from users.tests.generics import create_dummy_user_and_token_given_id
 
 @freeze_time("2020-01-01")
 class CommentFlagTest(TestCase):
     def setUp(self):
-        self.user = User(
-            email='TestUser@usc.edu',
-            username='TestUser',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user.set_password("TestPassword@98374")
-        self.user.save()
-        self.auth_token = Token.objects.create(user=self.user)
+        self.user, self.auth_token = create_dummy_user_and_token_given_id(1)
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
             body='FakeTextForFirstPost',
             author=self.user,
         )
+
         self.comment = Comment.objects.create(
             body="FakeTextForFirstComment",
             author=self.user,
@@ -184,11 +178,11 @@ class CommentFlagTest(TestCase):
         test_users = [create_dummy_user_and_token_given_id(i) 
         for i in range(LOWER_BOUND_FOR_IDS, LOWER_BOUND_FOR_IDS+MANY_FLAGS)]
 
-        self.assertFalse(Ban.objects.filter(email=self.user.email))
+        self.assertFalse(Ban.objects.filter(phone_number=self.user.phone_number))
 
         post_flags_to_many_impermissible_comments()
 
-        self.assertTrue(Ban.objects.filter(email=self.user.email))
+        self.assertTrue(Ban.objects.filter(phone_number=self.user.phone_number))
     
     def test_delete_should_delete_flag(self):
         flag = CommentFlag.objects.create(

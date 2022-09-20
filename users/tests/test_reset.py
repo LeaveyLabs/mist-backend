@@ -58,24 +58,24 @@ class RequestResetEmailViewTest(TestCase):
         self.assertFalse(mail.outbox)
         return
 
-    def test_post_should_not_send_email_given_banned_phone_number(self):
-        Ban.objects.create(email=self.user1.email)
+    # def test_post_should_not_send_email_given_banned_phone_number(self):
+    #     Ban.objects.create(email=self.user1.email)
 
-        request = APIRequestFactory().post(
-            'api/request-reset-email/',
-            {
-                'email': self.user1.email,
-            }
-        )
-        response = RequestResetEmailView.as_view()(request)
-        reset_requests = PasswordReset.objects.filter(
-            email=self.user1.email,
-        )
+    #     request = APIRequestFactory().post(
+    #         'api/request-reset-email/',
+    #         {
+    #             'email': self.user1.email,
+    #         }
+    #     )
+    #     response = RequestResetEmailView.as_view()(request)
+    #     reset_requests = PasswordReset.objects.filter(
+    #         email=self.user1.email,
+    #     )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(reset_requests)
-        self.assertFalse(mail.outbox)
-        return
+    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    #     self.assertFalse(reset_requests)
+    #     self.assertFalse(mail.outbox)
+    #     return
 
 class ValidateResetEmailViewTest(TestCase):
     def setUp(self):

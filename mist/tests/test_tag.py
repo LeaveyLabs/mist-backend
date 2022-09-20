@@ -11,6 +11,8 @@ from mist.serializers import TagSerializer
 from mist.views.tag import TagView
 
 import sys
+
+from users.tests.generics import create_dummy_user_and_token_given_id
 sys.path.append("...")
 from twilio_config import TwillioTestClientMessages
 
@@ -29,23 +31,9 @@ class TagTest(TestCase):
     def setUp(self):
         cache.cache.clear()
 
-        self.user1 = User(
-            email='TestUser1@usc.edu',
-            username='TestUser1',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user1.set_password("TestPassword1@98374")
-        self.user1.save()
-        self.auth_token1 = Token.objects.create(user=self.user1)
-
-        self.user2 = User(
-            email='TestUser2@usc.edu',
-            username='TestUser2',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user2.set_password("TestPassword2@98374")
-        self.user2.save()
-        self.auth_token2 = Token.objects.create(user=self.user2)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
+        self.user3, self.auth_token3 = create_dummy_user_and_token_given_id(3)
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',

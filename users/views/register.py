@@ -105,15 +105,14 @@ class RegisterPhoneNumberView(generics.CreateAPIView):
         phone_number_registration = PhoneNumberRegistrationSerializer(data=request.data)
         phone_number_registration.is_valid(raise_exception=True)
         phone_number = phone_number_registration.data.get('phone_number')
-        email = phone_number_registration.data.get('email').lower()
+        # email = phone_number_registration.data.get('email').lower()
 
-        PhoneNumberAuthentication.objects.filter(email__iexact=email).delete()
+        # PhoneNumberAuthentication.objects.filter(email__iexact=email).delete()
         PhoneNumberAuthentication.objects.filter(phone_number=phone_number).delete()
-        phone_number_authentication = PhoneNumberAuthentication.objects.create(
-            email=email, phone_number=phone_number)
+        phone_number_authentication = PhoneNumberAuthentication.objects.create(phone_number=phone_number)
 
         twilio_client.messages.create(
-            body=f"your phone number verification code for Mist is {phone_number_authentication.code}",
+            body=f"your phone number verification code for mist is {phone_number_authentication.code}",
             from_=twilio_phone_number,
             to=str(phone_number_authentication.phone_number),
         )

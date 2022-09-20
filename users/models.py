@@ -12,7 +12,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 from PIL import Image
 from sorl.thumbnail import get_thumbnail
 
-from .generics import get_current_time, get_random_code
+from .generics import get_current_time, get_default_date_of_birth, get_random_code, get_random_email
 
 class User(AbstractUser):
     def profile_picture_filepath(instance, filename):
@@ -41,7 +41,8 @@ class User(AbstractUser):
     )
     MAX_IMAGE_SIZE = (100, 100)
 
-    date_of_birth = models.DateField()
+    email = models.EmailField(default=get_random_email)
+    date_of_birth = models.DateField(default=get_default_date_of_birth)
     picture = models.ImageField(
         upload_to=profile_picture_filepath, null=True, blank=True
     )
@@ -51,7 +52,7 @@ class User(AbstractUser):
     thumbnail = models.ImageField(
         upload_to=thumbnail_filepath, null=True, blank=True
     )
-    phone_number = PhoneNumberField(null=True, unique=True)
+    phone_number = PhoneNumberField(unique=True, null=True)
     sex = models.CharField(max_length=1, choices=SEXES, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
@@ -119,12 +120,12 @@ class PhoneNumberReset(models.Model):
     phone_number_validation_time = models.FloatField(null=True)
 
 class Ban(models.Model):
-    email = models.EmailField(unique=True)
+    phone_number = PhoneNumberField(null=True)
     timestamp = models.FloatField(default=get_current_time)
 
     def save(self, *args, **kwargs):
         super(Ban, self).save(*args, **kwargs)
-        for user in User.objects.filter(email__iexact=self.email).all():
+        for user in User.objects.filter(phone_number=self.phone_number).all():
             Token.objects.filter(user=user).delete()
             user.is_banned = True
             user.save()

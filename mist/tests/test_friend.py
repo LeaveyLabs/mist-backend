@@ -10,36 +10,14 @@ from mist.views.friend import FriendRequestView, FriendshipView
 
 from users.models import User
 from users.serializers import ReadOnlyUserSerializer
+from users.tests.generics import create_dummy_user_and_token_given_id
 
 @freeze_time("2020-01-01")
 class FriendRequestTest(TestCase):
     def setUp(self):
-        self.user1 = User(
-            email='TestUser1@usc.edu',
-            username='TestUser1',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user1.set_password("TestPassword1@98374")
-        self.user1.save()
-        self.auth_token1 = Token.objects.create(user=self.user1)
-
-        self.user2 = User(
-            email='TestUser2@usc.edu',
-            username='TestUser2',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user2.set_password("TestPassword2@98374")
-        self.user2.save()
-        self.auth_token2 = Token.objects.create(user=self.user2)
-
-        self.user3 = User(
-            email='TestUser3@usc.edu',
-            username='TestUser3',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user3.set_password("TestPassword3@98374")
-        self.user3.save()
-        self.auth_token3 = Token.objects.create(user=self.user3)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
+        self.user3, self.auth_token3 = create_dummy_user_and_token_given_id(3)
         return
 
     def test_get_should_return_friend_request_given_valid_friend_requesting_user(self):

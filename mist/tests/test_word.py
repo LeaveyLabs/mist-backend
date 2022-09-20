@@ -8,31 +8,27 @@ from mist.models import Post
 from mist.views.word import WordView
 
 from users.models import User
+from users.tests.generics import create_dummy_user_and_token_given_id
 
 @freeze_time("2020-01-01")
 class WordTest(TestCase):
     def setUp(self):
-        self.user = User(
-            email='TestUser@usc.edu',
-            username='TestUser',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user.set_password("TestPassword@98374")
-        self.user.save()
-        self.auth_token = Token.objects.create(user=self.user)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
+        self.user3, self.auth_token3 = create_dummy_user_and_token_given_id(3)
 
     def test_get_should_return_matching_words_given_partial_word(self):
         word_to_search = 'Fake'
         Post.objects.create(
             title='FakeTitleForFakePost',
             body='FakeTextForFakePost',
-            author=self.user,
+            author=self.user1,
         )
 
         request = APIRequestFactory().get(
             f'/api/words?search_word={word_to_search}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = WordView.as_view()(request)
 
@@ -47,13 +43,13 @@ class WordTest(TestCase):
         Post.objects.create(
             title='FakeTitleForFakePost',
             body='FakeTextForFakePost',
-            author=self.user,
+            author=self.user1,
         )
 
         request = APIRequestFactory().get(
             f'/api/words?search_word={word_to_search}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = WordView.as_view()(request)
 
@@ -68,13 +64,13 @@ class WordTest(TestCase):
         Post.objects.create(
             title='FakeTitleForFakePost',
             body='FakeTextForFakePost',
-            author=self.user,
+            author=self.user1,
         )
 
         request = APIRequestFactory().get(
             f'/api/words?search_word={word_to_search}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = WordView.as_view()(request)
 
@@ -89,13 +85,13 @@ class WordTest(TestCase):
         Post.objects.create(
             title='FakeTitleForFakePost',
             body='FakeTextForFakePost',
-            author=self.user,
+            author=self.user1,
         )
 
         request = APIRequestFactory().get(
             f'/api/words?search_word={word_to_search}&wrapper_words={wrapper_word1}&wrapper_words={wrapper_word2}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = WordView.as_view()(request)
 
@@ -112,13 +108,13 @@ class WordTest(TestCase):
         Post.objects.create(
             title='FakeTitleForFakePost',
             body='FakeTextForFakePost',
-            author=self.user,
+            author=self.user1,
         )
 
         request = APIRequestFactory().get(
             f'/api/words?search_word={word_to_search}&wrapper_words={wrapper_word1}&wrapper_words={wrapper_word2}',
             format='json',
-            HTTP_AUTHORIZATION=f'Token {self.auth_token}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = WordView.as_view()(request)
 

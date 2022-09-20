@@ -17,6 +17,8 @@ class NotificationServiceMock:
 class ViewTest(TestCase):
     def setUp(self):
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
+        self.user3, self.auth_token3 = create_dummy_user_and_token_given_id(3)
         
         self.post1 = Post.objects.create(
             title='FakeTitleForFirstPost',

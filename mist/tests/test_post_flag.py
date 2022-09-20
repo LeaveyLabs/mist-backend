@@ -16,23 +16,9 @@ from users.tests.generics import create_dummy_user_and_token_given_id
 @freeze_time("2020-01-01")
 class PostFlagTest(TestCase):
     def setUp(self):
-        self.user1 = User(
-            email='TestUser1@usc.edu',
-            username='TestUser1',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user1.set_password("TestPassword@98374")
-        self.user1.save()
-        self.auth_token1 = Token.objects.create(user=self.user1)
-
-        self.user2 =  User(
-            email='TestUser2@usc.edu',
-            username='TestUser2',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user2.set_password("TestPassword@98374")
-        self.user2.save()
-        self.auth_token2 = Token.objects.create(user=self.user2)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
+        self.user3, self.auth_token3 = create_dummy_user_and_token_given_id(3)
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',
@@ -188,11 +174,11 @@ class PostFlagTest(TestCase):
         test_users = [create_dummy_user_and_token_given_id(i) 
         for i in range(LOWER_BOUND_FOR_IDS, LOWER_BOUND_FOR_IDS+MANY_FLAGS)]
 
-        self.assertFalse(Ban.objects.filter(email=self.user1.email))
+        self.assertFalse(Ban.objects.filter(phone_number=self.user1.phone_number))
 
         post_flags_to_many_impermissible_posts()
 
-        self.assertTrue(Ban.objects.filter(email=self.user1.email))
+        self.assertTrue(Ban.objects.filter(phone_number=self.user1.phone_number))
     
     def test_delete_should_delete_flag(self):
         flag = PostFlag.objects.create(

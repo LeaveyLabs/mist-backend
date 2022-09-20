@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from django.test import TestCase
 from users.generics import get_current_time
-from users.models import Ban, User
+from users.models import Ban
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
@@ -73,7 +73,7 @@ class RequestLoginCodeViewTest(TestCase):
         self.user1.phone_number = banned_phone_number
         self.user1.save()
 
-        Ban.objects.create(email=self.user1.email)
+        Ban.objects.create(phone_number=self.user1.phone_number)
 
         request = APIRequestFactory().post(
             'api/request-login-code/',
