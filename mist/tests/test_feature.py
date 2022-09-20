@@ -9,18 +9,12 @@ from mist.serializers import FeatureSerializer
 from mist.views.feature import FeatureView
 
 from users.models import User
+from users.tests.generics import create_dummy_user_and_token_given_id
 
 @freeze_time("2020-01-01")
 class FeatureTest(TestCase):
     def setUp(self):
-        self.user1 = User(
-            email='TestUser1@usc.edu',
-            username='TestUser1',
-            date_of_birth=date(2000, 1, 1),
-        )
-        self.user1.set_password("TestPassword1@98374")
-        self.user1.save()
-        self.auth_token1 = Token.objects.create(user=self.user1)
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
 
         self.post = Post.objects.create(
             title='FakeTitleForFirstPost',

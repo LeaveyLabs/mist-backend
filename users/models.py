@@ -41,8 +41,8 @@ class User(AbstractUser):
     )
     MAX_IMAGE_SIZE = (100, 100)
 
-    email = models.EmailField(default=get_random_email)
-    date_of_birth = models.DateField(default=get_default_date_of_birth)
+    email = models.EmailField(default=get_random_email, null=True, blank=True)
+    date_of_birth = models.DateField(default=get_default_date_of_birth, null=True, blank=True)
     picture = models.ImageField(
         upload_to=profile_picture_filepath, null=True, blank=True
     )
@@ -52,7 +52,7 @@ class User(AbstractUser):
     thumbnail = models.ImageField(
         upload_to=thumbnail_filepath, null=True, blank=True
     )
-    phone_number = PhoneNumberField(unique=True)
+    phone_number = PhoneNumberField(unique=True, null=True)
     sex = models.CharField(max_length=1, choices=SEXES, null=True)
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
