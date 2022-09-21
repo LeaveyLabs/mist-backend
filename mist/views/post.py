@@ -20,7 +20,7 @@ class Order(Enum):
     TRENDING = 2
 
     def recent(post):
-        return post.creation_time
+        return post.timestamp
 
     def votecount(post):
         return sum([vote.rating for vote in post.votes.all()])

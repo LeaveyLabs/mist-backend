@@ -446,9 +446,9 @@ class PostTest(TestCase):
         self.post1.creation_time = 4
         self.post1.timestamp = 4
         self.post2.creation_time = 3
-        self.post2.timestamp = 4
+        self.post2.timestamp = 3
         self.post3.creation_time = 2
-        self.post3.timestamp = 4
+        self.post3.timestamp = 2
 
         self.post1.save()
         self.post2.save()
