@@ -361,8 +361,8 @@ class PostTest(TestCase):
     #     return
     
     def test_get_should_return_posts_in_trending_order_as_default(self):
-        self.post1.timestamp = 10
-        self.post2.timestamp = 4
+        self.post1.timestamp = self.post1.creation_time+3600
+        self.post2.timestamp = self.post2.creation_time
 
         self.post1.save()
         self.post2.save()
@@ -393,8 +393,8 @@ class PostTest(TestCase):
         return
 
     def test_get_should_return_viewed_posts_later_in_the_order(self):
-        self.post1.timestamp = 1
-        self.post2.timestamp = 1
+        self.post1.timestamp = self.post1.creation_time+3600
+        self.post2.timestamp = self.post2.creation_time
 
         self.post1.save()
         self.post2.save()
@@ -454,8 +454,8 @@ class PostTest(TestCase):
         return
 
     def test_get_should_return_posts_in_trending_order_given_order_parameter(self):
-        self.post1.timestamp = 10
-        self.post2.timestamp = 4
+        self.post1.timestamp = self.post1.creation_time+3600
+        self.post2.timestamp = self.post2.creation_time
 
         self.post1.save()
         self.post2.save()

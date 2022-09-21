@@ -1,5 +1,6 @@
 from decimal import Decimal
 from enum import Enum
+import math
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Sum
 from django.db.models.expressions import RawSQL
@@ -32,11 +33,12 @@ class Order(Enum):
         return sum([flag.rating for flag in post.flags.all()])
 
     def trendscore(post):
+        NORM_CONSTANT = 100000
         try: post.viewcount
         except: post.viewcount = 0
         return sum(
             [vote.rating*
-            (post.timestamp/get_current_time())*
+            math.pow(2, (post.timestamp-get_current_time())/NORM_CONSTANT)*
             (1/(post.viewcount+1))
             for vote in post.votes.all()])
 
