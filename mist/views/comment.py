@@ -20,7 +20,7 @@ class CommentView(viewsets.ModelViewSet):
         commenter = User.objects.get(id=commenter_id)
         post_author = Post.objects.get(id=post_id).author
         APNSDevice.objects.filter(user=post_author).send_message(
-            f"{commenter.first_name} {commenter.last_name} commented on your mist!",
+            f"{commenter.first_name} {commenter.last_name} commented on your mist",
             extra={
                 "type": NotificationTypes.COMMENT,
                 "data": comment_response.data
