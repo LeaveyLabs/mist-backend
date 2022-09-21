@@ -281,8 +281,7 @@ class MistboxView(generics.RetrieveUpdateAPIView):
                 mistbox.posts.exclude(
                     views__user=user
                 ).all(),
-                key=Order.recent, 
-                reverse=True
+                key=Order.recent,
             )
         )
 

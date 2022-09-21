@@ -5,6 +5,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
+from push_notifications.models import APNSDevice
 import uuid
 import string
 from users.generics import get_empty_keywords
@@ -20,6 +21,7 @@ class NotificationTypes:
     MATCH = "match"
     DAILY_MISTBOX = "dailymistbox"
     MAKE_SOMEONES_DAY = "makesomeonesday"
+    COMMENT = "comment"
 
 # Post Interactions
 class Post(models.Model):
@@ -78,20 +80,32 @@ class Post(models.Model):
                     ).split()
             
             words_in_post = words_in_text + words_in_title + words_in_loc
-            mistboxes = Mistbox.objects.all().exclude(user=self.author)
-            # for each word ...
+            mistboxes = Mistbox.objects.all().\
+                exclude(user=self.author).\
+                select_related('user').\
+                prefetch_related('posts')
+            sent_user_ids = []
+            # for each word ...            
             for word in words_in_post:
                 lowercased_word = word.lower()
                 # ... if it doesn't exist create one
                 matching_word = Word.objects.filter(text__iexact=lowercased_word).first()
                 if not matching_word:
                     matching_word = Word.objects.create(text=lowercased_word)
-
+                
                 for mistbox in mistboxes:
                     for keyword in mistbox.keywords:
                         if keyword in lowercased_word:
                             mistbox.posts.add(self)
                             mistbox.save()
+                            if mistbox.user.id not in sent_user_ids:
+                                APNSDevice.objects.filter(user=mistbox.user).send_message(
+                                    "you got a new mist in your mistbox 💌",
+                                    extra={
+                                        "type": NotificationTypes.DAILY_MISTBOX,
+                                    }
+                                )
+                                sent_user_ids.append(mistbox.user.id)
 
 class Word(models.Model):
     text = models.CharField(max_length=100)

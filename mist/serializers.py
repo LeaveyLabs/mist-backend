@@ -236,9 +236,11 @@ class MistboxSerializer(serializers.ModelSerializer):
         return [keyword.lower() for keyword in keywords]
     
     def get_posts(self, obj):
+        from mist.views.post import Order
         try: obj.posts
         except: obj.posts = Post.objects.none()
-        return [PostSerializer(post).data for post in obj.posts.all()]
+        sorted_posts = sorted(obj.posts.all(), key=Order.recent, reverse=True)
+        return [PostSerializer(post).data for post in sorted_posts]
 
 class AccessCodeSerializer(serializers.ModelSerializer):
     class Meta:
