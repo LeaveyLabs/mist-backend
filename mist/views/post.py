@@ -172,7 +172,7 @@ class PostView(viewsets.ModelViewSet):
         return qs
 
 
-class MatchedPostsView(generics.ListAPIView):
+class MatchedPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -194,7 +194,7 @@ class MatchedPostsView(generics.ListAPIView):
         return matched_posts
 
 
-class FeaturedPostsView(generics.ListAPIView):
+class FeaturedPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -207,7 +207,7 @@ class FeaturedPostsView(generics.ListAPIView):
         return featured_posts
 
 
-class FriendPostsView(generics.ListAPIView):
+class FriendPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -227,7 +227,7 @@ class FriendPostsView(generics.ListAPIView):
             order_by('-creation_time')
 
 
-class FavoritedPostsView(generics.ListAPIView):
+class FavoritedPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -238,7 +238,7 @@ class FavoritedPostsView(generics.ListAPIView):
             order_by('-creation_time')
 
 
-class SubmittedPostsView(generics.ListAPIView):
+class SubmittedPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -248,7 +248,7 @@ class SubmittedPostsView(generics.ListAPIView):
             prefetch_related("votes", "comments", "flags").\
             order_by('-creation_time')
 
-class TaggedPostsView(generics.ListAPIView):
+class TaggedPostsView(PostView):
     permission_classes = (IsAuthenticated, )
     serializer_class = PostSerializer
 

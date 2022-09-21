@@ -1072,7 +1072,7 @@ class MatchedPostsViewTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = MatchedPostsView.as_view()(request)
+        response = MatchedPostsView.as_view({'get':'list'})(request)
         response_post = response.data[0]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1084,7 +1084,7 @@ class MatchedPostsViewTest(TestCase):
             '/api/matched-posts/',
             format='json',
         )
-        response = MatchedPostsView.as_view()(request)
+        response = MatchedPostsView.as_view({'get':'list'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
@@ -1130,7 +1130,7 @@ class FeaturedPostsViewTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = FeaturedPostsView.as_view()(request)
+        response = FeaturedPostsView.as_view({'get':'list'})(request)
         response_post = response.data[0]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1142,7 +1142,7 @@ class FeaturedPostsViewTest(TestCase):
             '/api/featured-posts/',
             format='json',
         )
-        response = FeaturedPostsView.as_view()(request)
+        response = FeaturedPostsView.as_view({'get':'list'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
@@ -1189,7 +1189,7 @@ class FavoritedPostsViewTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = FavoritedPostsView.as_view()(request)
+        response = FavoritedPostsView.as_view({'get':'list'})(request)
         response_post = response.data[0]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1201,7 +1201,7 @@ class FavoritedPostsViewTest(TestCase):
             '/api/favorited-posts/',
             format='json',
         )
-        response = FavoritedPostsView.as_view()(request)
+        response = FavoritedPostsView.as_view({'get':'list'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
@@ -1242,7 +1242,7 @@ class SubmittedPostsViewTest(TestCase):
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = SubmittedPostsView.as_view()(request)
+        response = SubmittedPostsView.as_view({'get':'list'})(request)
         response_post = response.data[0]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1254,7 +1254,7 @@ class SubmittedPostsViewTest(TestCase):
             '/api/submitted-posts/',
             format='json',
         )
-        response = SubmittedPostsView.as_view()(request)
+        response = SubmittedPostsView.as_view({'get':'list'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
@@ -1351,7 +1351,7 @@ class TaggedPostsViewTest(TestCase):
             '/api/tagged-posts/',
             HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
         )
-        response = TaggedPostsView.as_view()(request)
+        response = TaggedPostsView.as_view({'get':'list'})(request)
         response_posts = response.data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1362,7 +1362,7 @@ class TaggedPostsViewTest(TestCase):
         request = APIRequestFactory().get(
             '/api/tagged-posts/',
         )
-        response = TaggedPostsView.as_view()(request)
+        response = TaggedPostsView.as_view({'get':'list'})(request)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         return
