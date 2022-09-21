@@ -160,6 +160,7 @@ class PostTest(TestCase):
         )
 
         self.assertTrue(NotificationServiceMock.sent_notifications)
+        self.assertEqual(len(NotificationServiceMock.sent_notifications), 1)
 
     def test_save_should_not_add_to_author_mistboxes(self):
         mistbox = Mistbox.objects.create(user=self.user1)
