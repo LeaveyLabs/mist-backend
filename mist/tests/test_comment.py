@@ -1,8 +1,8 @@
 from datetime import date
+from unittest.mock import patch
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from mist.models import Comment, CommentFlag, Post, Tag
 from mist.serializers import CommentSerializer, TagSerializer
@@ -12,11 +12,22 @@ from users.models import User
 from users.serializers import ReadOnlyUserSerializer
 from users.tests.generics import create_dummy_user_and_token_given_id
 
+class NotificationServiceMock:
+    sent_notifications = []
+
+    def send_fake_notification(self, message, *args, **kwargs):
+        NotificationServiceMock.sent_notifications.append(message)
+
+
 @freeze_time("2020-01-01")
+@patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
+    NotificationServiceMock.send_fake_notification)
 class CommentTest(TestCase):
     maxDiff = None
 
     def setUp(self):
+        NotificationServiceMock.sent_notifications = []
+
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
         self.user3, self.auth_token3 = create_dummy_user_and_token_given_id(3)
@@ -203,6 +214,48 @@ class CommentTest(TestCase):
             author=test_comment.author))
         return
 
+    def test_post_should_send_notification_given_valid_comment(self):
+        test_comment = Comment(
+            body='FakeTextForTestComment',
+            post=self.post,
+            author=self.user1
+        )
+        serialized_comment = CommentSerializer(test_comment).data
+
+        request = APIRequestFactory().post(
+            '/api/comments/',
+            serialized_comment,
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = CommentView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(NotificationServiceMock.sent_notifications)
+        return
+    
+    def test_post_should_not_send_notification_given_valid_comment(self):
+        non_existent_user_id = -1
+
+        test_comment = Comment(
+            body='FakeTextForTestComment',
+            post=self.post,
+            author=self.user1
+        )
+        serialized_comment = CommentSerializer(test_comment).data
+        serialized_comment['author'] = non_existent_user_id
+
+        request = APIRequestFactory().post(
+            '/api/comments/',
+            serialized_comment,
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = CommentView.as_view({'post':'create'})(request)
+
+        self.assertFalse(NotificationServiceMock.sent_notifications)
+        return
+    
     # def test_post_should_not_create_given_profanity(self):
     #     test_comment = Comment(
     #         body='fuck shit ass',

@@ -1,16 +1,32 @@
-from django.db.models import Count
 from rest_framework import viewsets
 from mist.generics import is_impermissible_comment
 from mist.permissions import CommentPermission
+from users.models import User
+from push_notifications.models import APNSDevice
 from rest_framework.permissions import IsAuthenticated
 
 from ..serializers import CommentSerializer
 
-from ..models import Comment
+from ..models import Comment, NotificationTypes, Post
 
 class CommentView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, CommentPermission)
     serializer_class = CommentSerializer
+
+    def create(self, request, *args, **kwargs):
+        comment_response = super().create(request, *args, **kwargs)
+        post_id = comment_response.data.get('post')
+        commenter_id = comment_response.data.get('author')
+        commenter = User.objects.get(id=commenter_id)
+        post_author = Post.objects.get(id=post_id).author
+        APNSDevice.objects.filter(user=post_author).send_message(
+            f"{commenter.first_name} {commenter.last_name} commented on your mist!",
+            extra={
+                "type": NotificationTypes.COMMENT,
+                "data": comment_response.data
+            }
+        )
+        return comment_response
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)

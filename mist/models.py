@@ -20,6 +20,7 @@ class NotificationTypes:
     MATCH = "match"
     DAILY_MISTBOX = "dailymistbox"
     MAKE_SOMEONES_DAY = "makesomeonesday"
+    COMMENT = "comment"
 
 # Post Interactions
 class Post(models.Model):
