@@ -361,9 +361,15 @@ class PostTest(TestCase):
     #     return
     
     def test_get_should_return_posts_in_trending_order_as_default(self):
-        PostVote.objects.create(voter=self.user1, post=self.post2, timestamp=1)
+        self.post1.timestamp = 10
+        self.post2.timestamp = 4
+
+        self.post1.save()
+        self.post2.save()
+        
+        PostVote.objects.create(voter=self.user1, post=self.post2)
         PostVote.objects.create(voter=self.user2, post=self.post1)       
-        PostVote.objects.create(voter=self.user2, post=self.post2, timestamp=1)
+        PostVote.objects.create(voter=self.user2, post=self.post2)
         
         serialized_posts = [
             PostSerializer(self.post1).data,
@@ -387,6 +393,12 @@ class PostTest(TestCase):
         return
 
     def test_get_should_return_viewed_posts_later_in_the_order(self):
+        self.post1.timestamp = 1
+        self.post2.timestamp = 1
+
+        self.post1.save()
+        self.post2.save()
+
         PostVote.objects.create(voter=self.user2, post=self.post1)
         PostVote.objects.create(voter=self.user3, post=self.post1)
         PostVote.objects.create(voter=self.user1, post=self.post2)
@@ -442,9 +454,15 @@ class PostTest(TestCase):
         return
 
     def test_get_should_return_posts_in_trending_order_given_order_parameter(self):
+        self.post1.timestamp = 10
+        self.post2.timestamp = 4
+
+        self.post1.save()
+        self.post2.save()
+        
         PostVote.objects.create(voter=self.user2, post=self.post1)
-        PostVote.objects.create(voter=self.user1, post=self.post2, timestamp=1)
-        PostVote.objects.create(voter=self.user2, post=self.post2, timestamp=1)
+        PostVote.objects.create(voter=self.user1, post=self.post2)
+        PostVote.objects.create(voter=self.user2, post=self.post2)
         
         serialized_posts = [
             PostSerializer(self.post1).data,

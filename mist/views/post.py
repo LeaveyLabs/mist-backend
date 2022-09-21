@@ -1,7 +1,7 @@
 from decimal import Decimal
 from enum import Enum
 from django.core.paginator import Paginator
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
@@ -36,8 +36,7 @@ class Order(Enum):
         except: post.viewcount = 0
         return sum(
             [vote.rating*
-            (vote.timestamp/get_current_time())*
-            (post.creation_time/get_current_time())*
+            (post.timestamp/get_current_time())*
             (1/(post.viewcount+1))
             for vote in post.votes.all()])
 
