@@ -22,7 +22,6 @@ class NotificationTypes:
     DAILY_MISTBOX = "dailymistbox"
     MAKE_SOMEONES_DAY = "makesomeonesday"
     COMMENT = "comment"
-    NEW_MISTBOX = "newmistbox"
 
 # Post Interactions
 class Post(models.Model):
@@ -103,7 +102,7 @@ class Post(models.Model):
                                 APNSDevice.objects.filter(user=mistbox.user).send_message(
                                     "you got a new mist in your mistbox 💌",
                                     extra={
-                                        "type": NotificationTypes.NEW_MISTBOX,
+                                        "type": NotificationTypes.DAILY_MISTBOX,
                                     }
                                 )
                                 sent_user_ids.append(mistbox.user.id)
