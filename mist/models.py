@@ -5,6 +5,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
+from push_notifications.models import APNSDevice
 import uuid
 import string
 from users.generics import get_empty_keywords
@@ -21,6 +22,7 @@ class NotificationTypes:
     DAILY_MISTBOX = "dailymistbox"
     MAKE_SOMEONES_DAY = "makesomeonesday"
     COMMENT = "comment"
+    NEW_MISTBOX = "newmistbox"
 
 # Post Interactions
 class Post(models.Model):
@@ -93,6 +95,12 @@ class Post(models.Model):
                         if keyword in lowercased_word:
                             mistbox.posts.add(self)
                             mistbox.save()
+                            APNSDevice.objects.filter(user=mistbox.user).send_message(
+                                "you got a new mist in your mistbox 💌",
+                                extra={
+                                    "type": NotificationTypes.NEW_MISTBOX,
+                                }
+                            )
 
 class Word(models.Model):
     text = models.CharField(max_length=100)
