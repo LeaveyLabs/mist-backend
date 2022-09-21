@@ -81,7 +81,10 @@ class Post(models.Model):
                     ).split()
             
             words_in_post = words_in_text + words_in_title + words_in_loc
-            mistboxes = Mistbox.objects.all().exclude(user=self.author)
+            mistboxes = Mistbox.objects.all().\
+                exclude(user=self.author).\
+                select_related('user').\
+                prefetch_related('posts')
             # for each word ...
             for word in words_in_post:
                 lowercased_word = word.lower()
@@ -89,18 +92,21 @@ class Post(models.Model):
                 matching_word = Word.objects.filter(text__iexact=lowercased_word).first()
                 if not matching_word:
                     matching_word = Word.objects.create(text=lowercased_word)
-
+                
+                sent_users = []
                 for mistbox in mistboxes:
                     for keyword in mistbox.keywords:
                         if keyword in lowercased_word:
                             mistbox.posts.add(self)
                             mistbox.save()
-                            APNSDevice.objects.filter(user=mistbox.user).send_message(
-                                "you got a new mist in your mistbox 💌",
-                                extra={
-                                    "type": NotificationTypes.NEW_MISTBOX,
-                                }
-                            )
+                            if mistbox.user not in sent_users:
+                                APNSDevice.objects.filter(user=mistbox.user).send_message(
+                                    "you got a new mist in your mistbox 💌",
+                                    extra={
+                                        "type": NotificationTypes.NEW_MISTBOX,
+                                    }
+                                )
+                                sent_users.append(mistbox.user)
 
 class Word(models.Model):
     text = models.CharField(max_length=100)
