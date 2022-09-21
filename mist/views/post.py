@@ -38,7 +38,7 @@ class Order(Enum):
         except: post.viewcount = 0
         return sum(
             [vote.rating*
-            math.pow(2, (post.timestamp-get_current_time())/NORM_CONSTANT)*
+            math.pow(1.5, (post.timestamp-get_current_time())/NORM_CONSTANT)*
             (1/(post.viewcount+1))
             for vote in post.votes.all()])
 
