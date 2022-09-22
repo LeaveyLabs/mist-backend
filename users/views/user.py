@@ -77,7 +77,7 @@ class UserView(viewsets.ModelViewSet):
         # set serializers based on requesting user + method
         object_level_methods = ["DELETE", "PUT", "PATCH",]
         if self.request.method in object_level_methods:
-            return queryset.exclude(is_hidden=True).prefetch_related('badges', 'collectibles')
+            return queryset.exclude(is_hidden=True).prefetch_related('badges')
         else:
             non_matching_users = ~Q(id=requesting_user.id)
             readonly_users = queryset.filter(non_matching_users)
@@ -87,7 +87,7 @@ class UserView(viewsets.ModelViewSet):
             else:
                 self.serializer_class = CompleteUserSerializer
 
-        return queryset.exclude(is_hidden=True).prefetch_related('badges', 'collectibles')
+        return queryset.exclude(is_hidden=True).prefetch_related('badges')
 
     def create(self, request, *args, **kwargs):
         user_response = super().create(request, *args, **kwargs)

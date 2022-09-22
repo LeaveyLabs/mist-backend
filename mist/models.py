@@ -37,6 +37,7 @@ class Post(models.Model):
     timestamp = models.FloatField(default=get_current_time)
     creation_time = models.FloatField(default=get_current_time)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    collectible_type = models.PositiveIntegerField(null=True, blank=True)
 
     def _str_(self):
         return self.title
@@ -325,7 +326,3 @@ class View(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='views', on_delete=models.CASCADE)
     post = models.ForeignKey(Post, related_name='views', on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
-
-class Collectible(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='collectibles', on_delete=models.CASCADE)
-    collectible_type = models.PositiveIntegerField()

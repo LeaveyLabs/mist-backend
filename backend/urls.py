@@ -21,7 +21,6 @@ from push_notifications.api.rest_framework import APNSDeviceAuthorizedViewSet
 from rest_framework import routers
 from mist.views.access_code import ClaimAccessCodeView
 from mist.views.block import BlockView
-from mist.views.collectible import ClaimCollectibleView
 from mist.views.comment import CommentView
 from mist.views.comment_flag import CommentFlagView
 from mist.views.comment_vote import CommentVoteView
@@ -80,7 +79,6 @@ urlpatterns = [
     # Database
     path('api/', include(router.urls)),
     path('api/access-codes/', ClaimAccessCodeView.as_view()),
-    path('api/collectibles/', ClaimCollectibleView.as_view()),
     path('api/views', ViewPost.as_view()),
     path('api/nearby-users/', NearbyUsersView.as_view()),
     path('api/user-population/', UserPopulationView.as_view()),

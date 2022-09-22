@@ -4,7 +4,7 @@ from rest_framework import serializers
 from users.generics import get_current_time
 
 from users.serializers import ReadOnlyUserSerializer
-from .models import AccessCode, Block, Collectible, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, View, Word
+from .models import AccessCode, Block, CommentFlag, CommentVote, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, Comment, Message, Tag, PostVote, View, Word
 
 class WordSerializer(serializers.ModelSerializer):
     occurrences = serializers.SerializerMethodField()
@@ -28,7 +28,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ('id', 'title', 'body', 
         'latitude', 'longitude', 'location_description',
         'timestamp', 'author', 'creation_time',
-        'emoji_dict', 'commentcount', 'flagcount', 'votecount',)
+        'emoji_dict', 'commentcount', 'flagcount', 'votecount', 'collectible_type')
     
     def get_flagcount(self, obj):
         try: obj.flags
@@ -263,8 +263,3 @@ class ViewPostSerializer(serializers.Serializer):
     posts = serializers.ListField(
         child = serializers.IntegerField()
     )
-
-class CollectibleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Collectible
-        fields = ('collectible_type', 'user')
