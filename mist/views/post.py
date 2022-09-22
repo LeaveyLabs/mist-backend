@@ -1,7 +1,8 @@
 from decimal import Decimal
 from enum import Enum
+import math
 from django.core.paginator import Paginator
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.db.models.expressions import RawSQL
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, generics, status
@@ -20,7 +21,7 @@ class Order(Enum):
     TRENDING = 2
 
     def recent(post):
-        return post.creation_time
+        return post.timestamp
 
     def votecount(post):
         return sum([vote.rating for vote in post.votes.all()])
@@ -32,12 +33,12 @@ class Order(Enum):
         return sum([flag.rating for flag in post.flags.all()])
 
     def trendscore(post):
+        NORM_CONSTANT = 100000
         try: post.viewcount
         except: post.viewcount = 0
         return sum(
             [vote.rating*
-            (vote.timestamp/get_current_time())*
-            (post.creation_time/get_current_time())*
+            math.pow(1.5, (post.timestamp-get_current_time())/NORM_CONSTANT)*
             (1/(post.viewcount+1))
             for vote in post.votes.all()])
 
@@ -61,21 +62,23 @@ class PostView(viewsets.ModelViewSet):
             annotate(viewcount=Count("views", filter=Q(views__user=user)))
        
         queryset = self.order_queryset(queryset)
-        queryset = self.paginate_queryset(queryset)
+        queryset = self.custom_paginate_queryset(queryset)
         queryset = self.remove_impermissible_posts(queryset)
         
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    def paginate_queryset(self, queryset):
+    def custom_paginate_queryset(self, queryset):
         page = self.request.query_params.get('page')
+        order = self.request.query_params.get('order')
         paginator = Paginator(queryset, 100)
         try:
             page_num = int(page)
             if page_num > 0: return paginator.page(page_num).object_list
             else: return paginator.page(1).object_list
         except:
-            return queryset
+            if not order: return queryset
+            return paginator.page(1).object_list
 
     def order_queryset(self, queryset):
         order = self.request.query_params.get('order')
@@ -169,7 +172,7 @@ class PostView(viewsets.ModelViewSet):
         return qs
 
 
-class MatchedPostsView(generics.ListAPIView):
+class MatchedPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -191,7 +194,7 @@ class MatchedPostsView(generics.ListAPIView):
         return matched_posts
 
 
-class FeaturedPostsView(generics.ListAPIView):
+class FeaturedPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -204,7 +207,7 @@ class FeaturedPostsView(generics.ListAPIView):
         return featured_posts
 
 
-class FriendPostsView(generics.ListAPIView):
+class FriendPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -224,7 +227,7 @@ class FriendPostsView(generics.ListAPIView):
             order_by('-creation_time')
 
 
-class FavoritedPostsView(generics.ListAPIView):
+class FavoritedPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -235,7 +238,7 @@ class FavoritedPostsView(generics.ListAPIView):
             order_by('-creation_time')
 
 
-class SubmittedPostsView(generics.ListAPIView):
+class SubmittedPostsView(PostView):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -245,7 +248,7 @@ class SubmittedPostsView(generics.ListAPIView):
             prefetch_related("votes", "comments", "flags").\
             order_by('-creation_time')
 
-class TaggedPostsView(generics.ListAPIView):
+class TaggedPostsView(PostView):
     permission_classes = (IsAuthenticated, )
     serializer_class = PostSerializer
 
