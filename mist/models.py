@@ -292,6 +292,7 @@ class Message(models.Model):
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sender', on_delete=models.CASCADE)
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='receiver', on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True)
+    is_hidden = models.BooleanField(default=False)
 
     def _str_(self):
         return self.text
@@ -324,3 +325,10 @@ class View(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='views', on_delete=models.CASCADE)
     post = models.ForeignKey(Post, related_name='views', on_delete=models.CASCADE)
     timestamp = models.FloatField(default=get_current_time)
+
+class Collectible(models.Model):
+    COLLECTIBLE_OPTIONS = (
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='collectibles', on_delete=models.CASCADE)
+    collectible_type = models.CharField(max_length=2, choices=COLLECTIBLE_OPTIONS,)

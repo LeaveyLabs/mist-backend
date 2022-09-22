@@ -5,7 +5,7 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import MatchRequest, Post
+from mist.models import MatchRequest, Message, Post
 from mist.serializers import MatchRequestSerializer
 from mist.views.match import MatchRequestView, MatchView
 
@@ -213,6 +213,40 @@ class MatchRequestTest(TestCase):
             post=match_request.post,
         ))
         return
+
+    def test_delete_should_delete_given_requesting_user(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        request = APIRequestFactory().delete(
+            '/api/match_requests',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request, pk=match_request.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        return
+
+    def test_delete_should_delete_given_requested_user(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        request = APIRequestFactory().delete(
+            '/api/match_requests',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token2}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request, pk=match_request.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        return
     
     def test_delete_should_delete_match_request_given_pk(self):
         match_request = MatchRequest.objects.create(
@@ -234,7 +268,28 @@ class MatchRequestTest(TestCase):
         self.assertFalse(MatchRequest.objects.filter(pk=match_request.pk))
         return
 
-    def test_delete_should_delete_favorite_given_query_combo(self):
+    def test_delete_should_hide_match_request_messages_given_pk(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        message = Message.objects.create(sender=self.user1, receiver=self.user2)
+        self.assertFalse(Message.objects.get(id=message.id).is_hidden)
+
+        request = APIRequestFactory().delete(
+            '/api/match_requests',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request, pk=match_request.pk)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertTrue(Message.objects.get(id=message.id).is_hidden)
+        return
+
+    def test_delete_should_delete_request_given_query_combo(self):
         match_request = MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
@@ -253,8 +308,29 @@ class MatchRequestTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(MatchRequest.objects.filter(pk=match_request.pk))
         return
+
+    def test_delete_should_hide_match_request_messages_given_query_combo(self):
+        match_request = MatchRequest.objects.create(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+            post=self.post,
+            timestamp=0,
+        )
+        message = Message.objects.create(sender=self.user1, receiver=self.user2)
+        self.assertFalse(Message.objects.get(id=message.id).is_hidden)
+
+        request = APIRequestFactory().delete(
+            f'/api/match_requests?match_requesting_user={self.user1.pk}&match_requested_user={self.user2.pk}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'delete':'destroy'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertTrue(Message.objects.get(id=message.id).is_hidden)
+        return
     
-    def test_delete_should_not_delete_favorite_given_invalid_query_combo(self):
+    def test_delete_should_not_delete_request_given_invalid_query_combo(self):
         match_request = MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
@@ -274,7 +350,7 @@ class MatchRequestTest(TestCase):
         self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
         return
 
-    def test_delete_should_not_delete_favorite_given_nonexistent_pk(self):
+    def test_delete_should_not_delete_request_given_nonexistent_pk(self):
         nonexistent_pk = 9999999
         match_request = MatchRequest.objects.create(
             match_requesting_user=self.user1,
@@ -296,7 +372,7 @@ class MatchRequestTest(TestCase):
         self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
         return
 
-    def test_delete_should_not_delete_favorite_given_no_parameters(self):
+    def test_delete_should_not_delete_request_given_no_parameters(self):
         match_request = MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
@@ -316,7 +392,7 @@ class MatchRequestTest(TestCase):
         self.assertTrue(MatchRequest.objects.filter(pk=match_request.pk))
         return
 
-    def test_delete_should_delete_favorite_given_pk_and_query_combo(self):
+    def test_delete_should_delete_request_given_pk_and_query_combo(self):
         match_request = MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,
@@ -336,7 +412,7 @@ class MatchRequestTest(TestCase):
         self.assertFalse(MatchRequest.objects.filter(pk=match_request.pk))
         return
 
-    def test_delete_should_not_delete_favorite_given_invalid_pk_and_query_combo(self):
+    def test_delete_should_not_delete_request_given_invalid_pk_and_query_combo(self):
         match_request_1 = MatchRequest.objects.create(
             match_requesting_user=self.user1,
             match_requested_user=self.user2,

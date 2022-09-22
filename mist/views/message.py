@@ -67,10 +67,12 @@ class ConversationView(generics.ListAPIView):
             Q(receiver__blockings__blocked_user=requesting_user) | \
             Q(sender__blocks__blocking_user=requesting_user) | \
             Q(receiver__blocks__blocking_user=requesting_user)
+        exclude_hidden_query = Q(is_hidden=True)
 
         sent_or_received_messages = Message.objects.\
             filter(sender_or_receiver_query).\
             exclude(exclude_blocks_query).\
+            exclude(exclude_hidden_query).\
             select_related('receiver').\
             select_related('sender')
             

@@ -1,6 +1,8 @@
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from push_notifications.models import APNSDevice
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.response import Response
 from mist.permissions import MatchRequestPermission
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
@@ -8,7 +10,7 @@ from users.generics import get_user_from_request
 from users.models import User
 
 from ..serializers import MatchRequestSerializer, ReadOnlyUserSerializer
-from ..models import MatchRequest, NotificationTypes
+from ..models import MatchRequest, Message, NotificationTypes
 
 class MatchRequestView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MatchRequestPermission)
@@ -54,6 +56,21 @@ class MatchRequestView(viewsets.ModelViewSet):
                     "data": match_request_response.data
                 })
         return match_request_response
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        requesting = instance.match_requesting_user
+        requested = instance.match_requested_user
+
+        message_sent_to_match = Q(sender=requesting, receiver=requested)
+        messages_sent_from_match = Q(sender=requested, receiver=requesting)
+        
+        Message.objects.filter(message_sent_to_match | messages_sent_from_match).update(is_hidden=True)
+
+        self.perform_destroy(instance)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class MatchView(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
