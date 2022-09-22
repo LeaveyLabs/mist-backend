@@ -8,21 +8,22 @@ from ..serializers import CollectibleSerializer
 from ..models import Collectible
 
 class ClaimCollectibleView(generics.CreateAPIView):
-    permission_classes = IsAuthenticated
+    permission_classes = (IsAuthenticated, )
     serializer_class = CollectibleSerializer
 
     def create(self, request, *args, **kwargs):
-        user = get_user_from_request(request)
-        request.data.update({"user": f"{user.id}"})
+        request_copy = request.data.copy()
+        request_copy.update({'user': get_user_from_request(request).id})
 
-        collectible_claim = CollectibleSerializer(data=request.data)
+        collectible_claim = CollectibleSerializer(data=request_copy)
         collectible_claim.is_valid(raise_exception=True)
 
+        user_id = collectible_claim.data.get('user')
         collectible_type = collectible_claim.data.get('collectible_type')
 
         if Collectible.objects.filter(
             collectible_type=collectible_type,
-            user=user).exists():
+            user_id=user_id).exists():
             return Response(
                 {
                     "detail": "Already claimed collectible",
@@ -31,7 +32,7 @@ class ClaimCollectibleView(generics.CreateAPIView):
         
         Collectible.objects.create(
             collectible_type=collectible_type,
-            user=user,
+            user_id=user_id,
         )
 
         return Response(

@@ -327,8 +327,5 @@ class View(models.Model):
     timestamp = models.FloatField(default=get_current_time)
 
 class Collectible(models.Model):
-    COLLECTIBLE_OPTIONS = (
-    )
-
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='collectibles', on_delete=models.CASCADE)
-    collectible_type = models.CharField(max_length=2, choices=COLLECTIBLE_OPTIONS,)
+    collectible_type = models.PositiveIntegerField()
