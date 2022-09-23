@@ -10,18 +10,10 @@ import uuid
 import string
 from users.generics import get_empty_keywords
 
-from users.models import User
+from users.models import Notification, User
 
 def get_current_time():
     return datetime.now().timestamp()
-
-class NotificationTypes:
-    TAG = "tag"
-    MESSAGE = "message"
-    MATCH = "match"
-    DAILY_MISTBOX = "dailymistbox"
-    MAKE_SOMEONES_DAY = "makesomeonesday"
-    COMMENT = "comment"
 
 # Post Interactions
 class Post(models.Model):
@@ -37,6 +29,7 @@ class Post(models.Model):
     timestamp = models.FloatField(default=get_current_time)
     creation_time = models.FloatField(default=get_current_time)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    collectible_type = models.PositiveIntegerField(null=True, blank=True)
 
     def _str_(self):
         return self.title
@@ -99,11 +92,10 @@ class Post(models.Model):
                             mistbox.posts.add(self)
                             mistbox.save()
                             if mistbox.user.id not in sent_user_ids:
-                                APNSDevice.objects.filter(user=mistbox.user).send_message(
-                                    "you got a new mist in your mistbox 💌",
-                                    extra={
-                                        "type": NotificationTypes.DAILY_MISTBOX,
-                                    }
+                                Notification.objects.create(
+                                    user_id=mistbox.user.id,
+                                    type=Notification.NotificationTypes.DAILY_MISTBOX,
+                                    message="you got a new mist in your mistbox 💌",
                                 )
                                 sent_user_ids.append(mistbox.user.id)
 
@@ -292,6 +284,7 @@ class Message(models.Model):
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='sender', on_delete=models.CASCADE)
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='receiver', on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, null=True, blank=True)
+    is_hidden = models.BooleanField(default=False)
 
     def _str_(self):
         return self.text

@@ -1,13 +1,12 @@
 from rest_framework import viewsets
 from mist.generics import is_impermissible_comment
 from mist.permissions import CommentPermission
-from users.models import User
-from push_notifications.models import APNSDevice
+from users.models import Notification, User
 from rest_framework.permissions import IsAuthenticated
 
 from ..serializers import CommentSerializer
 
-from ..models import Comment, NotificationTypes, Post
+from ..models import Comment, Notification, Post
 
 class CommentView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, CommentPermission)
@@ -19,13 +18,15 @@ class CommentView(viewsets.ModelViewSet):
         commenter_id = comment_response.data.get('author')
         commenter = User.objects.get(id=commenter_id)
         post_author = Post.objects.get(id=post_id).author
-        APNSDevice.objects.filter(user=post_author).send_message(
-            f"{commenter.first_name} {commenter.last_name} commented on your mist",
-            extra={
-                "type": NotificationTypes.COMMENT,
-                "data": comment_response.data
-            }
+
+        notification_message = f"{commenter.first_name} {commenter.last_name} commented on your mist"
+        Notification.objects.create(
+            user_id=post_author.id,
+            type=Notification.NotificationTypes.COMMENT,
+            data=comment_response.data,
+            message=notification_message,
         )
+        
         return comment_response
 
     def list(self, request, *args, **kwargs):

@@ -8,12 +8,12 @@ def send_mistbox_notifications_task():
     send_mistbox_notifications()
 
 def send_mistbox_notifications():
-    from mist.models import NotificationTypes
+    from mist.models import Notification
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
         "your mistbox opens have refreshed! pick out 5 new mists containing your keywords 💌",
         extra={
-            "type": NotificationTypes.DAILY_MISTBOX,
+            "type": Notification.NotificationTypes.DAILY_MISTBOX,
         })
 
 @shared_task(name="schedule_make_your_day_mist_notifications_task")
@@ -28,12 +28,12 @@ def send_make_your_day_mist_notifications_task():
     send_make_your_day_mist_notifications()
 
 def send_make_your_day_mist_notifications():
-    from mist.models import NotificationTypes
+    from mist.models import Notification
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
         "did anyone make your day today? make theirs back with a mist 💞",
         extra={
-            "type": NotificationTypes.MAKE_SOMEONES_DAY,
+            "type": Notification.NotificationTypes.MAKE_SOMEONES_DAY,
         })
 
 @shared_task(name="reset_mistbox_opens_task")

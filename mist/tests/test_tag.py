@@ -1,13 +1,12 @@
-from datetime import date
 from unittest.mock import patch
 from django.core import cache
 from django.test import TestCase
 from freezegun import freeze_time
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from mist.models import Comment, Post, Tag
 from mist.serializers import TagSerializer
+from mist.tests.generics import NotificationServiceMock
 from mist.views.tag import TagView
 
 import sys
@@ -16,19 +15,14 @@ from users.tests.generics import create_dummy_user_and_token_given_id
 sys.path.append("...")
 from twilio_config import TwillioTestClientMessages
 
-from users.models import User
-
-class NotificationServiceMock:
-    sent_notifications = []
-
-    def send_fake_notification(self, message, *args, **kwargs):
-        NotificationServiceMock.sent_notifications.append(message)
-
 @freeze_time("2020-01-01")
 @patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
     NotificationServiceMock.send_fake_notification)
 class TagTest(TestCase):
     def setUp(self):
+        NotificationServiceMock.sent_notifications = []
+        NotificationServiceMock.badges = 0
+
         cache.cache.clear()
 
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
@@ -222,20 +216,12 @@ class TagTest(TestCase):
         return
     
     def test_post_should_send_notification_given_valid_tag_with_tagged_user(self):
-        NotificationServiceMock.sent_notifications = []
-
         tag = Tag(
             comment=self.comment,
             tagging_user=self.user1,
             tagged_user=self.user2,
         )
         serialized_tag = TagSerializer(tag).data
-
-        self.assertFalse(Tag.objects.filter(
-            comment=self.comment,
-            tagging_user=self.user1,
-            tagged_user=self.user2,
-        ))
 
         request = APIRequestFactory().post(
             '/api/tags',
@@ -247,6 +233,7 @@ class TagTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(NotificationServiceMock.sent_notifications)
+        self.assertEqual(NotificationServiceMock.badges, 1)
         return
 
     def test_post_should_send_text_given_valid_tag_with_phone_number(self):

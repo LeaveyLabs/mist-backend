@@ -1,4 +1,5 @@
 import os
+from push_notifications.models import APNSDevice
 import random
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
@@ -56,6 +57,7 @@ class User(AbstractUser):
     is_hidden = models.BooleanField(default=False)
     is_pending_verification = models.BooleanField(default=False)
     is_banned = models.BooleanField(default=False)
+    notification_badges_enabled = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'auth_user'
@@ -125,3 +127,58 @@ class Ban(models.Model):
             Token.objects.filter(user=user).delete()
             user.is_banned = True
             user.save()
+
+class Notification(models.Model):
+    class NotificationTypes:
+        TAG = "tag"
+        MESSAGE = "message"
+        MATCH = "match"
+        DAILY_MISTBOX = "dailymistbox"
+        MAKE_SOMEONES_DAY = "makesomeonesday"
+        COMMENT = "comment"
+    
+    NOTIFICATION_OPTIONS = (
+        (NotificationTypes.MESSAGE, NotificationTypes.MESSAGE),
+        (NotificationTypes.TAG, NotificationTypes.TAG),
+        (NotificationTypes.DAILY_MISTBOX, NotificationTypes.DAILY_MISTBOX),
+        (NotificationTypes.COMMENT, NotificationTypes.COMMENT),
+    )
+
+    user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
+    sangdaebang = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    type = models.CharField(max_length=15, choices=NOTIFICATION_OPTIONS,)
+    message = models.TextField()
+    data = models.JSONField(null=True, blank=True)
+    timestamp = models.FloatField(default=get_current_time)
+    has_been_seen = models.BooleanField(default=False)
+
+    def update_badges(user):
+        badgecount = Notification.objects.\
+                        filter(user=user).\
+                        exclude(has_been_seen=True).\
+                        count()
+        if not user.notification_badges_enabled:
+            badgecount = 0
+        APNSDevice.objects.filter(user=user).\
+            send_message(
+                None, 
+                badge=badgecount,
+                extra=None,
+            )
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        badgecount = Notification.objects.\
+            filter(user=self.user).\
+            exclude(has_been_seen=True).\
+            count()
+        if not self.user.notification_badges_enabled:
+            badgecount = 0
+        APNSDevice.objects.filter(user=self.user).send_message(
+            self.message,
+            badge=badgecount,
+            extra={
+                "type": self.type,
+                "data": self.data,
+            }
+        )

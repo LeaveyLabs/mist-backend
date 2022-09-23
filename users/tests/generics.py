@@ -19,6 +19,7 @@ def create_dummy_user_and_token_given_id(id):
         username=username_handle,
         date_of_birth=date(2000, 1, 1),
         phone_number=gen_phone(),
+        notification_badges_enabled=True,
     )
 
     token = Token.objects.create(user=user)

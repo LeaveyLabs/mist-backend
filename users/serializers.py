@@ -6,7 +6,7 @@ from rest_framework import serializers
 from mist.models import Badge
 
 from users.generics import get_current_time
-from .models import Ban, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
+from .models import Ban, Notification, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
@@ -15,9 +15,9 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges', 'thumbnail',)
+        'picture', 'is_verified', 'badges', 'thumbnail', )
         read_only_fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges', 'thumbnail',)
+        'picture', 'is_verified', 'badges', 'thumbnail', )
 
     def get_badges(self, obj):
         badges = []
@@ -64,6 +64,11 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
         if not re.match(alphanumeric_dash_and_underscores_only, username):
             raise ValidationError("abc, 123, _ and .")
+        
+        users_with_matching_username = User.objects.filter(username__iexact=username)
+        if users_with_matching_username.exists():
+            raise ValidationError("username's taken")
+
         # [is_offensive] = predict([username])
         # if is_offensive:
         #     raise serializers.ValidationError("Avoid offensive language")
@@ -520,3 +525,8 @@ class MatchingPhoneNumberRequestSerializer(serializers.Serializer):
     phone_numbers = serializers.ListField(
         child = serializers.CharField()
     )
+
+class OpenedNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ('sangdaebang', 'timestamp', 'user', 'type')

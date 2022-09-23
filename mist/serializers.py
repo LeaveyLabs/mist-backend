@@ -28,7 +28,7 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ('id', 'title', 'body', 
         'latitude', 'longitude', 'location_description',
         'timestamp', 'author', 'creation_time',
-        'emoji_dict', 'commentcount', 'flagcount', 'votecount',)
+        'emoji_dict', 'commentcount', 'flagcount', 'votecount', 'collectible_type')
     
     def get_flagcount(self, obj):
         try: obj.flags

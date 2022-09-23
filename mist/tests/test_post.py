@@ -9,15 +9,11 @@ from rest_framework.test import APIRequestFactory
 
 from mist.models import Comment, Favorite, Feature, Mistbox, PostFlag, FriendRequest, MatchRequest, Post, PostVote, Tag, View, Word
 from mist.serializers import PostSerializer
+from mist.tests.generics import NotificationServiceMock
 from mist.views.post import DeleteMistboxPostView, FavoritedPostsView, FeaturedPostsView, MatchedPostsView, MistboxView, Order, PostView, SubmittedPostsView, TaggedPostsView
 from users.models import User
 from users.tests.generics import create_dummy_user_and_token_given_id
 
-class NotificationServiceMock:
-    sent_notifications = []
-
-    def send_fake_notification(self, message, *args, **kwargs):
-        NotificationServiceMock.sent_notifications.append(message)
 
 @freeze_time("2020-01-01")
 @patch('push_notifications.models.APNSDeviceQuerySet.send_message',
@@ -29,6 +25,7 @@ class PostTest(TestCase):
     USC_LONGITUDE = Decimal(118.2851)
 
     def setUp(self):
+        NotificationServiceMock.badges = 0
         NotificationServiceMock.sent_notifications = []
 
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
@@ -161,6 +158,7 @@ class PostTest(TestCase):
 
         self.assertTrue(NotificationServiceMock.sent_notifications)
         self.assertEqual(len(NotificationServiceMock.sent_notifications), 1)
+        self.assertEqual(NotificationServiceMock.badges, 1)
 
     def test_save_should_not_add_to_author_mistboxes(self):
         mistbox = Mistbox.objects.create(user=self.user1)
@@ -228,6 +226,39 @@ class PostTest(TestCase):
             author=test_post.author
         ))
         return
+
+    def test_post_should_create_collectible_given_valid_post_and_collectible(self):
+        collectible_type = 1
+
+        test_post = Post(
+            title='SomeFakeTitle',
+            body='ThisPostWillBeTestingCreatingANewPost',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
+            timestamp=0,
+            author=self.user1,
+            collectible_type=collectible_type,
+        )
+        serialized_post = PostSerializer(test_post).data
+
+        request = APIRequestFactory().post(
+            '/api/posts',
+            serialized_post,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = PostView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Post.objects.filter(
+            title=test_post.title,
+            body=test_post.body,
+            latitude=test_post.latitude,
+            longitude=test_post.longitude,
+            timestamp=test_post.timestamp,
+            author=test_post.author,
+            collectible_type=collectible_type,
+        ))
 
     # def test_post_should_not_create_post_given_profanity(self):
     #     test_post = Post(

@@ -35,6 +35,7 @@ from mist.views.tag import TagView
 from mist.views.post_vote import PostVoteView
 from mist.views.view import ViewPost
 from mist.views.word import WordView
+from users.views.notifications import OpenNotifications
 from users.views.user import UserPopulationView, UserView, NearbyUsersView, MatchingPhoneNumbersView
 from users.views.register import RegisterUserEmailView, RegisterPhoneNumberView, ValidateUserEmailView, ValidatePhoneNumberView, ValidateUsernameView
 from users.views.login import RequestLoginCodeView, ValidateLoginCodeView
@@ -105,6 +106,8 @@ urlpatterns = [
     path('api/delete-friend-request/', FriendRequestView.as_view({'delete':'destroy'})),
     path('api/delete-match-request/', MatchRequestView.as_view({'delete':'destroy'})),
     path('api/delete-mistbox-post/', DeleteMistboxPostView.as_view()),
+    # Notifications
+    path('api/open-notifications/', OpenNotifications.as_view()),
 ]
 
 if settings.DEBUG: 

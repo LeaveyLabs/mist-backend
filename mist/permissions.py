@@ -181,4 +181,7 @@ class MatchRequestPermission(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         requesting_user = get_user_from_request(request)
         if not requesting_user: return False
-        return requesting_user == obj.match_requesting_user
+        return (
+            requesting_user == obj.match_requesting_user or 
+            requesting_user == obj.match_requested_user
+        )

@@ -6,10 +6,10 @@ from rest_framework.response import Response
 
 from mist.permissions import MessagePermission
 from users.generics import get_user_from_request
-from users.models import User
+from users.models import Notification, User
 
 from ..serializers import MessageSerializer
-from ..models import MatchRequest, Message, NotificationTypes
+from ..models import MatchRequest, Message, Notification
 
 class MessageView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MessagePermission)
@@ -40,16 +40,14 @@ class MessageView(viewsets.ModelViewSet):
             match_requested_user=sender,
         )
 
-        receiving_devices = APNSDevice.objects.filter(user=receiver)
-
         if sender_match_request.exists() and receiver_match_request.exists():
             username = User.objects.get(id=sender).username
-            receiving_devices.send_message(
-                f"{username}: {body}",
-                extra={
-                    "type": NotificationTypes.MESSAGE,
-                    "data": message_response.data
-                })
+            Notification.objects.create(
+                user_id=receiver,
+                type=Notification.NotificationTypes.MESSAGE,
+                data=message_response.data,
+                message=f"{username}: {body}",
+            )
         
         return message_response
 
@@ -67,10 +65,12 @@ class ConversationView(generics.ListAPIView):
             Q(receiver__blockings__blocked_user=requesting_user) | \
             Q(sender__blocks__blocking_user=requesting_user) | \
             Q(receiver__blocks__blocking_user=requesting_user)
+        exclude_hidden_query = Q(is_hidden=True)
 
         sent_or_received_messages = Message.objects.\
             filter(sender_or_receiver_query).\
             exclude(exclude_blocks_query).\
+            exclude(exclude_hidden_query).\
             select_related('receiver').\
             select_related('sender')
             
