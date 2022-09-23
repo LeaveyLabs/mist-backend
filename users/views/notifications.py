@@ -12,7 +12,7 @@ from ..models import (
     Notification
 )
 
-class OpenedNotificationView(generics.CreateAPIView):
+class OpenNotifications(generics.CreateAPIView):
     permission_classes = (IsAuthenticated, )
     
     def create(self, request, *args, **kwargs):

@@ -1,24 +1,13 @@
-from datetime import date, datetime, timedelta
 from unittest.mock import patch
-from django.core import mail, cache
 from django.test import TestCase
 from freezegun import freeze_time
 from users.generics import get_current_time
-from users.models import Notification, User
+from users.models import Notification
 from rest_framework import status
-from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from mist.tests.generics import NotificationServiceMock
-from users.serializers import OpenedNotificationSerializer
 from users.tests.generics import create_dummy_user_and_token_given_id
-from users.views.notifications import OpenedNotificationView
-
-from users.views.register import RegisterPhoneNumberView, RegisterUserEmailView, ValidatePhoneNumberView, ValidateUserEmailView, ValidateUsernameView
-from users.models import Ban, EmailAuthentication, PhoneNumberAuthentication, User
-
-import sys
-sys.path.append("..")
-from twilio_config import TwillioTestClientMessages
+from users.views.notifications import OpenNotifications
 
 @freeze_time("2020-01-01")
 @patch('push_notifications.models.APNSDeviceQuerySet.send_message',
@@ -74,7 +63,7 @@ class OpenedNotificationsViewTest(TestCase):
             },
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = OpenedNotificationView.as_view()(request)
+        response = OpenNotifications.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(NotificationServiceMock.badges, 0)
@@ -110,7 +99,7 @@ class OpenedNotificationsViewTest(TestCase):
             },
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = OpenedNotificationView.as_view()(request)
+        response = OpenNotifications.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(NotificationServiceMock.badges, 2)
@@ -136,7 +125,7 @@ class OpenedNotificationsViewTest(TestCase):
             },
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = OpenedNotificationView.as_view()(request)
+        response = OpenNotifications.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(NotificationServiceMock.badges, 2)
@@ -161,7 +150,7 @@ class OpenedNotificationsViewTest(TestCase):
             },
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
-        response = OpenedNotificationView.as_view()(request)
+        response = OpenNotifications.as_view()(request)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(NotificationServiceMock.badges, 2)

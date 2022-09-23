@@ -64,6 +64,11 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
         if not re.match(alphanumeric_dash_and_underscores_only, username):
             raise ValidationError("abc, 123, _ and .")
+        
+        users_with_matching_username = User.objects.filter(username__iexact=username)
+        if users_with_matching_username.exists():
+            raise ValidationError("username's taken")
+
         # [is_offensive] = predict([username])
         # if is_offensive:
         #     raise serializers.ValidationError("Avoid offensive language")

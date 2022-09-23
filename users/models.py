@@ -2,7 +2,6 @@ import os
 from push_notifications.models import APNSDevice
 import random
 from datetime import datetime
-from re import S
 from django.contrib.auth.models import AbstractUser
 from django.core.files.base import ContentFile
 from rest_framework.authtoken.models import Token
