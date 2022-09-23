@@ -1,6 +1,6 @@
 from backend.settings.base import *
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'https://mist-backend.herokuapp.com',
