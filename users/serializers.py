@@ -141,7 +141,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         #     raise serializers.ValidationError({"email": "Email was not registered"})
 
         if not phone_number:
-            raise serializers.ValidationError({"phone_number": "Phone number was not registered"})
+            raise serializers.ValidationError({"phone_number": "Invalid phone number"})
         
         # email = email.lower()
         phone_number = phone_number.lower()
@@ -150,7 +150,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
             phone_number=phone_number)
 
         if not matching_validations:
-            raise serializers.ValidationError({"phone_number": "Phone number was not registered"})
+            raise serializers.ValidationError({"phone_number": "Invalid phone number"})
 
         most_recent_auth_request = matching_validations[0]
 
