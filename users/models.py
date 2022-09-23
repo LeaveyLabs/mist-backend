@@ -153,24 +153,30 @@ class Notification(models.Model):
     has_been_seen = models.BooleanField(default=False)
 
     def update_badges(user):
+        badgecount = Notification.objects.\
+                        filter(user=user).\
+                        exclude(has_been_seen=True).\
+                        count()
+        if not user.notification_badges_enabled:
+            badgecount = 0
         APNSDevice.objects.filter(user=user).\
             send_message(
                 None, 
-                badge=Notification.objects.\
-                    filter(user=user).\
-                    exclude(has_been_seen=True).\
-                    count(),
+                badge=badgecount,
                 extra=None,
             )
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        badgecount = Notification.objects.\
+            filter(user=self.user).\
+            exclude(has_been_seen=True).\
+            count()
+        if not self.user.notification_badges_enabled:
+            badgecount = 0
         APNSDevice.objects.filter(user=self.user).send_message(
             self.message,
-            badge=Notification.objects.\
-                filter(user=self.user).\
-                exclude(has_been_seen=True).\
-                count(),
+            badge=badgecount,
             extra={
                 "type": self.type,
                 "data": self.data,

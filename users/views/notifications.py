@@ -40,6 +40,9 @@ class OpenNotifications(generics.CreateAPIView):
             filter(notification_query).\
             update(has_been_seen=True)
         
+        user.notification_badges_enabled = True
+        user.save()
+        
         Notification.update_badges(user)
         
         return Response(

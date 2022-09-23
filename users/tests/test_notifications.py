@@ -2,7 +2,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from freezegun import freeze_time
 from users.generics import get_current_time
-from users.models import Notification
+from users.models import Notification, User
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
 from mist.tests.generics import NotificationServiceMock
@@ -39,6 +39,23 @@ class OpenedNotificationsViewTest(TestCase):
 
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
+
+    def test_post_should_enable_badges_given_notification(self):
+        self.user1.notification_badges_enabled = False
+        self.user1.save()
+
+        request = APIRequestFactory().post(
+            'api/open-notification/',
+            {
+                'timestamp': get_current_time(),
+                'type': Notification.NotificationTypes.COMMENT,
+            },
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = OpenNotifications.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(User.objects.get(id=self.user1.id).notification_badges_enabled)
 
     def test_post_should_update_badges_correctly_given_nonmessage_notification(self):
         Notification.objects.create(
