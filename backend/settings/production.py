@@ -23,7 +23,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 
 import os
-from decouple import config
 
 # os.environ.setdefault('AWS_ACCESS_KEY_ID', config('AWS_ACCESS_KEY_ID'))
 # os.environ.setdefault('AWS_SECRET_ACCESS_KEY', config('AWS_SECRET_ACCESS_KEY'))
