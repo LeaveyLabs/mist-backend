@@ -7,23 +7,20 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
 from mist.models import MatchRequest, Message, Post
 from mist.serializers import MatchRequestSerializer
+from mist.tests.generics import NotificationServiceMock
 from mist.views.match import MatchRequestView, MatchView
 
 from users.models import User
 from users.serializers import ReadOnlyUserSerializer
 from users.tests.generics import create_dummy_user_and_token_given_id
 
-class NotificationServiceMock:
-    sent_notifications = []
-
-    def send_fake_notification(self, message, *args, **kwargs):
-        NotificationServiceMock.sent_notifications.append(message)
 
 @freeze_time("2020-01-01")
 @patch('push_notifications.models.APNSDeviceQuerySet.send_message', 
     NotificationServiceMock.send_fake_notification)
 class MatchRequestTest(TestCase):
     def setUp(self):
+        NotificationServiceMock.badges = 0
         NotificationServiceMock.sent_notifications = []
 
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
@@ -185,6 +182,7 @@ class MatchRequestTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(NotificationServiceMock.sent_notifications)
+        self.assertEqual(NotificationServiceMock.badges, 1)
         return
     
     def test_post_should_not_create_match_request_given_invalid_match_request(self):

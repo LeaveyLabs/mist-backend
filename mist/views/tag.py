@@ -1,13 +1,12 @@
 import string
-from push_notifications.models import APNSDevice
 from rest_framework import viewsets
 from mist.permissions import TagPermission
 from rest_framework.permissions import IsAuthenticated
 
-from users.models import User
+from users.models import Notification, User
 from django.db.models import Q
 
-from ..models import Comment, NotificationTypes, Post, Tag
+from ..models import Comment, Notification, Post, Tag
 from ..serializers import TagSerializer
 
 import sys
@@ -62,13 +61,12 @@ class TagView(viewsets.ModelViewSet):
 
         if tagged_user_id:
             notifications_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist"
-            receiving_devices = APNSDevice.objects.filter(user_id=tagged_user_id)
-            receiving_devices.send_message(
-                notifications_body, 
-                extra={
-                    "type": NotificationTypes.TAG,
-                    "data": tag_response.data
-                })
+            Notification.objects.create(
+                user_id=tagged_user_id,
+                type=Notification.NotificationTypes.TAG,
+                data=tag_response.data,
+                message=notifications_body,
+            )
         
         elif tagged_phone_number:
             tagged_comment = Comment.objects.get(id=tagged_comment_id)

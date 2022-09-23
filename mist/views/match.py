@@ -7,10 +7,10 @@ from mist.permissions import MatchRequestPermission
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
-from users.models import User
+from users.models import Notification, User
 
 from ..serializers import MatchRequestSerializer, ReadOnlyUserSerializer
-from ..models import MatchRequest, Message, NotificationTypes
+from ..models import MatchRequest, Message, Notification
 
 class MatchRequestView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MatchRequestPermission)
@@ -45,16 +45,19 @@ class MatchRequestView(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         match_request_response = super().create(request, *args, **kwargs)
-        match_requested_user = match_request_response.data.get("match_requested_user")
-        if not MatchRequest.objects.filter(
-            match_requesting_user=match_requested_user).exists():
-            receiving_devices = APNSDevice.objects.filter(user=match_requested_user)
-            receiving_devices.send_message(
-                "someone replied to your mist 👀",
-                extra={
-                    "type": NotificationTypes.MATCH,
-                    "data": match_request_response.data
-                })
+        match_requested_user_id = match_request_response.data.get("match_requested_user")
+
+        has_already_requested = MatchRequest.objects.filter(
+            match_requesting_user_id=match_requested_user_id).exists()
+        
+        if not has_already_requested:
+            Notification.objects.create(
+                user_id=match_requested_user_id,
+                type=Notification.NotificationTypes.MATCH,
+                data=match_request_response.data,
+                message="someone replied to your mist 👀",
+            )
+        
         return match_request_response
 
     def destroy(self, request, *args, **kwargs):

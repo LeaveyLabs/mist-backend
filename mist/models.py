@@ -10,18 +10,10 @@ import uuid
 import string
 from users.generics import get_empty_keywords
 
-from users.models import User
+from users.models import Notification, User
 
 def get_current_time():
     return datetime.now().timestamp()
-
-class NotificationTypes:
-    TAG = "tag"
-    MESSAGE = "message"
-    MATCH = "match"
-    DAILY_MISTBOX = "dailymistbox"
-    MAKE_SOMEONES_DAY = "makesomeonesday"
-    COMMENT = "comment"
 
 # Post Interactions
 class Post(models.Model):
@@ -100,11 +92,10 @@ class Post(models.Model):
                             mistbox.posts.add(self)
                             mistbox.save()
                             if mistbox.user.id not in sent_user_ids:
-                                APNSDevice.objects.filter(user=mistbox.user).send_message(
-                                    "you got a new mist in your mistbox 💌",
-                                    extra={
-                                        "type": NotificationTypes.DAILY_MISTBOX,
-                                    }
+                                Notification.objects.create(
+                                    user_id=mistbox.user.id,
+                                    type=Notification.NotificationTypes.DAILY_MISTBOX,
+                                    message="you got a new mist in your mistbox 💌",
                                 )
                                 sent_user_ids.append(mistbox.user.id)
 

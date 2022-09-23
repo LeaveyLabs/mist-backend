@@ -6,7 +6,7 @@ from rest_framework import serializers
 from mist.models import Badge
 
 from users.generics import get_current_time
-from .models import Ban, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
+from .models import Ban, Notification, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
 from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
@@ -520,3 +520,8 @@ class MatchingPhoneNumberRequestSerializer(serializers.Serializer):
     phone_numbers = serializers.ListField(
         child = serializers.CharField()
     )
+
+class OpenedNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ('sangdaebang', 'timestamp', 'user', 'type')
