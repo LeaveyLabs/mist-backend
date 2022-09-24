@@ -119,7 +119,7 @@ class TasksTest(TestCase):
 
     def test_reset_prompts(self):
         def exhaust_all_minus_one_collectible(user):
-            for i in range(Post.NUMBER_OF_TOTAL_COLLECTIBLES-1):
+            for i in range(1, Post.NUMBER_OF_TOTAL_COLLECTIBLES):
                 Post.objects.create(
                     title='test',
                     body='test',

@@ -152,7 +152,7 @@ def reset_prompts():
             claimed_collectibles.append(post.collectible_type)
         
         unclaimed_collectibles = [
-            collectible for collectible in range(Post.NUMBER_OF_TOTAL_COLLECTIBLES) 
+            collectible for collectible in range(1, Post.NUMBER_OF_TOTAL_COLLECTIBLES+1) 
             if collectible not in claimed_collectibles
         ]
         

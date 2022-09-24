@@ -174,6 +174,19 @@ class UserViewPostTest(TestCase):
         self.image_file1 = SimpleUploadedFile('test1.jpeg', test_image_io1.getvalue(), content_type='image/jpeg')
         self.image_file2 = SimpleUploadedFile('test2.jpeg', test_image_io2.getvalue(), content_type='image/jpeg')
 
+    def test_save_should_create_user_with_random_sillouhette_without_picture(self):
+        test_user = User.objects.create(
+            email=self.email_auth.email,
+            phone_number=self.phone_auth.phone_number,
+            username=self.fake_username,
+            first_name=self.fake_first_name,
+            last_name=self.fake_last_name,
+            date_of_birth=self.fake_date_of_birth,
+        )
+
+        self.assertTrue(test_user.picture)
+        self.assertTrue(test_user.thumbnail)
+
     def test_post_should_create_user_given_validated_email_and_validated_phone_number(self):
         request = APIRequestFactory().post(
             'api/users/',
@@ -779,7 +792,6 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.user1.first_name, patched_user.first_name)
         self.assertEqual(self.user1.last_name, patched_user.last_name)
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
-        self.assertFalse(patched_user.picture)
         return
     
     def test_patch_should_not_update_username_given_invalid_username(self):
@@ -802,7 +814,6 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.user1.first_name, patched_user.first_name)
         self.assertEqual(self.user1.last_name, patched_user.last_name)
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
-        self.assertFalse(patched_user.picture)
         return
 
     def test_patch_should_update_first_name_given_first_name(self):
@@ -827,7 +838,6 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(patched_user.first_name, fake_first_name)
         self.assertEqual(self.user1.last_name, patched_user.last_name)
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
-        self.assertFalse(patched_user.picture)
         return
 
     def test_patch_should_not_update_first_name_given_invalid_first_name(self):
@@ -850,7 +860,6 @@ class UserViewPatchTest(TestCase):
         self.assertNotEqual(patched_user.first_name, fake_first_name)
         self.assertEqual(self.user1.last_name, patched_user.last_name)
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
-        self.assertFalse(patched_user.picture)
         return
     
     def test_patch_should_update_last_name_given_last_name(self):
@@ -875,7 +884,6 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.user1.first_name, patched_user.first_name)
         self.assertEqual(patched_user.last_name, fake_last_name)
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
-        self.assertFalse(patched_user.picture)
         return
 
     def test_patch_should_not_update_last_name_given_invalid_last_name(self):
@@ -900,7 +908,6 @@ class UserViewPatchTest(TestCase):
         self.assertEqual(self.user1.first_name, patched_user.first_name)
         self.assertNotEqual(patched_user.last_name, fake_last_name)
         self.assertEqual(self.user1.date_of_birth, patched_user.date_of_birth)
-        self.assertFalse(patched_user.picture)
         return
 
     def test_patch_should_update_picture_and_save_thumbnail_given_valid_picture(self):

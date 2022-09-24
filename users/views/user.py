@@ -46,13 +46,13 @@ class UserView(viewsets.ModelViewSet):
 
         # filter by words...
         if words:
+            q = Q()
             for word in words:
-                word_in_username = User.objects.filter(username__icontains=word)
-                word_in_first_name = User.objects.filter(first_name__icontains=word)
-                word_in_last_name = User.objects.filter(last_name__icontains=word)
-                word_userset = (word_in_username | word_in_first_name | word_in_last_name).distinct()
-                queryset = queryset.intersection(word_userset)
-            queryset = User.objects.filter(id__in=queryset.values_list('id'))
+                if word:
+                    q |= Q(username__icontains=word)
+                    q |= Q(first_name__icontains=word)
+                    q |= Q(last_name__icontains=word)
+            queryset = User.objects.filter(q)
         # or username, first_name, and last_name
         elif username or first_name or last_name:
             username_set = User.objects.none()

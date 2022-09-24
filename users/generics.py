@@ -23,10 +23,13 @@ def get_empty_keywords():
     return []
 
 def get_empty_prompts():
-    return random.sample([i for i in range(50)], 3)
+    return random.sample([i for i in range(1, 31)], 3)
 
 def get_random_email():
     return f'{uuid.uuid4()}@usc.edu'
 
 def get_default_date_of_birth():
     return datetime(2000, 1, 1).date()
+
+def get_path_to_random_sillouhette(id):
+    return f"/users/sillouhettes/silhouette{(id%6)+1}.png"
