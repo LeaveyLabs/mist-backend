@@ -129,3 +129,39 @@ def verify_profile_picture(user_id):
     matching_user.save()
     
     return True
+
+@shared_task(name="verify_profile_picture_task")
+def reset_prompts_task():
+    reset_prompts()
+
+def reset_prompts():
+    import random
+
+    from mist.models import Post
+    from users.models import User
+
+    NUMBER_OF_DAILY_COLLECTIBLES = 3
+
+    for user in User.objects.all().prefetch_related('posts'):
+
+        collectible_posts = user.posts.filter(collectible_type__isnull=False)
+
+        claimed_collectibles = []
+
+        for post in collectible_posts:
+            claimed_collectibles.append(post.collectible_type)
+        
+        unclaimed_collectibles = [
+            collectible for collectible in range(Post.NUMBER_OF_TOTAL_COLLECTIBLES) 
+            if collectible not in claimed_collectibles
+        ]
+        
+        daily_prompts = []
+        for _ in range(NUMBER_OF_DAILY_COLLECTIBLES):
+            if unclaimed_collectibles:
+                prompt = random.choice(unclaimed_collectibles)
+                unclaimed_collectibles.remove(prompt)
+                daily_prompts.append(prompt)
+        
+        user.daily_prompts = daily_prompts
+        user.save()

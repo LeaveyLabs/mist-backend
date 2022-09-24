@@ -22,6 +22,9 @@ def get_current_time():
 def get_empty_keywords():
     return []
 
+def get_empty_prompts():
+    return random.sample([i for i in range(50)], 3)
+
 def get_random_email():
     return f'{uuid.uuid4()}@usc.edu'
 

@@ -3,13 +3,14 @@ from push_notifications.models import APNSDevice
 import random
 from datetime import datetime
 from django.contrib.auth.models import AbstractUser
+from django.contrib.postgres.fields import ArrayField
 from django.core.files.base import ContentFile
 from rest_framework.authtoken.models import Token
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 from sorl.thumbnail import get_thumbnail
 
-from .generics import get_current_time, get_default_date_of_birth, get_random_code, get_random_email
+from .generics import get_current_time, get_default_date_of_birth, get_empty_prompts, get_random_code, get_random_email
 
 class User(AbstractUser):
     def profile_picture_filepath(instance, filename):
@@ -37,6 +38,7 @@ class User(AbstractUser):
         (other, other),
     )
     MAX_IMAGE_SIZE = (100, 100)
+    NUMBER_OF_PROMPTS = 3
 
     email = models.EmailField(default=get_random_email)
     date_of_birth = models.DateField(default=get_default_date_of_birth)
@@ -58,6 +60,7 @@ class User(AbstractUser):
     is_pending_verification = models.BooleanField(default=False)
     is_banned = models.BooleanField(default=False)
     notification_badges_enabled = models.BooleanField(default=False)
+    daily_prompts = ArrayField(models.PositiveIntegerField(), size=NUMBER_OF_PROMPTS, default=get_empty_prompts)
 
     class Meta:
         db_table = 'auth_user'

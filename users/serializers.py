@@ -3,7 +3,7 @@ import re
 from django.forms import ValidationError
 # from profanity_check import predict
 from rest_framework import serializers
-from mist.models import Badge
+from mist.models import Badge, Post
 
 from users.generics import get_current_time
 from .models import Ban, Notification, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
@@ -26,24 +26,33 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
         return [badge.badge_type for badge in badges.all()]
 
 class CompleteUserSerializer(serializers.ModelSerializer):
-    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+    EXPIRATION_TIME = timedelta(minutes=60).total_seconds()
     MEGABYTE_LIMIT = 10
 
     badges = serializers.SerializerMethodField()
+    collectible_posts = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('id', 'email', 'username',
         'first_name', 'last_name', 'picture',
         'confirm_picture', 'phone_number',
-        'date_of_birth', 'sex', 'latitude', 'longitude',
+        'date_of_birth', 'sex', 'latitude', 'longitude', 
         'is_verified', 'is_pending_verification', 'badges',
-        'is_superuser', 'thumbnail',)
-        read_only_fields = ('badges', 'is_verified', 'is_pending_verification',)
+        'is_superuser', 'thumbnail', 'daily_prompts', 'collectible_posts')
+        read_only_fields = ('badges', 'is_verified', 'is_pending_verification',
+        'daily_prompts', 'collectible_posts', )
         extra_kwargs = {
             'picture': {'required': True},
             'phone_number': {'required': True},
         }
+
+    def get_collectible_posts(self, obj):
+        from mist.serializers import PostSerializer
+        try: obj.posts
+        except: obj.posts = Post.objects.filter(author_id=obj.id)
+        collectible_posts = obj.posts.filter(collectible_type__isnull=False)
+        return [PostSerializer(post).data for post in collectible_posts]
     
     def get_badges(self, obj):
         badges = []
@@ -63,7 +72,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def validate_username(self, username):
         alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
         if not re.match(alphanumeric_dash_and_underscores_only, username):
-            raise ValidationError("abc, 123, _ and .")
+            raise ValidationError("abc, 123, and _")
         
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username.exists():
@@ -146,7 +155,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         #     raise serializers.ValidationError({"email": "Email was not registered"})
 
         if not phone_number:
-            raise serializers.ValidationError({"phone_number": "Phone number was not registered"})
+            raise serializers.ValidationError({"phone_number": "Invalid phone number"})
         
         # email = email.lower()
         phone_number = phone_number.lower()
@@ -155,7 +164,7 @@ class CompleteUserSerializer(serializers.ModelSerializer):
             phone_number=phone_number)
 
         if not matching_validations:
-            raise serializers.ValidationError({"phone_number": "Phone number was not registered"})
+            raise serializers.ValidationError({"phone_number": "Invalid phone number"})
 
         most_recent_auth_request = matching_validations[0]
 
@@ -179,9 +188,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if not username:
             raise ValidationError({"username": "Username was not provided"})
 
-        alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
+        alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_]*$"
         if not re.match(alphanumeric_dash_period_and_underscores_only, username):
-            raise ValidationError({"username": "abc, 123, _ and . only"})
+            raise ValidationError({"username": "abc, 123, and _ only"})
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:

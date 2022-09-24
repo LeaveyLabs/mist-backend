@@ -6,9 +6,10 @@ from django.test import TestCase
 from django.test import TestCase
 from unittest.mock import patch
 
-from mist_worker.tasks import reset_mistbox_opens, send_make_your_day_mist_notifications, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
+from mist_worker.tasks import reset_mistbox_opens, reset_prompts, send_make_your_day_mist_notifications, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
 from mist.models import Mistbox, Post, PostVote
 from push_notifications.models import APNSDevice
+from users.models import User
 from users.tests.generics import create_dummy_user_and_token_given_id, create_simple_uploaded_file_from_image_path
 
 # Create your tests here.
@@ -115,3 +116,21 @@ class TasksTest(TestCase):
         self.assertTrue(NotificationServiceMock.sent_notifications)
         for notification in NotificationServiceMock.sent_notifications:
             self.assertIn('mist', notification)
+
+    def test_reset_prompts(self):
+        def exhaust_all_minus_one_collectible(user):
+            for i in range(Post.NUMBER_OF_TOTAL_COLLECTIBLES-1):
+                Post.objects.create(
+                    title='test',
+                    body='test',
+                    author=user,
+                    collectible_type=i,
+                )
+        
+        exhaust_all_minus_one_collectible(self.user1)
+
+        reset_prompts()
+
+        self.assertEqual(len(User.objects.get(id=self.user1.id).daily_prompts), 1)
+        self.assertEqual(len(User.objects.get(id=self.user2.id).daily_prompts), 3)
+        self.assertEqual(len(User.objects.get(id=self.user3.id).daily_prompts), 3)
