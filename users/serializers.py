@@ -26,7 +26,7 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
         return [badge.badge_type for badge in badges.all()]
 
 class CompleteUserSerializer(serializers.ModelSerializer):
-    EXPIRATION_TIME = timedelta(minutes=10).total_seconds()
+    EXPIRATION_TIME = timedelta(minutes=60).total_seconds()
     MEGABYTE_LIMIT = 10
 
     badges = serializers.SerializerMethodField()
