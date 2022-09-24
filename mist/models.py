@@ -20,6 +20,8 @@ class Post(models.Model):
     USC_LATITUDE = Decimal(34.0224)
     USC_LONGITUDE = Decimal(118.2851)
 
+    NUMBER_OF_TOTAL_COLLECTIBLES = 30
+
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     title = models.CharField(max_length=40)
     body = models.CharField(max_length=1000)
@@ -28,7 +30,7 @@ class Post(models.Model):
     longitude = models.FloatField(default=USC_LONGITUDE)
     timestamp = models.FloatField(default=get_current_time)
     creation_time = models.FloatField(default=get_current_time)
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
     collectible_type = models.PositiveIntegerField(null=True, blank=True)
 
     def _str_(self):

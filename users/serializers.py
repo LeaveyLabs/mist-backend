@@ -3,7 +3,7 @@ import re
 from django.forms import ValidationError
 # from profanity_check import predict
 from rest_framework import serializers
-from mist.models import Badge
+from mist.models import Badge, Post
 
 from users.generics import get_current_time
 from .models import Ban, Notification, PhoneNumberAuthentication, PhoneNumberReset, User, EmailAuthentication
@@ -30,20 +30,29 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     MEGABYTE_LIMIT = 10
 
     badges = serializers.SerializerMethodField()
+    collectible_posts = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('id', 'email', 'username',
         'first_name', 'last_name', 'picture',
         'confirm_picture', 'phone_number',
-        'date_of_birth', 'sex', 'latitude', 'longitude',
+        'date_of_birth', 'sex', 'latitude', 'longitude', 
         'is_verified', 'is_pending_verification', 'badges',
-        'is_superuser', 'thumbnail',)
-        read_only_fields = ('badges', 'is_verified', 'is_pending_verification',)
+        'is_superuser', 'thumbnail', 'daily_prompts', 'collectible_posts')
+        read_only_fields = ('badges', 'is_verified', 'is_pending_verification',
+        'daily_prompts', 'collectible_posts', )
         extra_kwargs = {
             'picture': {'required': True},
             'phone_number': {'required': True},
         }
+
+    def get_collectible_posts(self, obj):
+        from mist.serializers import PostSerializer
+        try: obj.posts
+        except: obj.posts = Post.objects.filter(author_id=obj.id)
+        collectible_posts = obj.posts.filter(collectible_type__isnull=False)
+        return [PostSerializer(post).data for post in collectible_posts]
     
     def get_badges(self, obj):
         badges = []
