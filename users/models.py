@@ -43,13 +43,13 @@ class User(AbstractUser):
     email = models.EmailField(default=get_random_email)
     date_of_birth = models.DateField(default=get_default_date_of_birth)
     picture = models.ImageField(
-        upload_to=profile_picture_filepath, null=True, blank=True
+        upload_to=profile_picture_filepath, default="",
     )
     confirm_picture = models.ImageField(
-        upload_to=confirm_profile_picture_filepath, null=True, blank=True
+        upload_to=confirm_profile_picture_filepath, default="",
     )
     thumbnail = models.ImageField(
-        upload_to=thumbnail_filepath, null=True, blank=True
+        upload_to=thumbnail_filepath, default="",
     )
     phone_number = PhoneNumberField(unique=True, null=True)
     sex = models.CharField(max_length=1, choices=SEXES, null=True)

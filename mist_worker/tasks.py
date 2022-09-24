@@ -52,7 +52,7 @@ def tally_random_upvotes_task():
 
 def tally_random_upvotes():
     import datetime
-    from random import randint, choice
+    from random import choice
 
     from mist.models import Post, PostVote
     from users.models import User
