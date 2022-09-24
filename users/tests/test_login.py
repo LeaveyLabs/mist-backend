@@ -8,7 +8,7 @@ from rest_framework.test import APIRequestFactory
 from users.tests.generics import create_dummy_user_and_token_given_id
 
 from users.views.login import RequestLoginCodeView, ValidateLoginCodeView
-from users.models import PhoneNumberAuthentication, User
+from users.models import PhoneNumberAuthentication
 
 import sys
 sys.path.append("..")
