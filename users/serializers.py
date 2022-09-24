@@ -179,9 +179,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         if not username:
             raise ValidationError({"username": "Username was not provided"})
 
-        alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_\.]*$"
+        alphanumeric_dash_period_and_underscores_only = "^[A-Za-z0-9_]*$"
         if not re.match(alphanumeric_dash_period_and_underscores_only, username):
-            raise ValidationError({"username": "abc, 123, _ and . only"})
+            raise ValidationError({"username": "abc, 123, and _ only"})
 
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username:
