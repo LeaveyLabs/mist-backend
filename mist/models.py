@@ -5,7 +5,6 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
-from push_notifications.models import APNSDevice
 import uuid
 import string
 from users.generics import get_empty_keywords
