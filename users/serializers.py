@@ -61,9 +61,9 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         return filesize > self.MEGABYTE_LIMIT * 1024 * 1024
 
     def validate_username(self, username):
-        alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-.]*$"
+        alphanumeric_dash_and_underscores_only = "^[A-Za-z0-9_-]*$"
         if not re.match(alphanumeric_dash_and_underscores_only, username):
-            raise ValidationError("abc, 123, _ and .")
+            raise ValidationError("abc, 123, and _")
         
         users_with_matching_username = User.objects.filter(username__iexact=username)
         if users_with_matching_username.exists():
