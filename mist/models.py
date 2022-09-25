@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models import Q
 from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
@@ -279,6 +280,28 @@ class MatchRequest(models.Model):
         
     class Meta:
         unique_together = ('match_requesting_user', 'match_requested_user')
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        oppposite_requests = MatchRequest.objects.filter(
+            match_requesting_user=self.match_requested_user,
+            match_requested_user=self.match_requesting_user,
+        )
+        if oppposite_requests.exists():
+            opposite_requests = Q(
+                match_requesting_user=self.match_requested_user,
+                match_requested_user=self.match_requesting_user)
+            same_requests = Q(
+                match_requesting_user=self.match_requesting_user,
+                match_requested_user=self.match_requested_user)
+            bidirectional_requests = MatchRequest.objects.filter(
+                opposite_requests | same_requests).select_related('post')
+            for request in bidirectional_requests:
+                if request.post:
+                    request.post.is_matched = True
+                    request.post.save()
+
 
 class Message(models.Model):
     body = models.CharField(max_length=1000)

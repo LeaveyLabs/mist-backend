@@ -50,15 +50,15 @@ class MatchRequestView(viewsets.ModelViewSet):
         request_will_complete_match = MatchRequest.objects.filter(
             match_requesting_user_id=match_requested_user_id).exists()
         
-        if request_will_complete_match:
-            matched_post = MatchRequest.objects.filter(
-                match_requesting_user_id=match_requested_user_id
-            ).select_related('post')[0].post
-            if matched_post:
-                matched_post.is_matched = True
-                matched_post.save()
+        # if request_will_complete_match:
+        #     matched_post = MatchRequest.objects.filter(
+        #         match_requesting_user_id=match_requested_user_id
+        #     ).select_related('post')[0].post
+        #     if matched_post:
+        #         matched_post.is_matched = True
+        #         matched_post.save()
 
-        else:
+        if not request_will_complete_match:
             Notification.objects.create(
                 user_id=match_requested_user_id,
                 type=Notification.NotificationTypes.MATCH,

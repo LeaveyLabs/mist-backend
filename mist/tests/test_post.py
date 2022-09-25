@@ -1097,6 +1097,7 @@ class MatchedPostsViewTest(TestCase):
 
     def test_get_should_return_all_matched_posts_given_no_parameters(self):
         serialized_post = PostSerializer(self.post).data
+        serialized_post['is_matched'] = True
 
         request = APIRequestFactory().get(
             '/api/matched-posts/',
