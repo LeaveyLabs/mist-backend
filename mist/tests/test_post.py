@@ -227,6 +227,43 @@ class PostTest(TestCase):
         ))
         return
 
+    def test_post_should_create_post_without_location(self):
+        test_post = Post(
+            title='SomeFakeTitle',
+            body='ThisPostWillBeTestingCreatingANewPost',
+            timestamp=0,
+            author=self.user1,
+        )
+        serialized_post = PostSerializer(test_post).data
+
+        request = APIRequestFactory().post(
+            '/api/posts',
+            serialized_post,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = PostView.as_view({'post':'create'})(request)
+        response_post = response.data
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response_post.get('title'), serialized_post.get('title'))
+        self.assertEqual(response_post.get('body'), serialized_post.get('body'))
+        self.assertEqual(response_post.get('timestamp'), serialized_post.get('timestamp'))
+        self.assertIsNone(response_post.get('location_description'))
+        self.assertIsNone(response_post.get('latitude'))
+        self.assertIsNone(response_post.get('longitude'))
+        self.assertEqual(response_post.get('author'), serialized_post.get('author'))
+        self.assertTrue(Post.objects.filter(
+            title=test_post.title,
+            body=test_post.body,
+            location_description__isnull=True,
+            latitude__isnull=True,
+            longitude__isnull=True,
+            timestamp=test_post.timestamp,
+            author=test_post.author
+        ))
+        return
+
     def test_post_should_create_collectible_given_valid_post_and_collectible(self):
         collectible_type = 1
 
