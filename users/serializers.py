@@ -11,14 +11,14 @@ from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
     badges = serializers.SerializerMethodField()
-    collectible_posts = serializers.SerializerMethodField()
+    collectibles = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges', 'thumbnail', 'collectible_posts',)
+        'picture', 'is_verified', 'badges', 'thumbnail', 'collectibles',)
         read_only_fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges', 'thumbnail',  'collectible_posts',)
+        'picture', 'is_verified', 'badges', 'thumbnail',  'collectibles',)
 
     def get_badges(self, obj):
         badges = []
@@ -26,20 +26,17 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
         except: badges = Badge.objects.filter(user_id=obj.id)
         return [badge.badge_type for badge in badges.all()]
 
-    def get_collectible_posts(self, obj):
-        from mist.serializers import PostSerializer
+    def get_collectibles(self, obj):
         try: obj.posts
         except: obj.posts = Post.objects.filter(author_id=obj.id)
-        collectible_posts = obj.posts.filter(collectible_type__isnull=False)
-        sorted_posts = sorted(collectible_posts, key=lambda post: post.collectible_type)
-        return [PostSerializer(post).data for post in sorted_posts]
+        return sorted([post.collectible_type for post in obj.posts.all()])
 
 class CompleteUserSerializer(serializers.ModelSerializer):
     EXPIRATION_TIME = timedelta(minutes=60).total_seconds()
     MEGABYTE_LIMIT = 10
 
     badges = serializers.SerializerMethodField()
-    collectible_posts = serializers.SerializerMethodField()
+    collectibles = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -48,21 +45,18 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         'confirm_picture', 'phone_number',
         'date_of_birth', 'sex', 'latitude', 'longitude', 
         'is_verified', 'is_pending_verification', 'badges',
-        'is_superuser', 'thumbnail', 'daily_prompts', 'collectible_posts')
+        'is_superuser', 'thumbnail', 'daily_prompts', 'collectibles')
         read_only_fields = ('badges', 'is_verified', 'is_pending_verification',
-        'daily_prompts', 'collectible_posts', )
+        'daily_prompts', 'collectibles', )
         extra_kwargs = {
             'picture': {'required': True},
             'phone_number': {'required': True},
         }
 
-    def get_collectible_posts(self, obj):
-        from mist.serializers import PostSerializer
+    def get_collectibles(self, obj):
         try: obj.posts
         except: obj.posts = Post.objects.filter(author_id=obj.id)
-        collectible_posts = obj.posts.filter(collectible_type__isnull=False)
-        sorted_posts = sorted(collectible_posts, key=lambda post: post.collectible_type)
-        return [PostSerializer(post).data for post in sorted_posts]
+        return sorted([post.collectible_type for post in obj.posts.all()])
     
     def get_badges(self, obj):
         badges = []
