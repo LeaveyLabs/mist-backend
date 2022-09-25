@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.test import APIRequestFactory
 from mist.tests.generics import NotificationServiceMock
 from users.tests.generics import create_dummy_user_and_token_given_id
-from users.views.notifications import OpenNotifications
+from users.views.notifications import LastOpenedNotificationTime, OpenNotifications
 
 @freeze_time("2020-01-01")
 @patch('push_notifications.models.APNSDeviceQuerySet.send_message',
@@ -171,3 +171,66 @@ class OpenedNotificationsViewTest(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(NotificationServiceMock.badges, 2)
+
+@freeze_time("2020-01-01")
+@patch('push_notifications.models.APNSDeviceQuerySet.send_message',
+    NotificationServiceMock.send_fake_notification)
+class LastOpenedNotificationViewTest(TestCase):
+    def setUp(self):
+        self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
+        self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
+    
+    def test_get_should_return_last_open_time_given_message_notification_type_and_sangaebang(self):
+        notification = Notification.objects.create(
+            user=self.user1,
+            type=Notification.NotificationTypes.MESSAGE,
+            sangdaebang=self.user2,
+            message='this is a test',
+            has_been_seen=True,
+        )
+
+        request = APIRequestFactory().get(
+            f'api/last-opened-time/?type={Notification.NotificationTypes.MESSAGE}&sangdaebang={self.user2.id}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = LastOpenedNotificationTime.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(notification.timestamp, response.data.get('timestamp'))
+
+    def test_get_should_return_zero_given_never_opened_notifications(self):
+        request = APIRequestFactory().get(
+            f'api/last-opened-time/?type={Notification.NotificationTypes.MESSAGE}&sangdaebang={self.user2.id}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = LastOpenedNotificationTime.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(0, response.data.get('timestamp'))
+
+    def test_get_should_return_last_opened_notification_given_nonmessage_notification_type(self):
+        notification = Notification.objects.create(
+            user=self.user1,
+            type=Notification.NotificationTypes.COMMENT,
+            message='this is a test',
+            has_been_seen=True,
+        )
+
+        request = APIRequestFactory().get(
+            f'api/last-opened-time/?type={Notification.NotificationTypes.COMMENT}',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = LastOpenedNotificationTime.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(notification.timestamp, response.data.get('timestamp'))
+
+    def test_get_should_return_zero_given_unseen_notification_type(self):
+        request = APIRequestFactory().get(
+            'api/last-opened-time/?type=invalid_type',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = LastOpenedNotificationTime.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(0, response.data.get('timestamp'))

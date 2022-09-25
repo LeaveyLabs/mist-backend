@@ -3,7 +3,7 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from users.generics import get_user_from_request
+from users.generics import get_current_time, get_user_from_request
 
 from ..serializers import (
     OpenedNotificationSerializer
@@ -51,3 +51,25 @@ class OpenNotifications(generics.CreateAPIView):
                 "data": message_activity.data,
             },
             status=status.HTTP_200_OK)
+
+class LastOpenedNotificationTime(generics.RetrieveAPIView):
+    def retrieve(self, *args, **kwargs):
+        type = self.request.query_params.get('type')
+        sangdaebang = self.request.query_params.get('sangdaebang')
+
+        opened_notifications = Notification.objects.\
+            filter(type=type, sangdaebang=sangdaebang).\
+            order_by('-timestamp')
+        
+        if not opened_notifications.exists():
+            return Response(
+            {
+                "timestamp": 0,
+            }, 
+            status=status.HTTP_200_OK)
+        
+        return Response(
+        {
+            "timestamp": opened_notifications[0].timestamp,
+        }, 
+        status=status.HTTP_200_OK)
