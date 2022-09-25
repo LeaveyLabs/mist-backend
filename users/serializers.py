@@ -29,7 +29,8 @@ class ReadOnlyUserSerializer(serializers.ModelSerializer):
     def get_collectibles(self, obj):
         try: obj.posts
         except: obj.posts = Post.objects.filter(author_id=obj.id)
-        return sorted([post.collectible_type for post in obj.posts.all()])
+        collectible_posts = obj.posts.filter(collectible_type__isnull=False)
+        return sorted([post.collectible_type for post in collectible_posts])
 
 class CompleteUserSerializer(serializers.ModelSerializer):
     EXPIRATION_TIME = timedelta(minutes=60).total_seconds()
@@ -56,7 +57,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
     def get_collectibles(self, obj):
         try: obj.posts
         except: obj.posts = Post.objects.filter(author_id=obj.id)
-        return sorted([post.collectible_type for post in obj.posts.all()])
+        collectible_posts = obj.posts.filter(collectible_type__isnull=False)
+        return sorted([post.collectible_type for post in collectible_posts])
     
     def get_badges(self, obj):
         badges = []
