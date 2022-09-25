@@ -427,6 +427,45 @@ class PostTest(TestCase):
     #     self.assertEqual(serialized_posts[1], response_posts[1])
     #     self.assertEqual(serialized_posts[2], response_posts[2])
     #     return
+
+    def test_get_should_return_posts_given_within_bounds_page_number(self):
+        request = APIRequestFactory().get(
+            f'/api/posts?page={1}',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response_posts)
+        return
+
+    def test_get_should_not_return_posts_given_below_lower_bound_page_number(self):
+        request = APIRequestFactory().get(
+            f'/api/posts?page={0}',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_posts)
+        return
+
+    def test_get_should_not_return_posts_given_above_upper_bound_page_number(self):
+        request = APIRequestFactory().get(
+            f'/api/posts?page={1000}',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response_posts)
+        return
     
     def test_get_should_return_posts_in_trending_order_as_default(self):
         self.post1.timestamp = self.post1.creation_time+3600
