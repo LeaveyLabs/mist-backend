@@ -74,8 +74,9 @@ class PostView(viewsets.ModelViewSet):
         paginator = Paginator(queryset, 100)
         try:
             page_num = int(page)
-            if page_num > 0: return paginator.page(page_num).object_list
-            else: return paginator.page(1).object_list
+            page_in_bounds = page_num > 0 and page_num < queryset.count()/100
+            if page_in_bounds: return paginator.page(page_num).object_list
+            else: return []
         except:
             if not order: return queryset
             return paginator.page(1).object_list
