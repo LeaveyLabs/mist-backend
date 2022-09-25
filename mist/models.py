@@ -31,6 +31,7 @@ class Post(models.Model):
     creation_time = models.FloatField(default=get_current_time)
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
     collectible_type = models.PositiveIntegerField(null=True, blank=True)
+    is_matched = models.BooleanField(default=False)
 
     def _str_(self):
         return self.title

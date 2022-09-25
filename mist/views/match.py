@@ -47,16 +47,25 @@ class MatchRequestView(viewsets.ModelViewSet):
         match_request_response = super().create(request, *args, **kwargs)
         match_requested_user_id = match_request_response.data.get("match_requested_user")
 
-        has_already_requested = MatchRequest.objects.filter(
+        request_will_complete_match = MatchRequest.objects.filter(
             match_requesting_user_id=match_requested_user_id).exists()
         
-        if not has_already_requested:
+        if request_will_complete_match:
+            matched_post = MatchRequest.objects.filter(
+                match_requesting_user_id=match_requested_user_id
+            ).select_related('post')[0].post
+            if matched_post:
+                matched_post.is_matched = True
+                matched_post.save()
+
+        else:
             Notification.objects.create(
                 user_id=match_requested_user_id,
                 type=Notification.NotificationTypes.MATCH,
                 data=match_request_response.data,
                 message="someone replied to your mist 👀",
             )
+
         
         return match_request_response
 

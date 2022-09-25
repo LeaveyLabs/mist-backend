@@ -184,6 +184,31 @@ class MatchRequestTest(TestCase):
         self.assertTrue(NotificationServiceMock.sent_notifications)
         self.assertEqual(NotificationServiceMock.badges, 1)
         return
+
+    def test_post_should_mark_post_as_matched_given_completing_match_request(self):
+        MatchRequest.objects.create(
+            match_requesting_user=self.user2,
+            match_requested_user=self.user1,
+            post=self.post,
+        )
+
+        match_request = MatchRequest(
+            match_requesting_user=self.user1,
+            match_requested_user=self.user2,
+        )
+        serialized_match_request = MatchRequestSerializer(match_request).data
+
+        request = APIRequestFactory().post(
+            '/api/match_requests',
+            serialized_match_request,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = MatchRequestView.as_view({'post':'create'})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Post.objects.get(id=self.post.id).is_matched)
+        return
     
     def test_post_should_not_create_match_request_given_invalid_match_request(self):
         match_request = MatchRequest(
