@@ -33,3 +33,21 @@ def get_default_date_of_birth():
 
 def get_path_to_random_sillouhette(id):
     return f"/users/sillouhettes/silhouette{(id%6)+1}.png"
+
+def get_random_sillouhette_image(id, username):
+    import os
+    from io import BytesIO
+    from PIL import Image
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    img_path = get_path_to_random_sillouhette(id)
+    ext = img_path.split('.')[-1]
+
+    img = Image.open(os.getcwd() + img_path)
+    img_io = BytesIO()
+    img.save(img_io, format=ext)
+
+    return SimpleUploadedFile(
+        f'{username}.{ext}', 
+        img_io.getvalue(),
+        content_type=f'image/{ext}')

@@ -10,7 +10,7 @@ from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 from sorl.thumbnail import get_thumbnail
 
-from .generics import get_current_time, get_default_date_of_birth, get_empty_prompts, get_path_to_random_sillouhette, get_random_code, get_random_email
+from .generics import get_current_time, get_default_date_of_birth, get_empty_prompts, get_random_sillouhette_image, get_random_code, get_random_email
 
 class User(AbstractUser):
     def profile_picture_filepath(instance, filename):
@@ -70,30 +70,16 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
         
         if not self.picture and not self.is_test_user:
-            self.set_picture_to_random_sillouhette()
+            upload_img = get_random_sillouhette_image(self.id, self.username)
+            self.picture.save(upload_img.name, upload_img, False)
 
         if self.picture:
-            resized = get_thumbnail(self.picture, '100x100', quality=99)
-            self.thumbnail.save(resized.name, ContentFile(resized.read()), False)
-
-    def set_picture_to_random_sillouhette(self):
-        from io import BytesIO
-        from PIL import Image
-        from django.core.files.uploadedfile import SimpleUploadedFile
-
-        img_path = get_path_to_random_sillouhette(self.id)
-        ext = img_path.split('.')[-1]
-
-        img = Image.open(os.getcwd() + img_path)
-        img_io = BytesIO()
-        img.save(img_io, format=ext)
-
-        upload_img = SimpleUploadedFile(
-            f'{self.username}.{ext}', 
-            img_io.getvalue(),
-            content_type=f'image/{ext}')
-        
-        self.picture.save(upload_img.name, upload_img, False)
+            try:
+                resized = get_thumbnail(self.picture, '100x100', quality=99)
+                self.thumbnail.save(resized.name, ContentFile(resized.read()), False)
+            except:
+                upload_img = get_random_sillouhette_image(self.id, self.username)
+                self.thumbnail.save(upload_img.name, upload_img, False)
 
 class EmailAuthentication(models.Model):
     def get_random_code():
