@@ -149,6 +149,8 @@ class Notification(models.Model):
         DAILY_MISTBOX = "dailymistbox"
         MAKE_SOMEONES_DAY = "makesomeonesday"
         COMMENT = "comment"
+
+    COUNTABLE_BADGES = [NotificationTypes]
     
     NOTIFICATION_OPTIONS = (
         (NotificationTypes.MESSAGE, NotificationTypes.MESSAGE),

@@ -130,6 +130,19 @@ def verify_profile_picture(user_id):
     
     return True
 
+@shared_task(name="send_daily_prompts_notification_task")
+def send_daily_prompts_notification_task():
+    send_daily_prompts_notification()
+
+def send_daily_prompts_notification():
+    from mist.models import Notification
+    from push_notifications.models import APNSDevice
+    APNSDevice.objects.all().send_message(
+        "your three daily prompts have refreshed! get something off your chest 💌",
+        extra={
+            "type": Notification.NotificationTypes.DAILY_MISTBOX,
+        })
+
 @shared_task(name="verify_profile_picture_task")
 def reset_prompts_task():
     reset_prompts()

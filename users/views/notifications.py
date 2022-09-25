@@ -3,7 +3,7 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from users.generics import get_current_time, get_user_from_request
+from users.generics import get_user_from_request
 
 from ..serializers import (
     OpenedNotificationSerializer
