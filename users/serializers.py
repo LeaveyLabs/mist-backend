@@ -11,19 +11,28 @@ from phonenumber_field.serializerfields import PhoneNumberField
 
 class ReadOnlyUserSerializer(serializers.ModelSerializer):
     badges = serializers.SerializerMethodField()
+    collectible_posts = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges', 'thumbnail', )
+        'picture', 'is_verified', 'badges', 'thumbnail', 'collectible_posts',)
         read_only_fields = ('id', 'username', 'first_name', 'last_name', 
-        'picture', 'is_verified', 'badges', 'thumbnail', )
+        'picture', 'is_verified', 'badges', 'thumbnail',  'collectible_posts',)
 
     def get_badges(self, obj):
         badges = []
         try: badges = obj.badges
         except: badges = Badge.objects.filter(user_id=obj.id)
         return [badge.badge_type for badge in badges.all()]
+
+    def get_collectible_posts(self, obj):
+        from mist.serializers import PostSerializer
+        try: obj.posts
+        except: obj.posts = Post.objects.filter(author_id=obj.id)
+        collectible_posts = obj.posts.filter(collectible_type__isnull=False)
+        sorted_posts = sorted(collectible_posts, key=lambda post: post.collectible_type)
+        return [PostSerializer(post).data for post in sorted_posts]
 
 class CompleteUserSerializer(serializers.ModelSerializer):
     EXPIRATION_TIME = timedelta(minutes=60).total_seconds()
@@ -52,7 +61,8 @@ class CompleteUserSerializer(serializers.ModelSerializer):
         try: obj.posts
         except: obj.posts = Post.objects.filter(author_id=obj.id)
         collectible_posts = obj.posts.filter(collectible_type__isnull=False)
-        return [PostSerializer(post).data for post in collectible_posts]
+        sorted_posts = sorted(collectible_posts, key=lambda post: post.collectible_type)
+        return [PostSerializer(post).data for post in sorted_posts]
     
     def get_badges(self, obj):
         badges = []
