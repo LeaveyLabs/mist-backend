@@ -80,7 +80,7 @@ class Post(models.Model):
                 exclude(user=self.author).\
                 select_related('user').\
                 prefetch_related('posts')
-            sent_user_ids = []
+            # sent_user_ids = []
             # for each word ...            
             for word in words_in_post:
                 lowercased_word = word.lower()
@@ -94,13 +94,13 @@ class Post(models.Model):
                         if keyword in lowercased_word:
                             mistbox.posts.add(self)
                             mistbox.save()
-                            if mistbox.user.id not in sent_user_ids:
-                                UserNotification.objects.create(
-                                    user_id=mistbox.user.id,
-                                    type=UserNotification.NotificationTypes.DAILY_MISTBOX,
-                                    message="you got a new mist in your mistbox 💌",
-                                )
-                                sent_user_ids.append(mistbox.user.id)
+                            # if mistbox.user.id not in sent_user_ids:
+                            #     UserNotification.objects.create(
+                            #         user_id=mistbox.user.id,
+                            #         type=UserNotification.NotificationTypes.DAILY_MISTBOX,
+                            #         message="you got a new mist in your mistbox 💌",
+                            #     )
+                            #     sent_user_ids.append(mistbox.user.id)
 
 class Word(models.Model):
     text = models.CharField(max_length=100)
