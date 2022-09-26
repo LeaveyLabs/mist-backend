@@ -141,21 +141,25 @@ class Ban(models.Model):
             user.is_banned = True
             user.save()
 
-class Notification(models.Model):
+class UserNotification(models.Model):
     class NotificationTypes:
         TAG = "tag"
         MESSAGE = "message"
         MATCH = "match"
         DAILY_MISTBOX = "dailymistbox"
-        MAKE_SOMEONES_DAY = "makesomeonesday"
         COMMENT = "comment"
+        PROMPTS = "prompt"
 
-    COUNTABLE_BADGES = [NotificationTypes]
+    COUNTABLE_BADGES = [
+        NotificationTypes.TAG, 
+        NotificationTypes.MESSAGE,
+        NotificationTypes.MATCH,
+        NotificationTypes.COMMENT,
+    ]
     
     NOTIFICATION_OPTIONS = (
         (NotificationTypes.MESSAGE, NotificationTypes.MESSAGE),
         (NotificationTypes.TAG, NotificationTypes.TAG),
-        (NotificationTypes.DAILY_MISTBOX, NotificationTypes.DAILY_MISTBOX),
         (NotificationTypes.COMMENT, NotificationTypes.COMMENT),
     )
 
@@ -168,10 +172,11 @@ class Notification(models.Model):
     has_been_seen = models.BooleanField(default=False)
 
     def update_badges(user):
-        badgecount = Notification.objects.\
-                        filter(user=user).\
-                        exclude(has_been_seen=True).\
-                        count()
+        badgecount = UserNotification.objects.\
+            filter(user=user).\
+            filter(type__in=UserNotification.COUNTABLE_BADGES).\
+            exclude(has_been_seen=True).\
+            count()
         if not user.notification_badges_enabled:
             badgecount = 0
         APNSDevice.objects.filter(user=user).\
@@ -183,8 +188,9 @@ class Notification(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        badgecount = Notification.objects.\
+        badgecount = UserNotification.objects.\
             filter(user=self.user).\
+            filter(type__in=UserNotification.COUNTABLE_BADGES).\
             exclude(has_been_seen=True).\
             count()
         if not self.user.notification_badges_enabled:

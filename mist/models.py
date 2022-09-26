@@ -10,7 +10,7 @@ import uuid
 import string
 from users.generics import get_empty_keywords
 
-from users.models import Notification, User
+from users.models import UserNotification, User
 
 def get_current_time():
     return datetime.now().timestamp()
@@ -95,9 +95,9 @@ class Post(models.Model):
                             mistbox.posts.add(self)
                             mistbox.save()
                             if mistbox.user.id not in sent_user_ids:
-                                Notification.objects.create(
+                                UserNotification.objects.create(
                                     user_id=mistbox.user.id,
-                                    type=Notification.NotificationTypes.DAILY_MISTBOX,
+                                    type=UserNotification.NotificationTypes.DAILY_MISTBOX,
                                     message="you got a new mist in your mistbox 💌",
                                 )
                                 sent_user_ids.append(mistbox.user.id)

@@ -7,10 +7,10 @@ from mist.permissions import MatchRequestPermission
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from users.generics import get_user_from_request
-from users.models import Notification, User
+from users.models import UserNotification, User
 
 from ..serializers import MatchRequestSerializer, ReadOnlyUserSerializer
-from ..models import MatchRequest, Message, Notification
+from ..models import MatchRequest, Message, UserNotification
 
 class MatchRequestView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MatchRequestPermission)
@@ -59,9 +59,9 @@ class MatchRequestView(viewsets.ModelViewSet):
         #         matched_post.save()
 
         if not request_will_complete_match:
-            Notification.objects.create(
+            UserNotification.objects.create(
                 user_id=match_requested_user_id,
-                type=Notification.NotificationTypes.MATCH,
+                type=UserNotification.NotificationTypes.MATCH,
                 data=match_request_response.data,
                 message="someone replied to your mist 👀",
             )

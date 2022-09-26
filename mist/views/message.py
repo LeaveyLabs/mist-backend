@@ -6,10 +6,10 @@ from rest_framework.response import Response
 
 from mist.permissions import MessagePermission
 from users.generics import get_user_from_request
-from users.models import Notification, User
+from users.models import UserNotification, User
 
 from ..serializers import MessageSerializer
-from ..models import MatchRequest, Message, Notification
+from ..models import MatchRequest, Message, UserNotification
 
 class MessageView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, MessagePermission)
@@ -42,9 +42,9 @@ class MessageView(viewsets.ModelViewSet):
 
         if sender_match_request.exists() and receiver_match_request.exists():
             username = User.objects.get(id=sender).username
-            Notification.objects.create(
+            UserNotification.objects.create(
                 user_id=receiver,
-                type=Notification.NotificationTypes.MESSAGE,
+                type=UserNotification.NotificationTypes.MESSAGE,
                 data=message_response.data,
                 message=f"{username}: {body}",
             )

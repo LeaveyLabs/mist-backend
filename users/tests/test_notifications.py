@@ -2,7 +2,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from freezegun import freeze_time
 from users.generics import get_current_time
-from users.models import Notification, User
+from users.models import UserNotification, User
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
 from mist.tests.generics import NotificationServiceMock
@@ -17,18 +17,29 @@ class NotificationsTest(TestCase):
         self.user1, self.auth_token1 = create_dummy_user_and_token_given_id(1)
         self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
 
-    def test_save_should_send_apns_notification_with_correct_badge_count(self):
+    def test_save_should_send_apns_notification_with_correct_badgecount(self):
         NotificationServiceMock.sent_notifications = []
         NotificationServiceMock.badges = 0
 
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.MESSAGE,
+            type=UserNotification.NotificationTypes.MESSAGE,
             sangdaebang=self.user2,
             message='this is a test',
         )
 
         self.assertEqual(NotificationServiceMock.badges, 1)
+
+    def test_save_should_exclude_automated_notifications_in_badgecount(self):
+        NotificationServiceMock.sent_notifications = []
+        NotificationServiceMock.badges = 0
+
+        UserNotification.objects.create(
+            user=self.user1,
+            type=UserNotification.NotificationTypes.PROMPTS,
+        )
+
+        self.assertEqual(NotificationServiceMock.badges, 0)
     
 @freeze_time("2020-01-01")
 @patch('push_notifications.models.APNSDeviceQuerySet.send_message',
@@ -48,7 +59,7 @@ class OpenedNotificationsViewTest(TestCase):
             'api/open-notification/',
             {
                 'timestamp': get_current_time(),
-                'type': Notification.NotificationTypes.COMMENT,
+                'type': UserNotification.NotificationTypes.COMMENT,
             },
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
@@ -58,15 +69,15 @@ class OpenedNotificationsViewTest(TestCase):
         self.assertTrue(User.objects.get(id=self.user1.id).notification_badges_enabled)
 
     def test_post_should_update_badges_correctly_given_nonmessage_notification(self):
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.COMMENT,
+            type=UserNotification.NotificationTypes.COMMENT,
             message='this is a test',
         )
 
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.COMMENT,
+            type=UserNotification.NotificationTypes.COMMENT,
             message='this is a test',
         )
 
@@ -76,7 +87,7 @@ class OpenedNotificationsViewTest(TestCase):
             'api/open-notification/',
             {
                 'timestamp': get_current_time(),
-                'type': Notification.NotificationTypes.COMMENT,
+                'type': UserNotification.NotificationTypes.COMMENT,
             },
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
@@ -86,22 +97,22 @@ class OpenedNotificationsViewTest(TestCase):
         self.assertEqual(NotificationServiceMock.badges, 0)
 
     def test_post_should_updage_badges_correctly_given_message_notification(self):
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.COMMENT,
+            type=UserNotification.NotificationTypes.COMMENT,
             message='this is a test',
         )
 
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.COMMENT,
+            type=UserNotification.NotificationTypes.COMMENT,
             message='this is a test',
         )
 
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
             sangdaebang=self.user2,
-            type=Notification.NotificationTypes.MESSAGE,
+            type=UserNotification.NotificationTypes.MESSAGE,
             message='this is a test',
         )
 
@@ -112,7 +123,7 @@ class OpenedNotificationsViewTest(TestCase):
             {
                 'timestamp': get_current_time(),
                 'sangdaebang': self.user2.id,
-                'type': Notification.NotificationTypes.MESSAGE,
+                'type': UserNotification.NotificationTypes.MESSAGE,
             },
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
@@ -122,15 +133,15 @@ class OpenedNotificationsViewTest(TestCase):
         self.assertEqual(NotificationServiceMock.badges, 2)
 
     def test_post_should_not_update_badges_given_invalid_notification_type(self):
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.COMMENT,
+            type=UserNotification.NotificationTypes.COMMENT,
             message='this is a test',
         )
 
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.COMMENT,
+            type=UserNotification.NotificationTypes.COMMENT,
             message='this is a test',
         )
 
@@ -148,15 +159,15 @@ class OpenedNotificationsViewTest(TestCase):
         self.assertEqual(NotificationServiceMock.badges, 2)
 
     def test_post_should_not_update_badges_given_no_timestamp(self):
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.COMMENT,
+            type=UserNotification.NotificationTypes.COMMENT,
             message='this is a test',
         )
 
-        Notification.objects.create(
+        UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.COMMENT,
+            type=UserNotification.NotificationTypes.COMMENT,
             message='this is a test',
         )
 
@@ -181,16 +192,16 @@ class LastOpenedNotificationViewTest(TestCase):
         self.user2, self.auth_token2 = create_dummy_user_and_token_given_id(2)
     
     def test_get_should_return_last_open_time_given_message_notification_type_and_sangaebang(self):
-        notification = Notification.objects.create(
+        notification = UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.MESSAGE,
+            type=UserNotification.NotificationTypes.MESSAGE,
             sangdaebang=self.user2,
             message='this is a test',
             has_been_seen=True,
         )
 
         request = APIRequestFactory().get(
-            f'api/last-opened-time/?type={Notification.NotificationTypes.MESSAGE}&sangdaebang={self.user2.id}',
+            f'api/last-opened-time/?type={UserNotification.NotificationTypes.MESSAGE}&sangdaebang={self.user2.id}',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = LastOpenedNotificationTime.as_view()(request)
@@ -200,7 +211,7 @@ class LastOpenedNotificationViewTest(TestCase):
 
     def test_get_should_return_zero_given_never_opened_notifications(self):
         request = APIRequestFactory().get(
-            f'api/last-opened-time/?type={Notification.NotificationTypes.MESSAGE}&sangdaebang={self.user2.id}',
+            f'api/last-opened-time/?type={UserNotification.NotificationTypes.MESSAGE}&sangdaebang={self.user2.id}',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = LastOpenedNotificationTime.as_view()(request)
@@ -209,15 +220,15 @@ class LastOpenedNotificationViewTest(TestCase):
         self.assertEqual(0, response.data.get('timestamp'))
 
     def test_get_should_return_last_opened_notification_given_nonmessage_notification_type(self):
-        notification = Notification.objects.create(
+        notification = UserNotification.objects.create(
             user=self.user1,
-            type=Notification.NotificationTypes.COMMENT,
+            type=UserNotification.NotificationTypes.COMMENT,
             message='this is a test',
             has_been_seen=True,
         )
 
         request = APIRequestFactory().get(
-            f'api/last-opened-time/?type={Notification.NotificationTypes.COMMENT}',
+            f'api/last-opened-time/?type={UserNotification.NotificationTypes.COMMENT}',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )
         response = LastOpenedNotificationTime.as_view()(request)

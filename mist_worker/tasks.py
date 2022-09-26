@@ -8,33 +8,33 @@ def send_mistbox_notifications_task():
     send_mistbox_notifications()
 
 def send_mistbox_notifications():
-    from mist.models import Notification
+    from mist.models import UserNotification
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
         "your mistbox opens have refreshed! pick out 5 new mists containing your keywords 💌",
         extra={
-            "type": Notification.NotificationTypes.DAILY_MISTBOX,
+            "type": UserNotification.NotificationTypes.DAILY_MISTBOX,
         })
 
-@shared_task(name="schedule_make_your_day_mist_notifications_task")
-def schedule_make_your_day_mist_notifications_task():
-    import random
-    from backend import celery_app
-    t = random.randint(3600*1, 3600*8)
-    celery_app.send_task(name="send_make_your_day_mist_notifications_task", countdown=t)
+# @shared_task(name="schedule_make_your_day_mist_notifications_task")
+# def schedule_make_your_day_mist_notifications_task():
+#     import random
+#     from backend import celery_app
+#     t = random.randint(3600*1, 3600*8)
+#     celery_app.send_task(name="send_make_your_day_mist_notifications_task", countdown=t)
 
-@shared_task(name="send_make_your_day_mist_notifications_task")
-def send_make_your_day_mist_notifications_task():
-    send_make_your_day_mist_notifications()
+# @shared_task(name="send_make_your_day_mist_notifications_task")
+# def send_make_your_day_mist_notifications_task():
+#     send_make_your_day_mist_notifications()
 
-def send_make_your_day_mist_notifications():
-    from mist.models import Notification
-    from push_notifications.models import APNSDevice
-    APNSDevice.objects.all().send_message(
-        "did anyone make your day today? make theirs back with a mist 💞",
-        extra={
-            "type": Notification.NotificationTypes.MAKE_SOMEONES_DAY,
-        })
+# def send_make_your_day_mist_notifications():
+#     from mist.models import UserNotification
+#     from push_notifications.models import APNSDevice
+#     APNSDevice.objects.all().send_message(
+#         "did anyone make your day today? make theirs back with a mist 💞",
+#         extra={
+#             "type": UserNotification.NotificationTypes.MAKE_SOMEONES_DAY,
+#         })
 
 @shared_task(name="reset_mistbox_opens_task")
 def reset_mistbox_opens_task():
@@ -135,12 +135,12 @@ def send_daily_prompts_notification_task():
     send_daily_prompts_notification()
 
 def send_daily_prompts_notification():
-    from mist.models import Notification
+    from mist.models import UserNotification
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
         "your three daily prompts have refreshed! get something off your chest 💌",
         extra={
-            "type": Notification.NotificationTypes.DAILY_MISTBOX,
+            "type": UserNotification.NotificationTypes.PROMPTS,
         })
 
 @shared_task(name="verify_profile_picture_task")

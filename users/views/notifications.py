@@ -9,7 +9,7 @@ from ..serializers import (
     OpenedNotificationSerializer
 )
 from ..models import (
-    Notification
+    UserNotification
 )
 
 class OpenNotifications(generics.CreateAPIView):
@@ -29,21 +29,21 @@ class OpenNotifications(generics.CreateAPIView):
 
         notification_query = Q(user=user, type=notification_type, timestamp__lte=timestamp)
 
-        if notification_type == Notification.NotificationTypes.MESSAGE:
+        if notification_type == UserNotification.NotificationTypes.MESSAGE:
             notification_query = Q(
                 sangdaebang=sangdaebang,
                 user=user, 
                 type=notification_type, 
                 timestamp__lte=timestamp)
     
-        Notification.objects.\
+        UserNotification.objects.\
             filter(notification_query).\
             update(has_been_seen=True)
         
         user.notification_badges_enabled = True
         user.save()
         
-        Notification.update_badges(user)
+        UserNotification.update_badges(user)
         
         return Response(
             {
@@ -57,7 +57,7 @@ class LastOpenedNotificationTime(generics.RetrieveAPIView):
         type = self.request.query_params.get('type')
         sangdaebang = self.request.query_params.get('sangdaebang')
 
-        opened_notifications = Notification.objects.\
+        opened_notifications = UserNotification.objects.\
             filter(type=type, sangdaebang=sangdaebang).\
             order_by('-timestamp')
         

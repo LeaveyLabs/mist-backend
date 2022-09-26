@@ -6,7 +6,7 @@ from django.test import TestCase
 from django.test import TestCase
 from unittest.mock import patch
 
-from mist_worker.tasks import reset_mistbox_opens, reset_prompts, send_make_your_day_mist_notifications, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
+from mist_worker.tasks import reset_mistbox_opens, reset_prompts, send_mistbox_notifications, tally_random_upvotes, verify_profile_picture
 from mist.models import Mistbox, Post, PostVote
 from push_notifications.models import APNSDevice
 from users.models import User
@@ -111,11 +111,11 @@ class TasksTest(TestCase):
         self.assertFalse(self.user1.is_pending_verification)
         self.assertFalse(self.user2.is_pending_verification)
 
-    def test_send_write_mist_notifications(self):
-        send_make_your_day_mist_notifications()
-        self.assertTrue(NotificationServiceMock.sent_notifications)
-        for notification in NotificationServiceMock.sent_notifications:
-            self.assertIn('mist', notification)
+    # def test_send_write_mist_notifications(self):
+    #     send_make_your_day_mist_notifications()
+    #     self.assertTrue(NotificationServiceMock.sent_notifications)
+    #     for notification in NotificationServiceMock.sent_notifications:
+    #         self.assertIn('mist', notification)
 
     def test_reset_prompts(self):
         def exhaust_all_minus_one_collectible(user):

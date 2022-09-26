@@ -3,10 +3,10 @@ from rest_framework import viewsets
 from mist.permissions import TagPermission
 from rest_framework.permissions import IsAuthenticated
 
-from users.models import Notification, User
+from users.models import UserNotification, User
 from django.db.models import Q
 
-from ..models import Comment, Notification, Post, Tag
+from ..models import Comment, UserNotification, Post, Tag
 from ..serializers import TagSerializer
 
 import sys
@@ -61,9 +61,9 @@ class TagView(viewsets.ModelViewSet):
 
         if tagged_user_id:
             notifications_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist"
-            Notification.objects.create(
+            UserNotification.objects.create(
                 user_id=tagged_user_id,
-                type=Notification.NotificationTypes.TAG,
+                type=UserNotification.NotificationTypes.TAG,
                 data=tag_response.data,
                 message=notifications_body,
             )

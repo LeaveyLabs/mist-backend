@@ -145,20 +145,20 @@ class PostTest(TestCase):
         self.assertNotIn(post4, test_mistbox.posts.all())
         return
 
-    def test_save_should_send_notifications_with_keywords_in_post(self):
-        mistbox = Mistbox.objects.create(user=self.user1)
-        mistbox.keywords = ['these', 'are', 'cool', 'keywords', 'key']
-        mistbox.save()
+    # def test_save_should_send_notifications_with_keywords_in_post(self):
+    #     mistbox = Mistbox.objects.create(user=self.user1)
+    #     mistbox.keywords = ['these', 'are', 'cool', 'keywords', 'key']
+    #     mistbox.save()
 
-        Post.objects.create(
-            title='these are',
-            body='cool keywords',
-            author=self.user2,
-        )
+    #     Post.objects.create(
+    #         title='these are',
+    #         body='cool keywords',
+    #         author=self.user2,
+    #     )
 
-        self.assertTrue(NotificationServiceMock.sent_notifications)
-        self.assertEqual(len(NotificationServiceMock.sent_notifications), 1)
-        self.assertEqual(NotificationServiceMock.badges, 1)
+    #     self.assertTrue(NotificationServiceMock.sent_notifications)
+    #     self.assertEqual(len(NotificationServiceMock.sent_notifications), 1)
+    #     self.assertEqual(NotificationServiceMock.badges, 1)
 
     def test_save_should_not_add_to_author_mistboxes(self):
         mistbox = Mistbox.objects.create(user=self.user1)
