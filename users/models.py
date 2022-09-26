@@ -148,7 +148,7 @@ class UserNotification(models.Model):
         MATCH = "match"
         DAILY_MISTBOX = "dailymistbox"
         COMMENT = "comment"
-        PROMPTS = "prompt"
+        PROMPTS = "prompts"
 
     COUNTABLE_BADGES = [
         NotificationTypes.TAG, 
