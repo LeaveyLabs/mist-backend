@@ -143,6 +143,21 @@ def send_daily_prompts_notification():
             "type": UserNotification.NotificationTypes.PROMPTS,
         })
 
+@shared_task(name="send_daily_prompts_notification_task")
+def test_notifications():
+    send_daily_prompts_notification()
+    send_comment_notification
+
+
+def send_comment_notification():
+    from mist.models import UserNotification
+    from push_notifications.models import APNSDevice
+    APNSDevice.objects.all().send_message(
+        "your three daily prompts have refreshed! get something off your chest 💌",
+        extra={
+            "type": UserNotification.NotificationTypes.COMMENT,
+        })
+
 @shared_task(name="verify_profile_picture_task")
 def reset_prompts_task():
     reset_prompts()
