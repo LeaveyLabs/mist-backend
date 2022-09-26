@@ -146,8 +146,7 @@ def send_daily_prompts_notification():
 @shared_task(name="send_daily_prompts_notification_task")
 def test_notifications():
     send_daily_prompts_notification()
-    send_comment_notification
-
+    send_comment_notification()
 
 def send_comment_notification():
     from mist.models import UserNotification
