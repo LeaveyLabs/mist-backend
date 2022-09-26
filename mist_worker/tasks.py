@@ -152,7 +152,7 @@ def send_comment_notification():
     from mist.models import UserNotification
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
-        "your three daily prompts have refreshed! get something off your chest 💌",
+        "comment test",
         extra={
             "type": UserNotification.NotificationTypes.COMMENT,
         })
