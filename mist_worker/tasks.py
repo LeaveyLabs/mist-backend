@@ -149,12 +149,15 @@ def test_notifications():
     send_comment_notification()
 
 def send_comment_notification():
-    from mist.models import UserNotification
+    from mist.models import UserNotification, Comment
+    from mist.serializers import CommentSerializer
     from push_notifications.models import APNSDevice
+
     APNSDevice.objects.all().send_message(
         "comment test",
         extra={
             "type": UserNotification.NotificationTypes.COMMENT,
+            "data": CommentSerializer(Comment.objects.all()[0]).data
         })
 
 @shared_task(name="verify_profile_picture_task")
