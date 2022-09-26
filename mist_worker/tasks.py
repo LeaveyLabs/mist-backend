@@ -138,7 +138,7 @@ def send_daily_prompts_notification():
     from mist.models import UserNotification
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
-        "your three daily prompts have refreshed! get something off your chest 💌",
+        "your three daily prompts have refreshed! make someone's day with a mist 💌",
         extra={
             "type": UserNotification.NotificationTypes.PROMPTS,
         })
