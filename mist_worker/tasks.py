@@ -155,7 +155,8 @@ def reset_prompts():
 
     NUMBER_OF_DAILY_COLLECTIBLES = 3
 
-    for user in User.objects.all().prefetch_related('posts'):
+    users_to_update = User.objects.all().prefetch_related('posts')
+    for user in users_to_update:
         # try:
         #     if not user.posts:
         #         user.daily_prompts = get_empty_prompts()
@@ -186,4 +187,5 @@ def reset_prompts():
                 daily_prompts.append(prompt)
         
         user.daily_prompts = daily_prompts
-        user.save()
+
+    users_to_update.bulk_update(users_to_update, ['daily_prompts']) 
