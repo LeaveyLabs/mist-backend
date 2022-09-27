@@ -3,6 +3,8 @@ import uuid
 import requests
 from celery import shared_task
 
+from users.generics import get_empty_prompts
+
 @shared_task(name="send_mistbox_notifications_task")
 def send_mistbox_notifications_task():
     send_mistbox_notifications()
@@ -156,6 +158,16 @@ def reset_prompts():
     NUMBER_OF_DAILY_COLLECTIBLES = 3
 
     for user in User.objects.all().prefetch_related('posts'):
+        
+        try:
+            if not user.posts:
+                user.daily_prompts = get_empty_prompts()
+                user.save()
+                continue
+        except:
+            user.daily_prompts = get_empty_prompts()
+            user.save()
+            continue
 
         collectible_posts = user.posts.filter(collectible_type__isnull=False)
 
