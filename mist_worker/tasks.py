@@ -3,8 +3,6 @@ import uuid
 import requests
 from celery import shared_task
 
-from users.generics import get_empty_prompts
-
 @shared_task(name="send_mistbox_notifications_task")
 def send_mistbox_notifications_task():
     send_mistbox_notifications()
