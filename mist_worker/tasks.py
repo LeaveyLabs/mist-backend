@@ -157,15 +157,6 @@ def reset_prompts():
 
     users_to_update = User.objects.all().prefetch_related('posts')
     for user in users_to_update:
-        # try:
-        #     if not user.posts:
-        #         user.daily_prompts = get_empty_prompts()
-        #         user.save()
-        #         continue
-        # except:
-        #     user.daily_prompts = get_empty_prompts()
-        #     user.save()
-        #     continue
 
         collectible_posts = user.posts.filter(collectible_type__isnull=False)
 
