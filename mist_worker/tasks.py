@@ -143,7 +143,7 @@ def send_daily_prompts_notification():
             "type": UserNotification.NotificationTypes.PROMPTS,
         })
 
-@shared_task(name="verify_profile_picture_task")
+@shared_task(name="reset_prompts_task")
 def reset_prompts_task():
     reset_prompts()
 
