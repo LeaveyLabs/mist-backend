@@ -158,16 +158,15 @@ def reset_prompts():
     NUMBER_OF_DAILY_COLLECTIBLES = 3
 
     for user in User.objects.all().prefetch_related('posts'):
-        
-        try:
-            if not user.posts:
-                user.daily_prompts = get_empty_prompts()
-                user.save()
-                continue
-        except:
-            user.daily_prompts = get_empty_prompts()
-            user.save()
-            continue
+        # try:
+        #     if not user.posts:
+        #         user.daily_prompts = get_empty_prompts()
+        #         user.save()
+        #         continue
+        # except:
+        #     user.daily_prompts = get_empty_prompts()
+        #     user.save()
+        #     continue
 
         collectible_posts = user.posts.filter(collectible_type__isnull=False)
 
