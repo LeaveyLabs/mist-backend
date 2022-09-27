@@ -129,8 +129,13 @@ class TasksTest(TestCase):
         
         exhaust_all_minus_one_collectible(self.user1)
 
+        self.user2.daily_prompts = [0, 0, 0]
+        self.user2.save()
+
         reset_prompts()
 
         self.assertEqual(len(User.objects.get(id=self.user1.id).daily_prompts), 1)
         self.assertEqual(len(User.objects.get(id=self.user2.id).daily_prompts), 3)
         self.assertEqual(len(User.objects.get(id=self.user3.id).daily_prompts), 3)
+
+        self.assertNotEqual(User.objects.get(id=self.user2.id).daily_prompts, [0, 0, 0])
