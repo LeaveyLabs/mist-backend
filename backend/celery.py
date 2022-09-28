@@ -14,4 +14,4 @@ def setup_periodic_tasks(sender, **kwargs):
     from mist_worker.tasks import reset_mistbox_opens_task, reset_prompts_task, send_daily_prompts_notification_task
     sender.add_periodic_task(crontab(hour=17, minute=0), reset_mistbox_opens_task.s())
     sender.add_periodic_task(crontab(hour=16, minute=0), send_daily_prompts_notification_task.s())
-    sender.add_periodic_task(crontab(hour=15, minute=59), reset_prompts_task.s())
+    sender.add_periodic_task(60*10, reset_prompts_task.s())
