@@ -10,7 +10,7 @@ import uuid
 import string
 from users.generics import get_empty_keywords
 
-from users.models import UserNotification, User
+from users.models import User
 
 def get_current_time():
     return datetime.now().timestamp()
@@ -21,6 +21,14 @@ class Post(models.Model):
     USC_LONGITUDE = Decimal(118.2851)
 
     NUMBER_OF_TOTAL_COLLECTIBLES = 30
+
+    BAD_WORDS = [
+        'fuck', 
+        'fuk', 
+        'dick', 
+        'sex',
+        'bitch',
+    ]
 
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
     title = models.CharField(max_length=40)
@@ -33,6 +41,7 @@ class Post(models.Model):
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="posts")
     collectible_type = models.PositiveIntegerField(null=True, blank=True)
     is_matched = models.BooleanField(default=False)
+    is_hidden = models.BooleanField(default=False)
 
     def _str_(self):
         return self.title
@@ -51,8 +60,31 @@ class Post(models.Model):
         return flags.count()
     
     def save(self, *args, **kwargs):
+        from profanity_check import predict
+        
         # check if the post is new
         is_new = (len(Post.objects.filter(id=self.id)) == 0)
+
+        # ai profanity check
+        if self.body and predict([self.body]):
+            self.is_hidden = True
+        if self.title and predict([self.title]):
+            self.is_hidden = True
+        if self.location_description and predict([self.location_description]):
+            self.is_hidden = True
+        
+        # manual profanity check
+        for word in self.BAD_WORDS:
+            if self.body and word in self.body:
+                self.is_hidden = True
+                break
+            if self.title and word in self.title:
+                self.is_hidden = True
+                break
+            if self.location_description and word in self.location_description:
+                self.is_hidden = True
+                break
+        
         # save original post
         super(Post, self).save(*args, **kwargs)
         # generate word

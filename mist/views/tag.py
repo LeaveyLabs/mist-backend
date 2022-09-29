@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from users.models import UserNotification, User
 from django.db.models import Q
 
-from ..models import Comment, UserNotification, Post, Tag
+from ..models import Comment, Post, Tag
 from ..serializers import TagSerializer
 
 import sys

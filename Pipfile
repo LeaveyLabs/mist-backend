@@ -35,6 +35,7 @@ django-cleanup = "*"
 sorl-thumbnail = "*"
 uvicorn = "*"
 django-silk = "*"
+alt-profanity-check = "*"
 
 [dev-packages]
 

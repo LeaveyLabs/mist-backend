@@ -297,57 +297,77 @@ class PostTest(TestCase):
             collectible_type=collectible_type,
         ))
 
-    # def test_post_should_not_create_post_given_profanity(self):
-    #     test_post = Post(
-    #         title='fuck you',
-    #         body='fuck fuck fuck shit ass',
-    #         latitude=self.USC_LATITUDE,
-    #         longitude=self.USC_LONGITUDE,
-    #         timestamp=0,
-    #         author=self.user1,
-    #     )
-    #     serialized_post = PostSerializer(test_post).data
+    def test_post_should_hide_post_given_profanity(self):
+        test_post = Post(
+            title='fuck you',
+            body='fuck fuck fuck shit ass',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
+            timestamp=0,
+            author=self.user1,
+        )
+        serialized_post = PostSerializer(test_post).data
 
-    #     request = APIRequestFactory().post(
-    #         '/api/posts',
-    #         serialized_post,
-    #         format='json',
-    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-    #     )
-    #     response = PostView.as_view({'post':'create'})(request)
+        request = APIRequestFactory().post(
+            '/api/posts',
+            serialized_post,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = PostView.as_view({'post':'create'})(request)
 
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    #     self.assertFalse(Post.objects.filter(
-    #         body=test_post.body,
-    #     ))
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Post.objects.get(
+            body=test_post.body).is_hidden)
 
-    # def test_post_should_not_create_post_given_hate_speech(self):
-    #     test_post = Post(
-    #         title='nigger',
-    #         body='faggot nigga nigger',
-    #         latitude=self.USC_LATITUDE,
-    #         longitude=self.USC_LONGITUDE,
-    #         timestamp=0,
-    #         author=self.user1,
-    #     )
-    #     serialized_post = PostSerializer(test_post).data
+    def test_post_should_hide_post_given_hate_speech(self):
+        test_post = Post(
+            title='nigger',
+            body='faggot nigga nigger',
+            latitude=self.USC_LATITUDE,
+            longitude=self.USC_LONGITUDE,
+            timestamp=0,
+            author=self.user1,
+        )
+        serialized_post = PostSerializer(test_post).data
 
-    #     request = APIRequestFactory().post(
-    #         '/api/posts',
-    #         serialized_post,
-    #         format='json',
-    #         HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
-    #     )
-    #     response = PostView.as_view({'post':'create'})(request)
+        request = APIRequestFactory().post(
+            '/api/posts',
+            serialized_post,
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = PostView.as_view({'post':'create'})(request)
 
-    #     self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-    #     self.assertFalse(Post.objects.filter(
-    #         body=test_post.body,
-    #     ))
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Post.objects.get(
+            body=test_post.body).is_hidden)
         
     def test_get_should_return_all_posts_given_no_parameters(self):
         serialized_posts = [
             PostSerializer(self.post1).data, 
+            PostSerializer(self.post2).data,
+            PostSerializer(self.post3).data,
+        ]
+
+        request = APIRequestFactory().get(
+            '/api/posts',
+            format="json",
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+
+        response = PostView.as_view({'get':'list'})(request)
+        response_posts = [post_data for post_data in response.data]
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertCountEqual(serialized_posts, response_posts)
+        return
+
+    def test_get_should_not_return_hidden_posts_for_generic_users(self):
+        self.post1.is_hidden = True
+        self.post1.save()
+
+        serialized_posts = [
             PostSerializer(self.post2).data,
             PostSerializer(self.post3).data,
         ]

@@ -60,7 +60,7 @@ class PostView(viewsets.ModelViewSet):
         queryset = queryset.\
             prefetch_related("votes", "comments", "flags", "views").\
             annotate(viewcount=Count("views", filter=Q(views__user=user)))
-       
+
         queryset = self.order_queryset(queryset)
         queryset = self.custom_paginate_queryset(queryset)
         queryset = self.remove_impermissible_posts(queryset)
@@ -143,7 +143,8 @@ class PostView(viewsets.ModelViewSet):
             queryset = queryset.filter(author=author)
         
         return queryset.\
-            prefetch_related("votes", "comments", "flags")
+            prefetch_related("votes", "comments", "flags").\
+            exclude(is_hidden=True)
 
     def get_locations_nearby_coords(self, latitude, longitude, max_distance=MAX_DISTANCE):
         """
@@ -227,7 +228,7 @@ class FriendPostsView(PostView):
             order_by('-creation_time')
 
 
-class FavoritedPostsView(PostView):
+class FavoritedPostsView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 
@@ -238,7 +239,7 @@ class FavoritedPostsView(PostView):
             order_by('-creation_time')
 
 
-class SubmittedPostsView(PostView):
+class SubmittedPostsView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = PostSerializer
 

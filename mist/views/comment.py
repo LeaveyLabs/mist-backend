@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from ..serializers import CommentSerializer
 
-from ..models import Comment, UserNotification, Post
+from ..models import Comment, Post
 
 class CommentView(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, CommentPermission)

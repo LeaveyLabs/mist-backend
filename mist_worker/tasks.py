@@ -8,7 +8,7 @@ def send_mistbox_notifications_task():
     send_mistbox_notifications()
 
 def send_mistbox_notifications():
-    from mist.models import UserNotification
+    from users.models import UserNotification
     from push_notifications.models import APNSDevice
     APNSDevice.objects.all().send_message(
         "your mistbox opens have refreshed! pick out 5 new mists containing your keywords 💌",
