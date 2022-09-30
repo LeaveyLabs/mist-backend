@@ -50,31 +50,18 @@ class PostTest(TestCase):
             timestamp=2,
             author=self.user1,
         )
-
-        self.vote = PostVote.objects.create(
-            voter=self.user1,
-            post=self.post1,
-        )
-
-        self.comment = Comment.objects.create(
-            body='FakeTextForComment',
-            post=self.post1,
-            author=self.user1,
-        )
-
-        self.flag = PostFlag.objects.create(
-            post=self.post1,
-            flagger=self.user1,
-        )
         return
     
     def test_calculate_votecount_should_return_votecount(self):
+        PostVote.objects.create(voter=self.user1, post=self.post1)
         return self.assertEqual(PostSerializer().get_votecount(self.post1), 1)
     
     def test_calculate_commentcount_should_return_number_of_comments(self):
+        Comment.objects.create(body='FakeTextForComment', post=self.post1, author=self.user1)
         return self.assertEqual(PostSerializer().get_commentcount(self.post1), 1)
     
     def test_calculate_flagcount_should_return_number_of_flags(self):
+        PostFlag.objects.create(post=self.post1, flagger=self.user1)
         return self.assertEqual(PostSerializer().get_flagcount(self.post1), 1)
 
     def test_save_should_create_words_in_post(self):
@@ -494,6 +481,7 @@ class PostTest(TestCase):
         self.post1.save()
         self.post2.save()
         
+        PostVote.objects.create(voter=self.user1, post=self.post1)
         PostVote.objects.create(voter=self.user1, post=self.post2)
         PostVote.objects.create(voter=self.user2, post=self.post1)       
         PostVote.objects.create(voter=self.user2, post=self.post2)
@@ -526,12 +514,15 @@ class PostTest(TestCase):
         self.post1.save()
         self.post2.save()
 
+        PostVote.objects.create(voter=self.user1, post=self.post1)
         PostVote.objects.create(voter=self.user2, post=self.post1)
         PostVote.objects.create(voter=self.user3, post=self.post1)
         PostVote.objects.create(voter=self.user1, post=self.post2)
         PostVote.objects.create(voter=self.user2, post=self.post2)
 
         View.objects.create(post=self.post1, user=self.user1)
+        View.objects.create(post=self.post1, user=self.user2)
+        View.objects.create(post=self.post1, user=self.user3)
 
         serialized_posts = [
             PostSerializer(self.post2).data,
@@ -555,6 +546,7 @@ class PostTest(TestCase):
         return
     
     def test_get_should_return_posts_in_best_order_given_order_parameter(self):
+        PostVote.objects.create(voter=self.user1, post=self.post1)
         PostVote.objects.create(voter=self.user2, post=self.post1)
         PostVote.objects.create(voter=self.user2, post=self.post2)
         PostVote.objects.create(voter=self.user3, post=self.post1)
@@ -587,6 +579,7 @@ class PostTest(TestCase):
         self.post1.save()
         self.post2.save()
         
+        PostVote.objects.create(voter=self.user1, post=self.post1)
         PostVote.objects.create(voter=self.user2, post=self.post1)
         PostVote.objects.create(voter=self.user1, post=self.post2)
         PostVote.objects.create(voter=self.user2, post=self.post2)
@@ -645,7 +638,7 @@ class PostTest(TestCase):
         self.assertEqual(serialized_posts[2], response_posts[2])
         return
     
-    def test_get_should_not_return_posts_with_flags_greater_than_square_root_of_votes(self):
+    def test_get_should_not_return_posts_with_flags(self):
         PostFlag.objects.create(flagger=self.user1, post=self.post3)
         PostFlag.objects.create(flagger=self.user2, post=self.post3)
         PostFlag.objects.create(flagger=self.user3, post=self.post3)

@@ -38,12 +38,13 @@ class Order(Enum):
         except: post.viewcount = 0
         return sum(
             [vote.rating*
+            (Order.commentcount(post)+1)*
             math.pow(2, (post.timestamp-get_current_time())/NORM_CONSTANT)*
             (1/(post.viewcount+1))
             for vote in post.votes.all()])
 
     def permissible_post(post):
-        if Order.flagcount(post) < 2: return True
+        if Order.flagcount(post) > 0: return False
         return Order.votecount(post)*Order.votecount(post) >= Order.flagcount(post)
 
 class PostView(viewsets.ModelViewSet):
