@@ -23,12 +23,16 @@ class RequestLoginCodeView(generics.CreateAPIView):
     """
     View to request login code to phone number
     """
-    TESTING_ADMIN_USERNAME = "mist"
     DEFAULT_CODE = "123456"
 
+    backdoor_usernames = [
+        "mist",
+        "corylevy",
+    ]
+    
     def is_testing_admin(self, phone_number):
         users_with_matching_phone_number = User.objects.filter(phone_number=phone_number)
-        testing_admin_users = User.objects.filter(username=self.TESTING_ADMIN_USERNAME)
+        testing_admin_users = User.objects.filter(username__in=self.backdoor_usernames)
         if not users_with_matching_phone_number.exists(): return False
         if not testing_admin_users.exists(): return False
         return users_with_matching_phone_number[0] == testing_admin_users[0]
