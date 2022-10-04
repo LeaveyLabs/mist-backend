@@ -28,6 +28,7 @@ class Post(models.Model):
         'dick', 
         'sex',
         'bitch',
+        'queef',
     ]
 
     uuid = models.CharField(max_length=36, default=uuid.uuid4, unique=True)
@@ -75,13 +76,13 @@ class Post(models.Model):
         
         # manual profanity check
         for word in self.BAD_WORDS:
-            if self.body and word in self.body:
+            if self.body and word in self.body.lower():
                 self.is_hidden = True
                 break
-            if self.title and word in self.title:
+            if self.title and word in self.title.lower():
                 self.is_hidden = True
                 break
-            if self.location_description and word in self.location_description:
+            if self.location_description and word in self.location_description.lower():
                 self.is_hidden = True
                 break
         
