@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from django.test import TestCase
 from users.generics import get_current_time
-from users.models import Ban
+from users.models import Ban, User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
@@ -110,6 +110,28 @@ class RequestLoginCodeViewTest(TestCase):
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(matching_messages)
+        return
+
+    def test_post_should_send_default_code_to_admin_user(self):
+        User.objects.create(
+            username="mist", 
+            phone_number="+13103103101")
+
+        admin_phone_number = "+13103103101"
+
+        request = APIRequestFactory().post(
+            'api/request-login-code/',
+            {
+                'phone_number': admin_phone_number,
+            },
+        )
+        response = RequestLoginCodeView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            PhoneNumberAuthentication.objects.get(
+                phone_number=admin_phone_number).code, 
+            "123456")
         return
     
 class ValidateLoginCodeViewTest(TestCase):
