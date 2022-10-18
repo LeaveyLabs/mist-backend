@@ -72,7 +72,7 @@ class TagView(viewsets.ModelViewSet):
             tagged_comment = Comment.objects.get(id=tagged_comment_id)
             tagged_post_snippet = " ".join(self.get_first_twenty_or_less_words(tagged_comment.post_id))
             download_link = "https://www.getmist.app/download"
-            text_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist: \"{tagged_post_snippet}...\"\n\nsee what your secret admirer has to say about you: {download_link}"
+            text_body = f"{tagging_first_name} {tagging_last_name} tagged you in a mist: \"{tagged_post_snippet}...\"\n\nsee what someone has to say about you: {download_link}"
             twilio_client.messages.create(
                 to=tagged_phone_number,
                 from_=twilio_phone_number,
