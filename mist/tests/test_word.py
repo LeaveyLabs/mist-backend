@@ -4,7 +4,7 @@ from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.test import APIRequestFactory
-from mist.models import Post
+from mist.models import Post, PostFlag
 from mist.views.word import WordView
 
 from users.models import User
@@ -113,6 +113,31 @@ class WordTest(TestCase):
 
         request = APIRequestFactory().get(
             f'/api/words?search_word={word_to_search}&wrapper_words={wrapper_word1}&wrapper_words={wrapper_word2}',
+            format='json',
+            HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
+        )
+        response = WordView.as_view()(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for word in response.data:
+            self.assertTrue(word_to_search.lower() in word.get('text'))
+            self.assertEqual(word.get('occurrences'), 0)
+        return
+
+    def test_get_should_not_return_count_of_flagged_posts_given_search_word(self):
+        word_to_search = 'Fake'
+        post = Post.objects.create(
+            title='FakeTitleForFakePost',
+            body='FakeTextForFakePost',
+            author=self.user1,
+        )
+        PostFlag.objects.create(
+            post=post,
+            flagger=self.user1,
+        )
+
+        request = APIRequestFactory().get(
+            f'/api/words?search_word={word_to_search}',
             format='json',
             HTTP_AUTHORIZATION=f'Token {self.auth_token1}',
         )

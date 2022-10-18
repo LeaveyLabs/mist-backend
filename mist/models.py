@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.forms import ValidationError
 from phonenumber_field.modelfields import PhoneNumberField
 import uuid
@@ -140,15 +140,14 @@ class Word(models.Model):
     posts = models.ManyToManyField(Post)
     
     def calculate_occurrences(self, wrapper_words=[]):
-        word_in_title = Post.objects.filter(title__icontains=self.text)
-        word_in_body = Post.objects.filter(body__icontains=self.text)
-        postset = (word_in_title | word_in_body).distinct()
+        query = (Q(title__icontains=self.text) | Q(body__icontains=self.text))
         for wrapper_word in wrapper_words:
-            wrapper_in_title = Post.objects.filter(title__icontains=wrapper_word)
-            wrapper_in_body = Post.objects.filter(body__icontains=wrapper_word)
-            wrapper_postset = (wrapper_in_title | wrapper_in_body).distinct()
-            postset = postset.intersection(wrapper_postset)
-        return postset.count()
+            query &= (Q(title__icontains=wrapper_word) | Q(body__icontains=wrapper_word))
+        postset = Post.objects.filter(query).distinct()
+        return postset\
+            .annotate(flagcount=Count('flags'))\
+            .exclude(flagcount__gt=0, flagcount__isnull=False)\
+            .count()
 
 class PostVote(models.Model):
     DEFAULT_RATING = 1
