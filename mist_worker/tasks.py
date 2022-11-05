@@ -133,7 +133,8 @@ def verify_profile_picture(user_id):
 
 @shared_task(name="send_daily_prompts_notification_task")
 def send_daily_prompts_notification_task():
-    send_daily_prompts_notification()
+    # send_daily_prompts_notification()
+    ... 
 
 def send_daily_prompts_notification():
     from users.models import UserNotification
