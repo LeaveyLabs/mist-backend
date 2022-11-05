@@ -6,7 +6,6 @@ from celery import shared_task
 @shared_task(name="send_mistbox_notifications_task")
 def send_mistbox_notifications_task():
     # send_mistbox_notifications()
-    ... 
     ...
 
 def send_mistbox_notifications():
