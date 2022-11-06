@@ -128,9 +128,8 @@ class PostView(viewsets.ModelViewSet):
         if words:
             q = Q()
             for word in words:
-                q |= Q(title__icontains=word)
-                q |= Q(body__icontains=word)
-                q |= Q(location_description__icontains=word)
+                q &= (Q(title__icontains=word) | Q(body__icontains=word))
+                #q &= Q(body__icontains=word)
             queryset = Post.objects.filter(q)
         if start_timestamp and end_timestamp:
             queryset = queryset.filter(
