@@ -20,10 +20,13 @@ class WordView(generics.ListAPIView):
         search_word_objs = Word.objects.filter(text__icontains=search_word)
         queryset = []
         print(search_word_objs)
+        count = 0 
         for search_word_obj in search_word_objs:
             search_word_obj.occurrences = search_word_obj.calculate_occurrences(wrapper_words)
             if search_word_obj.occurrences > 0:
+                count += 1 
                 queryset.append(search_word_obj)
+            if count >= 5: 
                 return queryset
         
         return queryset
