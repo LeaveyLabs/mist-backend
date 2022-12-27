@@ -254,9 +254,9 @@ class UserEmailRegistrationSerializer(serializers.Serializer):
         # if email_is_banned:
         #     raise ValidationError("Email's been banned")
 
-        domain = email.split('@')[1]
-        if domain not in self.ACCEPTABLE_DOMAINS:
-            raise ValidationError("Email has an invalid domain")
+        # domain = email.split('@')[1]
+        # if domain not in self.ACCEPTABLE_DOMAINS:
+        #     raise ValidationError("Email has an invalid domain")
 
         return lowercased_email
 
