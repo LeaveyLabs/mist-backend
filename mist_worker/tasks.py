@@ -5,7 +5,8 @@ from celery import shared_task
 
 @shared_task(name="send_mistbox_notifications_task")
 def send_mistbox_notifications_task():
-    send_mistbox_notifications()
+    # send_mistbox_notifications()
+    ...
 
 def send_mistbox_notifications():
     from users.models import UserNotification
@@ -132,7 +133,8 @@ def verify_profile_picture(user_id):
 
 @shared_task(name="send_daily_prompts_notification_task")
 def send_daily_prompts_notification_task():
-    send_daily_prompts_notification()
+    # send_daily_prompts_notification()
+    ... 
 
 def send_daily_prompts_notification():
     from users.models import UserNotification
